@@ -256,6 +256,11 @@ directory:
 - `cd apps/desktop && npm run typecheck`
   — passed after the P4 Desktop API/settings integration.
 
+- `cd apps/desktop && npm run build`
+  — clean working-tree build passed; Vite, Electron main/preload bundles,
+  native dependency staging, and `assert-dist-built` passed. Build stamp:
+  `955a9c3818fa`.
+
 - `systemctl --user is-active hafiye-gateway.service && systemctl --user is-enabled hafiye-gateway.service && .venv/bin/hafiye runtime doctor`
   — active, enabled; `ok=true`, `blockers=[]`, `warnings=[]`, expected and
   selected backend `CUDA`, managed server ready on `127.0.0.1:11435`.

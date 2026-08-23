@@ -196,6 +196,9 @@ P0 computer-use acceptance requires:
 - The real host build compiled CPU and CUDA; Hafiye AUTO selected CUDA on the
   NVIDIA RTX 3080. The loopback server, GGUF registry, model lifecycle,
   authenticated gateway API, and Desktop settings boundary were verified.
+- The clean Desktop production build after P4 closure passed with build stamp
+  `955a9c3818fa`; Vite, Electron main/preload bundles, native staging, and
+  `assert-dist-built` all passed.
 - The corrected full backend regression command completed with the exact four
   accepted baseline IDs plus the two previously isolated-passing async
   diagnostics; no new or different failure was found, and no upstream Hermes

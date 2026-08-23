@@ -60,7 +60,7 @@ its result says so.
 | P4-PY-02 | Persistent gateway subprocess environment guard | `./scripts/run_tests.sh tests/agent/test_subprocess_env_guard.py tests/hermes_cli/test_persistent_gateway.py -q` | 6 passed after the shared environment factory correction | PASS |
 | P4-D-01 | Local runtime settings boundary | `cd apps/desktop && ../../node_modules/.bin/vitest run src/app/settings/model-settings.test.tsx --project ui` | 1 file; 22 passed | PASS |
 | P4-D-02 | Desktop typecheck after runtime API/settings | `cd apps/desktop && npm run typecheck` | Renderer, Electron, and E2E TypeScript checks passed | PASS |
-| P4-D-03 | Desktop production build after runtime API/settings | `cd apps/desktop && npm run build` | Vite, Electron bundles, native staging, and assert-dist-built passed; clean stamp to be refreshed after documentation closure | PASS |
+| P4-D-03 | Desktop production build after runtime API/settings | `cd apps/desktop && npm run build` | Clean working-tree build passed; Vite, Electron bundles, native staging, and assert-dist-built passed; stamp `955a9c3818fa` | PASS |
 | P4-REAL-01 | Real CUDA toolchain and host detection | `nvcc --version`; `nvidia-smi`; `pkg-config --exists vulkan` | CUDA 12.4.131; NVIDIA RTX 3080/driver 595.84; Vulkan development metadata available | PASS |
 | P4-REAL-02 | Managed llama.cpp build | `.venv/bin/hafiye runtime install --backend AUTO` | Source commit `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`; compiled `CPU,CUDA`; selected `CUDA` | PASS |
 | P4-REAL-03 | GGUF model lifecycle | `.venv/bin/hafiye runtime model download ...`; `runtime model list`; import/delete checks | Gemma and Qwen GGUFs downloaded/imported with recorded sizes and SHA-256; private registry and model root | PASS |
