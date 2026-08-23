@@ -31,10 +31,11 @@ These are measured issues and accepted baseline findings. They are not silently 
 
 ## KI-004 — computer-use-linux readiness is incomplete on the real desktop
 
-- Status: `BLOCKER — P0 OPEN`.
+- Status: `BLOCKER — P0 OPEN, relogin pending`.
 - Pinned source: `agent-sh/computer-use-linux` commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
-- The pre-setup doctor report has `can_register_mcp_tools=true` and `can_send_development_input=true`, but `can_build_accessibility_tree=false`, `can_query_windows=false`, and a non-empty `blockers` array.
-- The official pinned-source setup still needs to provision/enable AT-SPI, ydotool/ydotoold, GNOME Wayland window targeting, `/dev/uinput` access, and required user services.
+- The official pinned-source setup has now enabled AT-SPI (`can_build_accessibility_tree=true`), installed ydotool/ydotoold, wrote the GNOME window-targeting extension, and changed `/dev/uinput` to `root:input 0660`.
+- The current pre-relogin doctor has `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`, and `can_send_development_input=true`, but `can_query_windows=false` and one window-introspection blocker because GNOME Shell has not reloaded the extension.
+- The current process also has not reloaded `input` group membership, so ydotoold has not yet been enabled by the official user-service step.
 - P0 acceptance requires all four mandated readiness booleans to be true and `blockers=[]`.
 
 ## KI-005 — computer-use-linux release asset mismatch
@@ -46,10 +47,11 @@ These are measured issues and accepted baseline findings. They are not silently 
 
 ## KI-006 — Optional diagnostic tools and source-build prerequisites
 
-- Status: `SETUP IN PROGRESS`; only the CUA source prerequisites are relevant to the active P0 blocker.
+- Status: `SETUP PARTIALLY COMPLETE`; only the post-relogin CUA doctor remains relevant to the active P0 blocker.
 - `pactl` is absent, but PipeWire `1.6.2`, WirePlumber `0.5.13`, and `wpctl` are present and enumerate microphones. This is an audio diagnostic warning, not a P0 blocker.
 - `vulkaninfo` is absent. The Vulkan loader/ICD packages are present, but Vulkan is now a fallback on this host rather than the primary backend. This is a compute diagnostic warning, not a P0 blocker.
-- Rust/Cargo was absent before the official source setup; the pinned install flow is responsible for provisioning the user-space Rust toolchain needed for the source build.
+- The official source setup provisioned Rust/Cargo 1.98.0 under `/home/tolga/.cargo/bin` and built the pinned source successfully.
+- `ydotool` and `ydotoold` are installed. The user service could not be enabled in the old session because the newly-added `input` group membership is not active until relogin.
 - `sudo` requires normal interactive authentication (`sudo -n -v` fails). No passwordless sudo or `NOPASSWD` sudoers change is permitted; an interactive prompt is expected.
 
 ## KI-007 — Baseline npm audit reports vulnerabilities

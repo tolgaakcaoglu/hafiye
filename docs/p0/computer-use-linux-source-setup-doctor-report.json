@@ -1,0 +1,42 @@
+{
+  "capture": "2026-08-23",
+  "source_commit": "94736dc3e0dca56acfc89752c26869fb9ed01202",
+  "source_checkout": "/tmp/hafiye-computer-use-linux.djXfCX/repo",
+  "binary": "/home/tolga/.local/bin/computer-use-linux",
+  "setup_stage": "official source install completed; GNOME shell reload pending",
+  "readiness": {
+    "can_register_mcp_tools": true,
+    "can_build_accessibility_tree": true,
+    "can_send_development_input": true,
+    "can_query_windows": false,
+    "blockers": [
+      "Window introspection is unavailable; targeted window focus and verification will be disabled."
+    ]
+  },
+  "accessibility": {
+    "toolkit_accessibility": true,
+    "at_spi_enabled": true
+  },
+  "windowing": {
+    "gnome_shell_introspect": {
+      "ok": false,
+      "detail": "org.freedesktop.DBus.Error.AccessDenied: GetWindows is not allowed"
+    },
+    "computer_use_linux_gnome_shell_extension": {
+      "ok": false,
+      "detail": "org.freedesktop.DBus.Error.ServiceUnknown: dev.avifenesh.ComputerUseLinux.WindowControl"
+    },
+    "setup_window_targeting_requires_shell_reload": true
+  },
+  "input": {
+    "ydotool": true,
+    "ydotoold": false,
+    "ydotool_socket": false,
+    "uinput": {
+      "device_mode": "0660",
+      "device_owner": "root",
+      "device_group": "input",
+      "current_session_access": false
+    }
+  }
+}

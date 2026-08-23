@@ -9,7 +9,7 @@ Last updated: 2026-08-23
 - `upstream`: `https://github.com/NousResearch/hermes-agent.git`
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`
-- Current Hafiye HEAD at this state capture: `0b2febafcead545b208f1e91c237c9f40bab40f9`
+- Current Hafiye HEAD at this state capture: `80ba038475eedf8effb32590896237bfebe3ad7b`
 
 The baseline merge preserves both the original Hafiye documentation history and the Hermes upstream history. The current repository instructions combine the Hafiye binding instructions with the preserved upstream Hermes development guide.
 
@@ -30,6 +30,10 @@ P0 — Fork, pin, verify environment. P0 remains open only for the real `compute
 - Real host environment is documented in `ENVIRONMENT.md`.
 - `wpctl` enumerates the active PipeWire/WirePlumber graph; missing `pactl` is diagnostic only.
 - NVIDIA RTX 3080 and driver `595.84` are present; the amended compute policy expects CUDA as this host's primary backend, with Vulkan and CPU fallback.
+- The pinned source installer completed its system-dependency, Rust, source-build, and AT-SPI steps. Rust/Cargo 1.98.0 is available at `/home/tolga/.cargo/bin`.
+- `/home/tolga/.local/bin/computer-use-linux` and its COSMIC helper are source-built from commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
+- `computer-use-linux setup-window-targeting` wrote the GNOME extension and enabled it for the next GNOME Shell load.
+- `ydotool`/`ydotoold` and the `root:input 0660` `/dev/uinput` device are installed/configured. The current session has not reloaded the new `input` group membership yet.
 - No Hafiye runtime, Desktop, gateway, provider, or product source changes have been made.
 
 ## ACCEPTED_UPSTREAM_BASELINE
@@ -46,15 +50,14 @@ After Hafiye source changes, the same five failures are not new regressions. If 
 
 ## In progress
 
-- Pinned-source `computer-use-linux` official setup on the real Ubuntu GNOME Wayland session.
-- Readiness acceptance must report all of the following as true and `blockers` as an empty array:
-  `can_register_mcp_tools`, `can_build_accessibility_tree`, `can_send_development_input`, `can_query_windows`.
+- Post-setup source doctor now reports `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`, and `can_send_development_input=true`. Only `can_query_windows=false` remains.
+- The GNOME extension files are installed, but the current GNOME Shell has not reloaded them. The input group membership is also not present in this pre-relogin process.
 - Source checkout: `/tmp/hafiye-computer-use-linux.djXfCX/repo`, commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
 - The released npm `0.4.9` binary is historical diagnostic evidence only; it is not the final setup path.
 
 ## Active blocker
 
-The pre-setup doctor report has `can_register_mcp_tools=true` and `can_send_development_input=true`, but `can_build_accessibility_tree=false`, `can_query_windows=false`, and a non-empty blockers array. The official source setup still needs to configure AT-SPI, ydotool/ydotoold, GNOME Wayland window targeting, and user access to `/dev/uinput`. A logout/login may be required; P0 cannot close until the post-setup doctor is green.
+The official source setup is complete, but the post-setup doctor in the old GNOME session still has `can_query_windows=false` and one window-introspection blocker. `setup-window-targeting` explicitly requires a GNOME Shell reload, and the new `input` group membership requires a new login. P0 cannot close until the doctor is rerun after logout/login and reports all four required booleans true with `blockers=[]`.
 
 `pactl` absence and `vulkaninfo` absence are recorded warnings/diagnostics, not P0 blockers. PipeWire/WirePlumber plus `wpctl` is accepted for audio enumeration, and Vulkan is a fallback rather than this host's primary compute backend.
 
@@ -62,7 +65,7 @@ The pre-setup doctor report has `can_register_mcp_tools=true` and `can_send_deve
 
 - No Hafiye source regression has been introduced; only repository instructions and P0 evidence documents have changed so far.
 - The accepted five-failure set above is not attributed to Hafiye.
-- Root-only `/dev/uinput`, missing Rust/Cargo before the source setup, and the unconfigured CUA desktop path remain environment/setup findings.
+- The current process still cannot access `/dev/uinput` because group membership is pending relogin; this is an active setup finding, not permission hardening work.
 
 ## Last tests and commands
 
@@ -84,14 +87,13 @@ The pre-setup doctor report has `can_register_mcp_tools=true` and `can_send_deve
 ### Readiness
 
 - Historical diagnostic: `node /tmp/hafiye-computer-use-linux-npm/node_modules/@agent-sh/computer-use-linux/npm/bin/computer-use-linux.js doctor` — exit 0 with blockers; saved in `docs/p0/computer-use-linux-doctor-report.json`.
-- Required final command after source setup: `~/.local/bin/computer-use-linux doctor | jq '.readiness'`.
+- Pinned-source post-setup diagnostic: `~/.local/bin/computer-use-linux doctor | jq '{readiness: .readiness, accessibility: .accessibility, windowing: .windowing, input: .input}'` — accessibility tree true, query windows false, one blocker; saved in `docs/p0/computer-use-linux-source-setup-doctor-report.json`.
 
 ## Exact next actions
 
-1. Run the pinned source checkout's `./install.sh` official setup path with normal interactive sudo if requested.
-2. Complete any required `computer-use-linux setup` and `computer-use-linux setup-window-targeting` steps, then follow the installer's logout/login instruction exactly if GNOME or group/device state requires it.
-3. Rerun the source-built doctor and record all required readiness fields plus the empty blockers array.
-4. If and only if the readiness acceptance is green, mark P0 complete with a clean completion commit and begin P1 external identity/data root work.
+1. Log out of the GNOME session and log back in once so the GNOME extension and `input` group membership are loaded.
+2. Rerun the source-built doctor and record all required readiness fields plus the empty blockers array.
+3. If and only if the readiness acceptance is green, mark P0 complete with a clean completion commit and begin P1 external identity/data root work.
 
 ## Environment changes
 
@@ -99,4 +101,7 @@ The pre-setup doctor report has `can_register_mcp_tools=true` and `can_send_deve
 - Installed CPython `3.13.15` through uv and created repository `.venv`.
 - Installed upstream Python dependencies and optional provider SDKs only in `.venv`; no dependency manifest or lockfile was changed.
 - Installed root Node dependencies for the upstream Desktop baseline; the upstream lockfile was restored after verification.
-- Inspected pinned `computer-use-linux` source; no final binary has yet been installed from the release channel.
+- Ran the pinned source checkout's official `./install.sh --package-manager apt` with normal interactive sudo.
+- Installed Rustup stable 1.98.0, built the two source binaries, and installed them under `/home/tolga/.local/bin`.
+- Enabled GNOME toolkit accessibility, installed `ydotool`, and installed/enabled the CUA GNOME extension for the next shell load.
+- Added `tolga` to the `input` group. The current process requires relogin before that membership is active.

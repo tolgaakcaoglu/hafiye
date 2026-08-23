@@ -9,7 +9,7 @@
 
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`
-- Current Hafiye HEAD at the last state capture: `0b2febafcead545b208f1e91c237c9f40bab40f9`
+- Current Hafiye HEAD at the last state capture: `80ba038475eedf8effb32590896237bfebe3ad7b`
 
 The pinned commit is the Hermes code baseline. The baseline merge commit is the Hafiye history-preserving merge. The current Hafiye HEAD is a separate repository commit and must not be confused with either upstream SHA.
 
@@ -63,8 +63,10 @@ After Hafiye source changes, the same five failures are not regressions. A small
 - Source package version: `0.4.10`
 - Official final P0 setup path: run the pinned checkout's `./install.sh`, allowing its official system-dependency, Rust, build, AT-SPI, ydotoold, and GNOME extension steps. Then run the source-installed `computer-use-linux doctor`.
 - Official setup commands available from this checkout include `computer-use-linux setup` and `computer-use-linux setup-window-targeting` where the installer or doctor requires them.
+- Setup result so far: `./install.sh --package-manager apt` installed the required Debian packages, Rustup stable/Cargo 1.98.0, source-built binaries, AT-SPI configuration, ydotool/ydotoold, and the GNOME window-targeting extension. `setup-window-targeting` reports `requires_shell_reload=true`.
+- `sudo usermod -aG input tolga` was completed; `/dev/uinput` is `root:input 0660`. The current session must be replaced before the input group and ydotoold user service can be verified.
 - The source's expected `0.4.10` GitHub release asset returned HTTP 404. Released npm `0.4.9` was used only for the historical diagnostic and is not the final setup path.
-- Historical normalized doctor output is saved at `docs/p0/computer-use-linux-doctor-report.json`.
+- Historical normalized doctor output is saved at `docs/p0/computer-use-linux-doctor-report.json`; the pinned-source post-setup pre-relogin report is saved at `docs/p0/computer-use-linux-source-setup-doctor-report.json`.
 
 P0 computer-use acceptance requires:
 
