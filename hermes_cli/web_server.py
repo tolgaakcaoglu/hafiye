@@ -7197,6 +7197,138 @@ def get_model_info(profile: Optional[str] = None):
 
 
 # ---------------------------------------------------------------------------
+# Managed local llama.cpp runtime — machine-global, loopback-only lifecycle.
+# The long-running gateway owns no model process itself; these operations use
+# the same manager as the CLI and persist their state under Hafiye's XDG roots.
+# ---------------------------------------------------------------------------
+
+
+def _local_runtime_call(operation, *args, **kwargs):
+    from hermes_cli.local_runtime import LocalRuntimeError, runtime_manager
+
+    try:
+        return operation(runtime_manager(), *args, **kwargs)
+    except LocalRuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/local-runtime")
+async def get_local_runtime():
+    return await asyncio.to_thread(_local_runtime_call, lambda manager: manager.doctor())
+
+
+@app.get("/api/local-runtime/models")
+async def get_local_runtime_models():
+    return await asyncio.to_thread(_local_runtime_call, lambda manager: {"models": manager.models()})
+
+
+@app.post("/api/local-runtime/install")
+async def install_local_runtime(body: dict[str, Any]):
+    backend = str(body.get("backend", "AUTO") or "AUTO")
+    source_ref = str(body.get("source_ref", "master") or "master")
+    return await asyncio.to_thread(
+        _local_runtime_call,
+        lambda manager: manager.install_runtime(backend=backend, source_ref=source_ref),
+    )
+
+
+@app.post("/api/local-runtime/models/import")
+async def import_local_runtime_model(body: dict[str, Any]):
+    source = str(body.get("path", "")).strip()
+    if not source:
+        raise HTTPException(status_code=422, detail="path is required")
+    model_id = body.get("model_id") or body.get("id")
+    return await asyncio.to_thread(
+        _local_runtime_call,
+        lambda manager: manager.import_model(source, str(model_id) if model_id else None),
+    )
+
+
+@app.post("/api/local-runtime/models/download")
+async def download_local_runtime_model(body: dict[str, Any]):
+    repo_id = str(body.get("repo_id", "")).strip()
+    filename = str(body.get("filename", "")).strip()
+    if not repo_id or not filename:
+        raise HTTPException(status_code=422, detail="repo_id and filename are required")
+    return await asyncio.to_thread(
+        _local_runtime_call,
+        lambda manager: manager.download_model(
+            repo_id,
+            filename,
+            revision=str(body.get("revision", "main") or "main"),
+            model_id=str(body["model_id"]) if body.get("model_id") else None,
+            sha256=str(body["sha256"]) if body.get("sha256") else None,
+        ),
+    )
+
+
+@app.delete("/api/local-runtime/models/{model_id}")
+async def delete_local_runtime_model(model_id: str):
+    return await asyncio.to_thread(_local_runtime_call, lambda manager: manager.delete_model(model_id))
+
+
+@app.get("/api/local-runtime/server/health")
+async def get_local_runtime_server_health():
+    return await asyncio.to_thread(_local_runtime_call, lambda manager: manager.health())
+
+
+@app.post("/api/local-runtime/server/start")
+async def start_local_runtime_server(body: dict[str, Any]):
+    model_id = str(body.get("model_id", "")).strip()
+    if not model_id:
+        raise HTTPException(status_code=422, detail="model_id is required")
+    try:
+        context_size = int(body.get("context_size", 4096))
+        port = int(body.get("port", 11435))
+        gpu_layers = body.get("gpu_layers")
+        gpu_layers = int(gpu_layers) if gpu_layers is not None and str(gpu_layers).strip() else None
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="context_size, gpu_layers, and port must be integers") from exc
+    return await asyncio.to_thread(
+        _local_runtime_call,
+        lambda manager: manager.start_server(
+            model_id,
+            backend=str(body.get("backend", "AUTO") or "AUTO"),
+            context_size=context_size,
+            gpu_layers=gpu_layers,
+            port=port,
+        ),
+    )
+
+
+@app.post("/api/local-runtime/server/stop")
+@app.post("/api/local-runtime/server/unload")
+async def stop_local_runtime_server():
+    return await asyncio.to_thread(_local_runtime_call, lambda manager: manager.stop_server())
+
+
+@app.post("/api/local-runtime/server/restart")
+async def restart_local_runtime_server(body: dict[str, Any]):
+    model_id = str(body.get("model_id", "")).strip()
+    if not model_id:
+        raise HTTPException(status_code=422, detail="model_id is required")
+    try:
+        context_size = int(body.get("context_size", 4096))
+        port = int(body.get("port", 11435))
+        gpu_layers = body.get("gpu_layers")
+        gpu_layers = int(gpu_layers) if gpu_layers is not None and str(gpu_layers).strip() else None
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="context_size, gpu_layers, and port must be integers") from exc
+
+    def _restart(manager):
+        manager.stop_server()
+        return manager.start_server(
+            model_id,
+            backend=str(body.get("backend", "AUTO") or "AUTO"),
+            context_size=context_size,
+            gpu_layers=gpu_layers,
+            port=port,
+        )
+
+    return await asyncio.to_thread(_local_runtime_call, _restart)
+
+
+# ---------------------------------------------------------------------------
 # Model assignment — pick provider+model for main slot or auxiliary slots.
 # Mirrors the model.options JSON-RPC from tui_gateway but uses REST so the
 # Models page (which has no chat PTY open) can drive it.

@@ -36,6 +36,7 @@ import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 
 import { CONTROL_TEXT } from './constants'
 import { getNested, setNested } from './helpers'
+import { LocalRuntimeSettings } from './local-runtime-settings'
 import { ListRow, Pill, SectionHeading } from './primitives'
 import { useDeepLinkHighlight } from './use-deep-link-highlight'
 
@@ -58,6 +59,8 @@ export function ModelSettingsSkeleton() {
           <Skeleton className="h-6 w-20" />
         </div>
       </section>
+
+      <LocalRuntimeSettings />
 
       <section>
         <div className="mb-2.5 flex items-center gap-2 pt-2">

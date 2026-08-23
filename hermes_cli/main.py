@@ -444,6 +444,7 @@ from hermes_cli.subcommands._shared import add_accept_hooks_flag as _add_accept_
 from hermes_cli.subcommands.cron import build_cron_parser
 from hermes_cli.subcommands.sync import build_sync_parser
 from hermes_cli.subcommands.gateway import build_gateway_parser
+from hermes_cli.subcommands.runtime import build_runtime_parser
 from hermes_cli.subcommands.profile import build_profile_parser
 from hermes_cli.subcommands.model import build_model_parser
 from hermes_cli.subcommands.setup import build_setup_parser
@@ -3306,6 +3307,77 @@ def cmd_gateway(args):
     from hermes_cli.gateway import gateway_command
 
     gateway_command(args)
+
+
+def cmd_runtime(args):
+    """Manage Hafiye's managed local llama.cpp runtime."""
+    from hermes_cli.local_runtime import LocalRuntimeError, runtime_manager
+
+    manager = runtime_manager()
+    command = getattr(args, "runtime_command", None)
+    try:
+        if command == "install":
+            result = manager.install_runtime(
+                backend=args.backend,
+                source_ref=args.source_ref,
+            )
+        elif command == "version":
+            result = manager.version()
+        elif command == "doctor":
+            result = manager.doctor()
+        elif command == "model":
+            model_command = getattr(args, "runtime_model_command", None)
+            if model_command in {"list", "ls"}:
+                result = {"models": manager.models()}
+            elif model_command == "import":
+                result = manager.import_model(args.path, args.model_id)
+            elif model_command == "download":
+                result = manager.download_model(
+                    args.repo_id,
+                    args.filename,
+                    revision=args.revision,
+                    model_id=args.model_id,
+                    sha256=args.sha256,
+                )
+            elif model_command == "delete":
+                result = manager.delete_model(args.model_id)
+            else:
+                print("Use `hafiye runtime model {import,download,list,delete}`.")
+                return 0
+        elif command == "server":
+            server_command = getattr(args, "runtime_server_command", None)
+            if server_command == "start":
+                result = manager.start_server(
+                    args.model_id,
+                    backend=args.backend,
+                    context_size=args.context_size,
+                    gpu_layers=args.gpu_layers,
+                    port=args.port,
+                )
+            elif server_command == "restart":
+                manager.stop_server()
+                result = manager.start_server(
+                    args.model_id,
+                    backend=args.backend,
+                    context_size=args.context_size,
+                    gpu_layers=args.gpu_layers,
+                    port=args.port,
+                )
+            elif server_command in {"stop", "unload"}:
+                result = manager.stop_server()
+            elif server_command == "health":
+                result = manager.health()
+            else:
+                print("Use `hafiye runtime server {start,stop,restart,health,unload}`.")
+                return 0
+        else:
+            print("Use `hafiye runtime {install,version,doctor,model,server}`.")
+            return 0
+    except LocalRuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 
 
 def cmd_proxy(args):
@@ -12981,6 +13053,10 @@ def main():
     build_gateway_parser(
         subparsers, cmd_gateway=cmd_gateway, cmd_proxy=cmd_proxy, cmd_gateway_enroll=cmd_gateway_enroll
     )
+
+    # Hafiye's managed local llama.cpp/GGUF runtime.  This is a separate
+    # lifecycle from Hermes' upstream messaging gateway.
+    build_runtime_parser(subparsers, cmd_runtime=cmd_runtime)
 
     # =========================================================================
     # lsp command

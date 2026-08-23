@@ -22,6 +22,8 @@ const saveMoaModels = vi.fn()
 const setEnvVar = vi.fn()
 const getHermesConfigRecord = vi.fn()
 const saveHermesConfig = vi.fn()
+const getLocalRuntime = vi.fn()
+const getLocalRuntimeModels = vi.fn()
 const startManualLocalEndpoint = vi.fn()
 const startManualOnboarding = vi.fn()
 const startManualProviderOAuth = vi.fn()
@@ -40,6 +42,8 @@ vi.mock('@/hermes', () => ({
   setEnvVar: (key: string, value: string) => setEnvVar(key, value),
   getHermesConfigRecord: () => getHermesConfigRecord(),
   saveHermesConfig: (config: unknown) => saveHermesConfig(config),
+  getLocalRuntime: () => getLocalRuntime(),
+  getLocalRuntimeModels: () => getLocalRuntimeModels(),
   setApiRequestProfile: () => {}
 }))
 
@@ -78,6 +82,15 @@ beforeEach(() => {
   setEnvVar.mockResolvedValue({ ok: true })
   getHermesConfigRecord.mockResolvedValue({ agent: { reasoning_effort: 'medium', service_tier: 'normal' } })
   saveHermesConfig.mockResolvedValue({ ok: true })
+  getLocalRuntime.mockResolvedValue({
+    blockers: [],
+    environment: {},
+    paths: {},
+    runtime: { installed: false, version: '' },
+    server: { ready: false, running: false },
+    warnings: []
+  })
+  getLocalRuntimeModels.mockResolvedValue({ models: [] })
 })
 
 afterEach(() => {
