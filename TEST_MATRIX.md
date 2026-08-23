@@ -44,6 +44,17 @@ its result says so.
 | P2-REAL-02 | Authenticated persistent backend | Real Python HTTP/WS probe against `127.0.0.1:9120` | HTTP succeeded, version `0.20.5`, WebSocket `OPEN` | PASS |
 | P2-REAL-03 | Desktop close persistence | Real Electron launch/close with `HERMES_DESKTOP_SKIP_QUIT_CONFIRM=1` | Persistent readiness logged; service stayed active and endpoint stayed reachable | PASS |
 | P2-REAL-04 | Persistent gateway restart control | Authenticated `POST /api/gateway/restart` | Success returned; new active PID observed; endpoint reachable | PASS |
+| P3-D-01 | Composer lifecycle and shortcut defaults | `cd apps/desktop && ../../node_modules/.bin/vitest run electron/quick-entry.test.ts electron/composer-lifecycle.test.ts --project electron` | 2 files; 29 passed | PASS |
+| P3-D-02 | Composer state/reducer | `cd apps/desktop && ../../node_modules/.bin/vitest run src/store/quick-entry.test.ts --project ui` | 1 file; 17 passed | PASS |
+| P3-D-03 | Full Desktop UI suite after Composer changes | `cd apps/desktop && npm run test:ui` | 578 files; 5,547 passed | PASS |
+| P3-D-04 | Full Desktop Electron suite after tray/autostart changes | `cd apps/desktop && npm run test:desktop:platforms` | 114 files; 1,609 passed; 3 skipped | PASS |
+| P3-D-05 | Desktop TypeScript | `cd apps/desktop && npm run typecheck` | Renderer, Electron, and E2E checks passed | PASS |
+| P3-D-06 | Clean Desktop production build | `cd apps/desktop && npm run build` | Clean stamp `e33bb456d109`; Vite, Electron bundles, native staging, and assert-dist-built passed | PASS |
+| P3-REAL-01 | XDG autostart entry | `sed -n '1,20p' ~/.config/autostart/hafiye.desktop; stat -c '%a %U:%G' ...` | Owner-created entry contains Electron executable, app path, `--hidden`; mode 0644 | PASS |
+| P3-REAL-02 | Real Wayland Desktop/tray startup | `HERMES_DESKTOP_SKIP_QUIT_CONFIRM=1 electron .` plus desktop log | `Hafiye tray ready`; persistent backend readiness logged | PASS |
+| P3-REAL-03 | Close-to-tray persistence | `ydotool key 56:1 62:1 62:0 56:0` plus process/systemd probes | Electron remained resident; `hafiye-gateway.service` remained active/listening | PASS |
+| P3-REAL-04 | Exact autostart command | Generated `~/.config/autostart/hafiye.desktop` `Exec=` command with `--hidden` | Launched successfully in current Wayland session | PASS WITH KI-013 |
+| P3-REAL-05 | Mandated default global shortcut | Real Desktop launch and GNOME keybinding inspection | `Super+Shift+Space` reported taken by GNOME input-source-backward binding | WARNING; KI-012 |
 
 ## Current ACCEPTED_UPSTREAM_BASELINE
 

@@ -6,7 +6,7 @@ records execution status only.
 - [x] P0 Fork + environment
 - [x] P1 Hafiye external identity and data root
 - [x] P2 Persistent gateway + Desktop connection
-- [ ] P3 Hafiye Composer + tray + autostart
+- [x] P3 Hafiye Composer + tray + autostart
 - [ ] P4 llama.cpp managed local runtime
 - [ ] P5 Providers + Gemini + remote OpenAI-compatible
 - [ ] P6 Model router + privacy modes
@@ -88,5 +88,32 @@ attribution and retained compatibility machinery.
       Desktop shutdown persistence, and restart control.
 
 P2 is complete. The source implementation is recorded in commit
-e2e22c10b49ec01ef7d8420f1158668718b03fa9. The next incomplete phase is P3 —
-Hafiye Composer + tray + autostart.
+e2e22c10b49ec01ef7d8420f1158668718b03fa9. P3 follows below; after its
+completion the next incomplete phase is P4 — llama.cpp managed local runtime.
+
+## P3 execution status
+
+- [x] Add the Hafiye Composer surface on top of Hermes Quick Entry.
+- [x] Set the mandated default shortcut to `Super+Shift+Space` and keep it
+      configurable through the real Desktop settings state.
+- [x] Implement `HOTKEY_ONLY`, `SHOW_ON_LOGIN`, and `PINNED` lifecycle modes.
+- [x] Add compact activity/task/tool/model/progress states, microphone/voice
+      forwarding through the existing Desktop voice path, and stop forwarding
+      through the existing cancellation path.
+- [x] Add a functional Hafiye tray with Composer, Desktop, task, session,
+      settings, logs, gateway restart/stop, and Desktop quit actions. Features
+      from later phases remain explicitly disabled rather than fake toggles.
+- [x] Add an owner-safe XDG autostart entry and systemd user-service login
+      enablement controlled by Composer settings.
+- [x] Verify the real Wayland launch, tray creation, exact autostart command,
+      Alt+F4-to-tray behavior, and persistent gateway survival.
+
+P3 source implementation is recorded in commit `e33bb456d109`. Composer
+unit/store tests, the complete Desktop UI/Electron test projects, typecheck,
+clean production build, and the real Wayland checks passed. The host's GNOME
+`switch-input-source-backward` binding currently owns the mandated shortcut;
+Hafiye reports this conflict and leaves the user binding unchanged. The
+shortcut remains configurable, and the issue is recorded as KI-012. A full
+reboot was not performed during this session; the exact XDG autostart command
+was launched directly with `--hidden` and recorded as the non-disruptive login
+equivalent. See KI-013 for that operational follow-up.

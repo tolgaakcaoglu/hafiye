@@ -9,7 +9,7 @@ Last updated: 2026-08-23
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: e2e22c10b49ec01ef7d8420f1158668718b03fa9
+- Current Hafiye source HEAD: e33bb456d109 (P3 Composer/tray/autostart)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -21,8 +21,10 @@ P0 — Fork, pin, verify environment: complete.
 
 P1 — Hafiye external identity and data root: complete.
 
-P2 — Persistent gateway + Desktop connection: complete. The next incomplete
-phase is P3 — Hafiye Composer + tray + autostart.
+P2 — Persistent gateway + Desktop connection: complete.
+
+P3 — Hafiye Composer + tray + autostart: complete with host warnings KI-012
+and KI-013. The next incomplete phase is P4 — llama.cpp managed local runtime.
 
 ## Verified working
 
@@ -53,6 +55,16 @@ phase is P3 — Hafiye Composer + tray + autostart.
   reachable.
 - An authenticated Desktop gateway restart request restarted the service and
   returned after the new backend PID was reachable.
+- Hafiye Composer now owns the Desktop Quick Entry lifecycle with
+  `HOTKEY_ONLY`, `SHOW_ON_LOGIN`, and `PINNED` modes; the mandated default is
+  `Super+Shift+Space` and the setting remains configurable.
+- The real Desktop creates a Hafiye tray and keeps running after the main
+  window is closed with Alt+F4; the persistent gateway stayed active.
+- The real XDG entry at `~/.config/autostart/hafiye.desktop` contains the
+  development-safe Electron executable, app path, and `--hidden` flag. The
+  exact entry command was launched successfully in the Wayland session.
+- The tray's later-phase controls are visibly disabled and labeled; there are
+  no fake privacy, microphone-mute, or computer-control toggles.
 
 ## Regression status
 
@@ -62,14 +74,19 @@ below. Two additional async tests timed out only in the full run but passed
 when isolated; they are recorded as diagnostic flakiness, not accepted
 baseline and not Hafiye regressions.
 
-No Hafiye-specific regression remains in the P1/P2 targeted tests or Desktop
-suite.
+No Hafiye-specific regression remains in the P1/P2/P3 targeted tests or
+Desktop suite. P3's only measured host issue is the GNOME-owned default
+shortcut conflict documented below.
 
 ## Active blockers
 
-None for P2. The user service is active in the current session. `loginctl`
-reports `Linger=no`, so logout/reboot persistence is not claimed by P2 and is
-deferred to the later Composer/onboarding/packaging acceptance work.
+None for the P3 source implementation. The user service is active in the
+current session. `loginctl` reports `Linger=no`, and a full reboot was not
+performed in this session; the exact autostart command was launched directly
+with `--hidden` as the non-disruptive login-equivalent check. GNOME currently
+owns `Super+Shift+Space` for input-source switching, so the default global
+shortcut reports `taken` until the user changes that binding or chooses a
+different configurable shortcut.
 
 The accepted upstream failures, the two isolated-passing full-suite async
 timeouts, npm audit warnings, missing pactl, and missing vulkaninfo are
@@ -148,6 +165,30 @@ directory:
   — returned success, systemd reported a new active backend PID, and the
   endpoint became reachable again.
 
+### P3 Composer, tray, and autostart
+
+- `cd apps/desktop && ../../node_modules/.bin/vitest run electron/quick-entry.test.ts electron/composer-lifecycle.test.ts --project electron`
+  — 2 files, 29 passed.
+- `cd apps/desktop && ../../node_modules/.bin/vitest run src/store/quick-entry.test.ts --project ui`
+  — 1 file, 17 passed.
+- `cd apps/desktop && npm run test:ui`
+  — 578 files, 5,547 passed.
+- `cd apps/desktop && npm run test:desktop:platforms`
+  — 114 files, 1,609 passed, 3 skipped.
+- `cd apps/desktop && npm run typecheck`
+  — renderer, Electron, and E2E checks passed.
+- `cd apps/desktop && npm run build`
+  — clean Vite renderer, Electron bundles, native staging, and
+  `assert-dist-built` passed; clean stamp `e33bb456d109`.
+- Real Wayland launch with `HERMES_DESKTOP_SKIP_QUIT_CONFIRM=1`
+  — Desktop log recorded `Hafiye tray ready`, `Super+Shift+Space is already
+  taken`, and persistent backend readiness.
+- Real `ydotool` Alt+F4 against the Hafiye window
+  — Electron process remained resident and `hafiye-gateway.service` remained
+  active/listening on `127.0.0.1:9120`.
+- Exact `~/.config/autostart/hafiye.desktop` `Exec=` command with `--hidden`
+  — launched successfully in the current Wayland session.
+
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
@@ -167,15 +208,18 @@ not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Start P3 — Hafiye Composer + tray + autostart.
+1. Start P4 — llama.cpp managed local runtime; preserve the fixed CUDA-first
+   AUTO policy and GGUF requirement.
 2. Keep the four current accepted failures as the regression comparison set.
 3. Preserve the Hafiye source commit, upstream pin, and separable patch groups
-   during the P3 work.
+   during the P4 work.
 
 ## Environment changes
 
-P2 installed and enabled the user-scoped `hafiye-gateway.service`; no sudo,
-root, passwordless sudo, or NOPASSWD sudoers change was made. User-manager
-linger remains disabled. P1's XDG alignment and P0's real Ubuntu, GNOME
+P2 installed and enabled the user-scoped `hafiye-gateway.service`; P3 added
+the owner-safe `~/.config/autostart/hafiye.desktop` entry and Composer settings
+under the Desktop user-data root. No sudo, root, passwordless sudo, or NOPASSWD
+sudoers change was made. User-manager linger remains disabled. P1's XDG
+alignment and P0's real Ubuntu, GNOME
 Wayland, NVIDIA/CUDA, PipeWire/WirePlumber, Python, Node, Rust, systemd-user,
 AT-SPI, ydotool, and uinput observations remain in ENVIRONMENT.md.

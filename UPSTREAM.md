@@ -58,6 +58,7 @@ The current Hafiye source commit contains these separable logical groups:
 Future changes should remain separable under the roadmap groups:
 
 - persistent-gateway
+- composer-tray-autostart
 - local-model-runtime
 - routing
 - linux-computer-use
@@ -153,6 +154,23 @@ P0 computer-use acceptance requires:
 - The persistent-gateway Python tests, Desktop tests/typecheck/build, real
   systemd service, authenticated HTTP/WS probe, Desktop close persistence, and
   authenticated restart control passed. No upstream commit was rewritten.
+
+## P3 source validation
+
+- Current Hafiye source commit: e33bb456d109.
+- Hermes Quick Entry remains the implementation base; Hafiye adds the
+  Composer lifecycle policy, Hafiye naming/surfaces, tray actions, and XDG
+  autostart integration without mass-renaming upstream modules or IPC keys.
+- The Composer settings are main-process-owned and persisted in the Desktop
+  user-data root. The persistent `hafiye-gateway.service` remains independent
+  of Desktop window lifetime.
+- Composer lifecycle tests, the complete Desktop UI/Electron test projects,
+  typecheck, clean production build, real Wayland tray startup, close-to-tray
+  behavior, persistent service survival, and exact autostart command passed.
+- The host GNOME input-source-backward binding currently conflicts with the
+  mandated default `Super+Shift+Space`; Hafiye reports the conflict and leaves
+  the user binding unchanged. This is an environment warning, not an upstream
+  source change.
 
 ## Baseline divergence
 

@@ -72,3 +72,22 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   existing ephemeral backend path as an installation/development fallback;
   persistent restart control goes through the user systemd unit. This is an
   implementation detail and does not override the master roadmap.
+
+## ADR-0008 — Keep Composer lifecycle and tray state in the Desktop main process
+
+- Date: 2026-08-23
+- Decision: Keep Composer launch modes, the global accelerator, XDG autostart,
+  systemd user-service login enablement, tray actions, and close-to-tray
+  behavior under Electron's main-process authority. The renderer receives
+  operational state through the existing Quick Entry bridge and uses the
+  existing voice/submit/cancel business paths.
+- Reason: Global shortcuts, tray ownership, window lifetime, and login
+  integration are OS/Desktop concerns. Keeping them beside the existing Hermes
+  Quick Entry owner avoids a second configuration system and preserves the
+  roadmap requirement that closing Desktop must not terminate the persistent
+  Hafiye core.
+- Consequence: Composer settings are persisted in the Desktop user-data root,
+  not gateway config. Later-phase controls that are not implemented are
+  visibly disabled and labeled rather than exposing fake state. The generated
+  autostart entry is conservative and only removes an existing file when it is
+  recognizably Hafiye-owned.

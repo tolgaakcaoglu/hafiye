@@ -133,3 +133,28 @@ silently treated as passing.
 - This fixed loopback port is intentional for the P2 Desktop connection
   contract; user-facing port configuration is later work if the roadmap
   requires it.
+
+## KI-012 — GNOME owns the mandated default Composer shortcut on this host
+
+- Status: ENVIRONMENT WARNING; Hafiye does not change the user's binding.
+- The roadmap-mandated default `Super+Shift+Space` is currently registered by
+  GNOME as `org.gnome.desktop.wm.keybindings switch-input-source-backward`
+  (`<Shift><Super>space`). Electron's real `globalShortcut` registration
+  therefore reports `taken`.
+- The Composer setting remains configurable and the real tray, login-mode
+  Composer, and direct entry remain available. The host binding was inspected
+  but not silently overwritten.
+- If the user wants the mandated default to register, remove that GNOME
+  binding (or choose another shortcut in Hafiye Desktop settings), then restart
+  Desktop and verify the registration log.
+
+## KI-013 — Full reboot/login acceptance was not performed in the P3 session
+
+- Status: OPERATIONAL FOLLOW-UP; not a source blocker.
+- A real Wayland Desktop launch used the exact generated XDG autostart command
+  with `--hidden`; the process reached persistent-backend readiness and the
+  autostart file is owner-created with mode 0644.
+- A full reboot was intentionally not issued from the shared development
+  session. The direct autostart invocation is recorded as the non-disruptive
+  login-equivalent check; a later reboot/login should confirm the desktop
+  session manager consumes the entry automatically.
