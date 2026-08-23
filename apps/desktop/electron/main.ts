@@ -18,6 +18,7 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  nativeImage,
   nativeTheme,
   Notification,
   powerMonitor,
@@ -27,7 +28,8 @@ import {
   screen,
   session,
   shell,
-  systemPreferences
+  systemPreferences,
+  Tray
 } from 'electron'
 
 import { classifyActiveRuntime } from './active-runtime-state'
@@ -61,6 +63,15 @@ import {
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
 import { runBootstrap } from './bootstrap-runner'
 import { detectBundleSkew } from './bundle-skew'
+import {
+  buildAutostartDesktopEntry,
+  type ComposerSettings,
+  composerStaysVisible,
+  DEFAULT_COMPOSER_SETTINGS,
+  resolveAutostartPath,
+  sanitizeComposerSettings,
+  shouldShowComposerOnLogin
+} from './composer-lifecycle'
 import { applyConnectionChange } from './connection-apply'
 import {
   apiRequestRegistryConnectionId,
@@ -121,7 +132,6 @@ import { describeCrashReason, installCrashForensics } from './crash-forensics'
 import { adoptServedDashboardToken } from './dashboard-token'
 import { loadOrCreateInstallationId, sshOwnershipId } from './desktop-installation'
 import { formatDesktopLogLine } from './desktop-log-line'
-import { resolveHafiyeDataHome, resolveHafiyeStateHome, resolvePersistentGatewayPaths } from './hafiye-paths'
 import { resolveDesktopRemoteRoute } from './desktop-remote-route'
 import {
   buildPosixCleanupScript,
@@ -162,6 +172,7 @@ import {
 import { probeGatewayWebSocket } from './gateway-ws-probe'
 import { registerGitIpc } from './git-ipc'
 import { clearStaleGitLocks } from './gitlock'
+import { resolveHafiyeDataHome, resolveHafiyeStateHome, resolvePersistentGatewayPaths } from './hafiye-paths'
 import { readAndConsumeHandoffResult } from './handoff-result'
 import {
   ATTACHMENT_UPLOAD_DEFAULT_MAX_BYTES,
@@ -367,6 +378,8 @@ if (USER_DATA_OVERRIDE) {
 
 const DEV_SERVER = process.env.HERMES_DESKTOP_DEV_SERVER
 const IS_PACKAGED = app.isPackaged || Boolean(process.env.HERMES_DESKTOP_IS_PACKAGED)
+const IS_ELECTRON_DEV_RUN =
+  Boolean(process.defaultApp) || /[\\/]node_modules[\\/]electron[\\/]/.test(process.execPath)
 const IS_MAC = process.platform === 'darwin'
 const IS_WINDOWS = process.platform === 'win32'
 const IS_WSL = isWslEnvironment()
@@ -778,6 +791,7 @@ const BOOT_FAKE_ERROR = process.env.HERMES_DESKTOP_BOOT_FAKE_ERROR || ''
 // nobody to answer a modal, so the active-work confirmation would hang the
 // caller instead of letting the process exit. Force quits set this.
 const SKIP_QUIT_CONFIRM = process.env.HERMES_DESKTOP_SKIP_QUIT_CONFIRM === '1'
+const LAUNCH_HIDDEN = process.argv.includes('--hidden') || process.env.HAFIYE_DESKTOP_LAUNCH_HIDDEN === '1'
 
 const BOOT_FAKE_STEP_MS = (() => {
   const raw = Number.parseInt(String(process.env.HERMES_DESKTOP_BOOT_FAKE_STEP_MS || ''), 10)
@@ -2998,6 +3012,11 @@ let updateInFlight = false
 // set, window-all-closed calls app.quit() on every platform so the process
 // actually dies and the hand-off script can proceed immediately.
 let isQuittingForHandoff = false
+
+// `app.quit()` emits before-quit before it closes BrowserWindows. This flag
+// lets the normal window close handler minimize to tray without blocking an
+// explicit Quit Desktop action or an update/uninstall handoff.
+let desktopQuitRequested = false
 
 // Quit-guard latches: one while the confirmation is on screen (a second
 // Cmd-Q must not stack dialogs), one after the user has said "quit anyway"
@@ -11955,6 +11974,113 @@ function closeHudWindow() {
   }
 }
 
+// ── Hafiye Composer lifecycle ──────────────────────────────────────────────
+// The Composer launch policy is device-local Desktop state. It deliberately
+// does not enter config.yaml: the gateway/CLI must not inherit a GUI-only
+// window preference, while the main process remains the authority for the
+// global accelerator and login integration.
+const COMPOSER_CONFIG_PATH = path.join(app.getPath('userData'), 'composer-settings.json')
+let composerSettings: ComposerSettings = DEFAULT_COMPOSER_SETTINGS
+
+function readComposerSettings(): ComposerSettings {
+  try {
+    return sanitizeComposerSettings(JSON.parse(fs.readFileSync(COMPOSER_CONFIG_PATH, 'utf8')))
+  } catch {
+    return sanitizeComposerSettings(undefined)
+  }
+}
+
+function writeComposerSettings(settings: ComposerSettings): void {
+  try {
+    fs.mkdirSync(path.dirname(COMPOSER_CONFIG_PATH), { recursive: true, mode: 0o700 })
+    const temporary = `${COMPOSER_CONFIG_PATH}.${process.pid}.tmp`
+    fs.writeFileSync(temporary, JSON.stringify(settings, null, 2), { encoding: 'utf8', mode: 0o600 })
+    fs.renameSync(temporary, COMPOSER_CONFIG_PATH)
+    try {
+      fs.chmodSync(COMPOSER_CONFIG_PATH, 0o600)
+    } catch {
+      // Best effort on filesystems that do not expose POSIX modes.
+    }
+  } catch (error) {
+    rememberLog(`[composer] settings write failed: ${error?.message || error}`)
+  }
+}
+
+function reconcileComposerAutostart(settings: ComposerSettings): void {
+  if (!IS_WINDOWS && !IS_MAC && process.platform !== 'linux') {
+    return
+  }
+
+  if (process.platform !== 'linux') {
+    try {
+      app.setLoginItemSettings?.({ openAtLogin: settings.startAtLogin, openAsHidden: settings.launchMinimized })
+    } catch (error) {
+      rememberLog(`[composer] native login-item update failed: ${error?.message || error}`)
+    }
+
+    return
+  }
+
+  const entryPath = resolveAutostartPath({ env: process.env, home: os.homedir(), platform: process.platform })
+
+  try {
+    if (!settings.startAtLogin) {
+      // Never remove a file another application owns, even if it happens to
+      // use the same conventional filename.
+      const existing = fs.readFileSync(entryPath, 'utf8')
+
+      if (/^Name=Hafiye$/m.test(existing) && /^Exec=.*hafiye-desktop|^Exec=.*electron.*hafiye/m.test(existing)) {
+        fs.unlinkSync(entryPath)
+      }
+
+      return
+    }
+
+    fs.mkdirSync(path.dirname(entryPath), { recursive: true, mode: 0o700 })
+    const entry = buildAutostartDesktopEntry({
+      appPath: IS_ELECTRON_DEV_RUN ? app.getAppPath() : undefined,
+      execPath: process.execPath,
+      hidden: settings.launchMinimized
+    })
+    const temporary = `${entryPath}.${process.pid}.tmp`
+    fs.writeFileSync(temporary, entry, { encoding: 'utf8', mode: 0o644 })
+    fs.renameSync(temporary, entryPath)
+    try {
+      fs.chmodSync(entryPath, 0o644)
+    } catch {
+      // Best effort on non-POSIX test filesystems.
+    }
+  } catch (error) {
+    // A read-only home or a missing desktop integration is diagnostic; it must
+    // not prevent the main Desktop or persistent gateway from starting.
+    rememberLog(`[composer] XDG autostart update failed: ${error?.message || error}`)
+  }
+}
+
+function reconcileGatewayAutostart(settings: ComposerSettings): void {
+  if (process.platform !== 'linux' || process.env.HAFIYE_DESKTOP_DISABLE_GATEWAY_AUTOSTART === '1') {
+    return
+  }
+
+  const action = settings.startGatewayAtLogin ? 'enable' : 'disable'
+
+  execFile('systemctl', ['--user', action, 'hafiye-gateway.service'], error => {
+    if (error) {
+      rememberLog(`[composer] systemd gateway ${action} failed: ${error.message}`)
+    }
+  })
+}
+
+function applyComposerSettings(settings: ComposerSettings) {
+  composerSettings = sanitizeComposerSettings(settings)
+  reconcileComposerAutostart(composerSettings)
+  reconcileGatewayAutostart(composerSettings)
+  applyQuickEntrySettings(readQuickEntrySettings())
+  refreshHafiyeTrayMenu()
+
+  return composerSettings
+}
+
 // ── Quick Entry ─────────────────────────────────────────────────────────────
 //
 // A global shortcut summons a small frameless always-on-top composer from
@@ -12054,10 +12180,11 @@ function spawnQuickEntryWindow() {
   // resurrect itself over the app, but its loss belongs in desktop.log.
   installWindowRendererLifecycle(win, { kind: 'quick', callbacks: { log: rememberLog } })
 
-  // Hide on blur. The window must never hold the user's focus captive — losing
-  // focus is the cheapest, least surprising dismiss (matches Spotlight).
+  // HOTKEY_ONLY/SHOW_ON_LOGIN behave like Spotlight and dismiss on blur. A
+  // PINNED Composer is deliberately allowed to stay visible while the user
+  // clicks through the main app or another window.
   win.on('blur', () => {
-    if (!win.isDestroyed()) {
+    if (!win.isDestroyed() && !composerStaysVisible(composerSettings)) {
       win.hide()
     }
   })
@@ -12094,7 +12221,7 @@ function repositionQuickEntryWindow(win) {
   }
 }
 
-function showQuickEntryWindow() {
+function showQuickEntryWindow({ welcome = false }: { welcome?: boolean } = {}) {
   if (!quickEntryWindow || quickEntryWindow.isDestroyed()) {
     // Reveal the window this call created, not whatever `quickEntryWindow`
     // points at by the time the event lands.
@@ -12105,6 +12232,10 @@ function showQuickEntryWindow() {
       show: () => {
         win.show()
         win.focus()
+
+        if (welcome && !win.isDestroyed()) {
+          win.webContents.send('hermes:quick-entry:welcome')
+        }
       }
     })
 
@@ -12116,6 +12247,10 @@ function showQuickEntryWindow() {
   quickEntryWindow.focus()
   // Re-summoned: tell the renderer to clear any stale draft and refocus.
   quickEntryWindow.webContents.send('hermes:quick-entry:shown')
+
+  if (welcome) {
+    quickEntryWindow.webContents.send('hermes:quick-entry:welcome')
+  }
 }
 
 function hideQuickEntryWindow() {
@@ -12154,6 +12289,8 @@ function applyQuickEntrySettings(settings) {
     rememberLog(`[quick-entry] shortcut ${state.shortcut} is already taken by another application`)
   } else if (state.error === 'invalid') {
     rememberLog(`[quick-entry] shortcut ${state.shortcut} is not a valid accelerator`)
+  } else if (state.registered) {
+    rememberLog(`[quick-entry] shortcut ${state.shortcut} registered`)
   }
 
   return { ...state, enabled: settings.enabled }
@@ -12167,6 +12304,120 @@ function closeQuickEntryWindow() {
   }
 
   quickEntryWindow = null
+}
+
+// ── System tray ────────────────────────────────────────────────────────────
+// The tray is the Desktop's resident surface: closing the main window hides it
+// here, while Quit Desktop is the only menu action that requests process exit.
+let hafiyeTray: Tray | null = null
+
+function sendTrayCommand(channel: string, payload?: unknown): void {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return
+  }
+
+  mainWindow.webContents.send(channel, payload)
+}
+
+function systemdGatewayAction(action: 'restart' | 'start' | 'stop'): void {
+  if (process.platform !== 'linux') {
+    rememberLog(`[tray] systemd gateway ${action} is only available on Linux`)
+
+    return
+  }
+
+  execFile('systemctl', ['--user', action, 'hafiye-gateway.service'], error => {
+    if (error) {
+      rememberLog(`[tray] systemd gateway ${action} failed: ${error.message}`)
+    }
+  })
+}
+
+function trayRecentTaskItems() {
+  const sessions = Array.isArray(quickEntryLastState?.sessions) ? quickEntryLastState.sessions : []
+
+  if (sessions.length === 0) {
+    return [{ enabled: false, label: 'No recent tasks' }]
+  }
+
+  return sessions.map(session => ({
+    click: () => sendTrayCommand('hermes:tray:open-session', session.id),
+    label: session.title || session.id
+  }))
+}
+
+function refreshHafiyeTrayMenu(): void {
+  if (!hafiyeTray) {
+    return
+  }
+
+  hafiyeTray.setContextMenu(
+    Menu.buildFromTemplate([
+      { enabled: false, label: APP_NAME },
+      { enabled: false, label: '● Running' },
+      { type: 'separator' },
+      { click: () => showQuickEntryWindow(), label: 'Open Composer' },
+      { click: () => focusWindow(mainWindow), label: `Open ${APP_NAME}` },
+      { click: () => sendTrayCommand('hermes:tray:new-task'), label: 'New Task' },
+      { type: 'separator' },
+      { enabled: false, label: 'Mute Microphone (Voice phase)' },
+      { click: () => sendTrayCommand('hermes:tray:toggle-voice'), label: 'Pause Voice' },
+      { enabled: false, label: 'Pause Computer Control (Host tools phase)' },
+      {
+        label: 'Privacy Mode',
+        submenu: [
+          { enabled: false, label: 'NORMAL (Routing phase)' },
+          { enabled: false, label: 'LOCAL_ONLY (Routing phase)' },
+          { enabled: false, label: 'OFFLINE (Routing phase)' }
+        ]
+      },
+      {
+        label: 'Recent Tasks',
+        submenu: trayRecentTaskItems()
+      },
+      { type: 'separator' },
+      { click: () => sendTrayCommand('hermes:tray:open-settings'), label: 'Settings' },
+      { click: () => void shell.openPath(path.join(HAFIYE_STATE_HOME, 'logs')), label: 'Logs' },
+      { type: 'separator' },
+      { click: () => systemdGatewayAction('restart'), label: 'Restart Hafiye' },
+      {
+        click: () => {
+          desktopQuitRequested = true
+          app.quit()
+        },
+        label: 'Quit Desktop'
+      },
+      { click: () => systemdGatewayAction('stop'), label: 'Stop Hafiye Core' }
+    ])
+  )
+}
+
+function createHafiyeTray(): void {
+  if (hafiyeTray) {
+    return
+  }
+
+  try {
+    const iconPath = getAppIconPath()
+    const icon = iconPath ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty()
+    hafiyeTray = new Tray(icon)
+    hafiyeTray.setToolTip(APP_NAME)
+    hafiyeTray.on('click', () => focusWindow(mainWindow))
+    hafiyeTray.on('double-click', () => focusWindow(mainWindow))
+    refreshHafiyeTrayMenu()
+    rememberLog('[tray] Hafiye tray ready')
+  } catch (error) {
+    rememberLog(`[tray] could not create system tray: ${error?.message || error}`)
+  }
+}
+
+function destroyHafiyeTray(): void {
+  if (!hafiyeTray) {
+    return
+  }
+
+  hafiyeTray.destroy()
+  hafiyeTray = null
 }
 
 function createWindow() {
@@ -12229,6 +12480,13 @@ function createWindow() {
   }
 
   const revealController = wireWindowReveal(createdMainWindow, {
+    show: () => {
+      if (LAUNCH_HIDDEN) {
+        createdMainWindow.hide()
+      } else {
+        createdMainWindow.show()
+      }
+    },
     onRevealed: () => {
       // Persist geometry as soon as the window is visible so a crash before the
       // first clean resize/move/close still captures the restored bounds (#56726).
@@ -12276,7 +12534,17 @@ function createWindow() {
   bindGeometryPersistence(mainWindow, schedulePersistWindowState)
   mainWindow.on('maximize', schedulePersistWindowState)
   mainWindow.on('unmaximize', schedulePersistWindowState)
-  mainWindow.on('close', () => schedulePersistWindowState.flush())
+  mainWindow.on('close', event => {
+    if (!desktopQuitRequested && !isQuittingForHandoff && hafiyeTray) {
+      event.preventDefault()
+      mainWindow?.hide()
+      schedulePersistWindowState.flush()
+
+      return
+    }
+
+    schedulePersistWindowState.flush()
+  })
 
   // the closed wrapper remains truthy, so clear only the window this callback owns.
   mainWindow.on('closed', () => {
@@ -14495,6 +14763,7 @@ ipcMain.on('hermes:keep-awake', (_event, on) => {
 // chord. See electron/quick-entry.ts + store/quick-entry.
 ipcMain.handle('hermes:quick-entry:settings:get', async () => {
   const settings = readQuickEntrySettings()
+  const composer = readComposerSettings()
   const state = quickEntryShortcut.current()
 
   // Ground truth is what the last apply produced; the shortcut we report is the
@@ -14502,22 +14771,50 @@ ipcMain.handle('hermes:quick-entry:settings:get', async () => {
   return {
     enabled: settings.enabled,
     error: state.error,
+    launchMinimized: composer.launchMinimized,
+    mode: composer.mode,
     registered: state.registered,
+    showOnLogin: composer.showOnLogin,
+    startAtLogin: composer.startAtLogin,
+    startGatewayAtLogin: composer.startGatewayAtLogin,
     shortcut: settings.enabled ? state.shortcut : settings.shortcut
   }
 })
 
 ipcMain.handle('hermes:quick-entry:settings:set', async (_event, patch) => {
   const current = readQuickEntrySettings()
+  const currentComposer = readComposerSettings()
 
   const next = sanitizeQuickEntrySettings({
     enabled: patch?.enabled === undefined ? current.enabled : patch.enabled === true,
     shortcut: typeof patch?.shortcut === 'string' && patch.shortcut.trim() ? patch.shortcut : current.shortcut
   })
+  const nextComposer = sanitizeComposerSettings({
+    ...currentComposer,
+    launchMinimized:
+      patch?.launchMinimized === undefined ? currentComposer.launchMinimized : patch.launchMinimized === true,
+    mode: patch?.mode === undefined ? currentComposer.mode : patch.mode,
+    showOnLogin: patch?.showOnLogin === undefined ? currentComposer.showOnLogin : patch.showOnLogin === true,
+    startAtLogin: patch?.startAtLogin === undefined ? currentComposer.startAtLogin : patch.startAtLogin === true,
+    startGatewayAtLogin:
+      patch?.startGatewayAtLogin === undefined ? currentComposer.startGatewayAtLogin : patch.startGatewayAtLogin === true
+  })
 
   writeQuickEntrySettings(next)
+  writeComposerSettings(nextComposer)
+  applyComposerSettings(nextComposer)
 
-  return applyQuickEntrySettings(next)
+  const state = quickEntryShortcut.current()
+
+  return {
+    ...state,
+    enabled: next.enabled,
+    launchMinimized: nextComposer.launchMinimized,
+    mode: nextComposer.mode,
+    showOnLogin: nextComposer.showOnLogin,
+    startAtLogin: nextComposer.startAtLogin,
+    startGatewayAtLogin: nextComposer.startGatewayAtLogin
+  }
 })
 
 // Quick window → main → PRIMARY renderer. We never submit here: the renderer
@@ -14559,6 +14856,18 @@ ipcMain.on('hermes:quick-entry:state', (_event, payload) => {
 })
 
 ipcMain.on('hermes:quick-entry:dismiss', () => hideQuickEntryWindow())
+
+ipcMain.on('hermes:quick-entry:start-voice', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('hermes:quick-entry:start-voice')
+  }
+})
+
+ipcMain.on('hermes:quick-entry:stop', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('hermes:quick-entry:stop')
+  }
+})
 
 // Disable F12 DevTools: maintained in the main process so a cold launch
 // restores it before any window is shown (applied on ready). The renderer
@@ -15272,10 +15581,11 @@ app.whenReady().then(() => {
 
   setActiveGatewayProfile(primaryProfile)
   setWslBridgeProfileState(primaryProfile, !primaryBackendIsRemote())
-  // Quick Entry's global chord — registered on ready so a cold launch restores
-  // it without the renderer visiting Settings. A failed registration is logged
-  // here and surfaced in Settings via the IPC state (never silent).
-  applyQuickEntrySettings(readQuickEntrySettings())
+  // Composer lifecycle is restored before the first window: the global chord,
+  // XDG autostart entry, and gateway login enablement are all main-process
+  // responsibilities and do not depend on a renderer visiting Settings.
+  composerSettings = readComposerSettings()
+  applyComposerSettings(composerSettings)
 
   if (IS_MAC) {
     const reposition = () => wakeIndicatorController.reposition()
@@ -15287,7 +15597,23 @@ app.whenReady().then(() => {
     screen.on('display-removed', reposition)
   }
 
+  createHafiyeTray()
   createWindow()
+
+  // SHOW_ON_LOGIN gives the user a brief, explicit “Hafiye hazır” signal after
+  // login; PINNED keeps the same Composer visible. HOTKEY_ONLY never reveals
+  // a window until the global chord is pressed.
+  if (shouldShowComposerOnLogin(composerSettings) && readQuickEntrySettings().enabled) {
+    mainWindow?.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        showQuickEntryWindow({ welcome: true })
+
+        if (!composerStaysVisible(composerSettings)) {
+          setTimeout(() => hideQuickEntryWindow(), 1_800)
+        }
+      }, 250)
+    })
+  }
 
   // Win/Linux cold start: the launching hermes:// URL is in our own argv.
   const _coldStartLink = _extractDeepLink(process.argv)
@@ -15377,9 +15703,13 @@ function heldQuitForActiveWork(event: Electron.Event): boolean {
 }
 
 app.on('before-quit', event => {
+  desktopQuitRequested = true
+
   // Runs ahead of every teardown below, so "Keep Running" leaves the app
   // exactly as it was.
   if (heldQuitForActiveWork(event)) {
+    desktopQuitRequested = false
+
     return
   }
 
@@ -15441,6 +15771,7 @@ app.on('before-quit', event => {
   // Same for the Quick Entry composer — and release its global accelerator so a
   // quitting Hermes never keeps another app's chord hostage.
   closeQuickEntryWindow()
+  destroyHafiyeTray()
 
   // Quitting mid-install should stop the installer, not orphan it.
   if (bootstrapAbortController) {

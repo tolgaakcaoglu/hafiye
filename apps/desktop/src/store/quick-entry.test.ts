@@ -41,12 +41,18 @@ const connect: QuickComposerEvent = {
 describe('quickComposerReducer', () => {
   it('starts visible, empty, DISCONNECTED, and targeting the current chat', () => {
     expect(initialQuickComposerState).toEqual({
+      activity: 'IDLE',
       connected: false,
+      currentTask: undefined,
+      currentTool: undefined,
       draft: '',
+      model: undefined,
+      progress: undefined,
       sessions: [],
       submitting: false,
       target: QUICK_TARGET_CURRENT,
-      visible: true
+      visible: true,
+      welcome: false
     })
   })
 

@@ -113,6 +113,8 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     getSettings: () => ipcRenderer.invoke('hermes:quick-entry:settings:get'),
     setSettings: patch => ipcRenderer.invoke('hermes:quick-entry:settings:set', patch),
     submit: payload => ipcRenderer.send('hermes:quick-entry:submit', payload),
+    startVoice: () => ipcRenderer.send('hermes:quick-entry:start-voice'),
+    stop: () => ipcRenderer.send('hermes:quick-entry:stop'),
     dismiss: () => ipcRenderer.send('hermes:quick-entry:dismiss'),
     // Primary renderer → main → quick window: gateway connection state + the
     // recent-session options the target picker offers. Main caches the latest
@@ -138,6 +140,50 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:quick-entry:shown', listener)
 
       return () => ipcRenderer.removeListener('hermes:quick-entry:shown', listener)
+    },
+    onWelcome: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:quick-entry:welcome', listener)
+
+      return () => ipcRenderer.removeListener('hermes:quick-entry:welcome', listener)
+    },
+    onStartVoice: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:quick-entry:start-voice', listener)
+
+      return () => ipcRenderer.removeListener('hermes:quick-entry:start-voice', listener)
+    },
+    onStop: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:quick-entry:stop', listener)
+
+      return () => ipcRenderer.removeListener('hermes:quick-entry:stop', listener)
+    }
+  },
+  tray: {
+    onNewTask: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:tray:new-task', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:new-task', listener)
+    },
+    onOpenSettings: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:tray:open-settings', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:open-settings', listener)
+    },
+    onOpenSession: callback => {
+      const listener = (_event, sessionId) => callback(sessionId)
+      ipcRenderer.on('hermes:tray:open-session', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:open-session', listener)
+    },
+    onToggleVoice: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:tray:toggle-voice', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:toggle-voice', listener)
     }
   },
   getBootProgress: () => ipcRenderer.invoke('hermes:boot-progress:get'),

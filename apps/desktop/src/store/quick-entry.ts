@@ -17,13 +17,31 @@
 
 import { atom } from 'nanostores'
 
+export const QUICK_ENTRY_COMPOSER_MODES = ['HOTKEY_ONLY', 'SHOW_ON_LOGIN', 'PINNED'] as const
+export type QuickEntryComposerMode = (typeof QUICK_ENTRY_COMPOSER_MODES)[number]
+
+export type QuickEntryActivity =
+  | 'ERROR'
+  | 'IDLE'
+  | 'LISTENING'
+  | 'PAUSED'
+  | 'SPEAKING'
+  | 'THINKING'
+  | 'TRANSCRIBING'
+  | 'WORKING'
+
 export interface QuickEntryState {
   enabled: boolean
+  launchMinimized: boolean
+  mode: QuickEntryComposerMode
   /** null before the first read; the settings row shows a skeleton until then. */
   registered: boolean | null
   /** Why the OS shortcut isn't live: taken by another app, or unusable. */
   error: null | QuickEntryRegistrationError
+  showOnLogin: boolean
   shortcut: string
+  startAtLogin: boolean
+  startGatewayAtLogin: boolean
 }
 
 export type QuickEntryRegistrationError = 'invalid' | 'taken'
@@ -31,17 +49,27 @@ export type QuickEntryRegistrationError = 'invalid' | 'taken'
 export interface QuickEntryStatus {
   enabled: boolean
   error: null | QuickEntryRegistrationError
+  launchMinimized?: boolean
+  mode?: QuickEntryComposerMode
   registered: boolean
+  showOnLogin?: boolean
   shortcut: string
+  startAtLogin?: boolean
+  startGatewayAtLogin?: boolean
 }
 
-export const QUICK_ENTRY_DEFAULT_SHORTCUT = 'CommandOrControl+Shift+Space'
+export const QUICK_ENTRY_DEFAULT_SHORTCUT = 'Super+Shift+Space'
 
 export const $quickEntry = atom<QuickEntryState>({
   enabled: true,
   error: null,
+  launchMinimized: true,
+  mode: 'SHOW_ON_LOGIN',
   registered: null,
-  shortcut: QUICK_ENTRY_DEFAULT_SHORTCUT
+  showOnLogin: true,
+  shortcut: QUICK_ENTRY_DEFAULT_SHORTCUT,
+  startAtLogin: true,
+  startGatewayAtLogin: true
 })
 
 function applyStatus(status: QuickEntryStatus | undefined): void {
@@ -52,8 +80,13 @@ function applyStatus(status: QuickEntryStatus | undefined): void {
   $quickEntry.set({
     enabled: status.enabled === true,
     error: status.error ?? null,
+    launchMinimized: status.launchMinimized !== false,
+    mode: status.mode && QUICK_ENTRY_COMPOSER_MODES.includes(status.mode) ? status.mode : 'SHOW_ON_LOGIN',
     registered: status.registered === true,
-    shortcut: typeof status.shortcut === 'string' && status.shortcut ? status.shortcut : QUICK_ENTRY_DEFAULT_SHORTCUT
+    showOnLogin: status.showOnLogin !== false,
+    shortcut: typeof status.shortcut === 'string' && status.shortcut ? status.shortcut : QUICK_ENTRY_DEFAULT_SHORTCUT,
+    startAtLogin: status.startAtLogin !== false,
+    startGatewayAtLogin: status.startGatewayAtLogin !== false
   })
 }
 
@@ -80,7 +113,17 @@ export async function loadQuickEntrySettings(): Promise<void> {
  * rejected shortcut or an already-taken chord comes back as an error state
  * instead of a silently-lost setting.
  */
-export async function saveQuickEntrySettings(patch: { enabled?: boolean; shortcut?: string }): Promise<void> {
+export async function saveQuickEntrySettings(
+  patch: {
+    enabled?: boolean
+    launchMinimized?: boolean
+    mode?: QuickEntryComposerMode
+    showOnLogin?: boolean
+    shortcut?: string
+    startAtLogin?: boolean
+    startGatewayAtLogin?: boolean
+  }
+): Promise<void> {
   if (!canUseQuickEntry()) {
     return
   }
@@ -117,7 +160,12 @@ export const QUICK_TARGET_NEW = 'new'
  * disconnected (input disabled) until the first push proves otherwise.
  */
 export interface QuickEntryStatePush {
+  activity?: QuickEntryActivity
   connected: boolean
+  currentTask?: string
+  currentTool?: string
+  model?: string
+  progress?: string
   sessions: QuickEntrySessionOption[]
 }
 
@@ -137,9 +185,14 @@ export interface QuickEntrySubmitPayload {
  * needs React or Electron.
  */
 export interface QuickComposerState {
+  activity: QuickEntryActivity
   /** Last pushed gateway truth. False (the initial value) disables submit. */
   connected: boolean
+  currentTask?: string
   draft: string
+  currentTool?: string
+  model?: string
+  progress?: string
   /** Recent sessions the picker offers, pushed by the primary renderer. */
   sessions: QuickEntrySessionOption[]
   /** True between a send and the window actually hiding. Blocks a double-send. */
@@ -148,6 +201,7 @@ export interface QuickComposerState {
   target: string
   /** Whether the window should be visible. False asks the shell to hide. */
   visible: boolean
+  welcome: boolean
 }
 
 export type QuickComposerEvent =
@@ -155,9 +209,10 @@ export type QuickComposerEvent =
   | { type: 'dismiss' }
   | { type: 'edit'; draft: string }
   | { type: 'shown' }
-  | { type: 'state'; connected: boolean; sessions: QuickEntrySessionOption[] }
+  | { type: 'state'; activity?: QuickEntryActivity; connected: boolean; currentTask?: string; currentTool?: string; model?: string; progress?: string; sessions: QuickEntrySessionOption[] }
   | { type: 'submit' }
   | { type: 'target'; target: string }
+  | { type: 'welcome' }
 
 export interface QuickComposerTransition {
   /** Payload to send through the real prompt-submit path, or null for none. */
@@ -166,14 +221,20 @@ export interface QuickComposerTransition {
 }
 
 export const initialQuickComposerState: QuickComposerState = {
+  activity: 'IDLE',
   // Disconnected until the primary renderer's first push proves otherwise — a
   // capture window that accepts text it can never deliver is a lie.
   connected: false,
+  currentTask: undefined,
+  currentTool: undefined,
   draft: '',
+  model: undefined,
+  progress: undefined,
   sessions: [],
   submitting: false,
   target: QUICK_TARGET_CURRENT,
-  visible: true
+  visible: true,
+  welcome: false
 }
 
 export function quickComposerReducer(state: QuickComposerState, event: QuickComposerEvent): QuickComposerTransition {
@@ -184,7 +245,7 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
       // hides — the send already left for the main process.
       return {
         send: null,
-        state: { ...state, draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: false }
+        state: { ...state, activity: 'IDLE', draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: false }
       }
     }
 
@@ -197,7 +258,7 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
       // a leftover target — but the pushed gateway truth carries over.
       return {
         send: null,
-        state: { ...state, draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: true }
+        state: { ...state, activity: 'IDLE', draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: true, welcome: false }
       }
     }
 
@@ -214,11 +275,20 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
         send: null,
         state: {
           ...state,
+          activity: event.activity ?? state.activity,
           connected: event.connected,
+          currentTask: event.currentTask,
+          currentTool: event.currentTool,
+          model: event.model,
+          progress: event.progress,
           sessions: event.sessions,
           target: targetStillValid ? state.target : QUICK_TARGET_CURRENT
         }
       }
+    }
+
+    case 'welcome': {
+      return { send: null, state: { ...state, visible: true, welcome: true } }
     }
 
     case 'submit': {
@@ -232,7 +302,7 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
 
       return {
         send: { target: state.target, text },
-        state: { ...state, draft: '', submitting: true, visible: false }
+        state: { ...state, activity: 'THINKING', draft: '', submitting: true, visible: false, welcome: false }
       }
     }
 

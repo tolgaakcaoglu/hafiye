@@ -111,7 +111,15 @@ declare global {
         // Returns the resulting state — including `registered: false` +
         // `error: 'taken'` when another app already owns the chord, so a failed
         // registration surfaces in Settings instead of failing silently.
-        setSettings: (patch: { enabled?: boolean; shortcut?: string }) => Promise<QuickEntryStatus>
+        setSettings: (patch: {
+          enabled?: boolean
+          launchMinimized?: boolean
+          mode?: 'HOTKEY_ONLY' | 'PINNED' | 'SHOW_ON_LOGIN'
+          showOnLogin?: boolean
+          shortcut?: string
+          startAtLogin?: boolean
+          startGatewayAtLogin?: boolean
+        }) => Promise<QuickEntryStatus>
         // Quick window → main: send this payload (main forwards it to the
         // primary renderer, which routes it to the target session and submits
         // through the normal prompt path) and hide.
@@ -129,6 +137,17 @@ declare global {
         // Quick window subscribes to "you were just summoned" so it can reset
         // its draft and re-focus the input on every open.
         onShown: (callback: () => void) => () => void
+        onWelcome: (callback: () => void) => () => void
+        onStartVoice: (callback: () => void) => () => void
+        onStop: (callback: () => void) => () => void
+        startVoice: () => void
+        stop: () => void
+      }
+      tray?: {
+        onNewTask: (callback: () => void) => () => void
+        onOpenSession: (callback: (sessionId: string) => void) => () => void
+        onOpenSettings: (callback: () => void) => () => void
+        onToggleVoice: (callback: () => void) => () => void
       }
       getBootProgress: () => Promise<DesktopBootProgress>
       getConnectionConfig: (profile?: null | string) => Promise<DesktopConnectionConfig>

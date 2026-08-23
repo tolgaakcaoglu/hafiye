@@ -86,7 +86,7 @@ import { isAuxiliaryWindow, isHudWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
 
 import { closeWorkspaceTab } from '../chat/close-tab'
-import { requestComposerInsert } from '../chat/composer/focus'
+import { requestComposerInsert, requestVoiceToggle } from '../chat/composer/focus'
 import { useComposerActions } from '../chat/hooks/use-composer-actions'
 import { CommandPalette } from '../command-palette'
 import { triggerAndRefreshCronJobs } from '../cron/cron-actions'
@@ -679,7 +679,14 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // The global-hotkey Quick Entry window's bridge: its captured text rides the
   // SAME submit machinery the normal composer uses (current chat / picked
   // session / new session), and it hears gateway truth from this window.
-  useQuickEntryBridge({ startFreshSessionDraft, submitText })
+  useQuickEntryBridge({
+    cancelRun,
+    openSettings: () => navigate(SETTINGS_ROUTE),
+    startFreshSessionDraft,
+    startVoice: requestVoiceConversationStart,
+    submitText,
+    toggleVoice: () => requestVoiceToggle()
+  })
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })

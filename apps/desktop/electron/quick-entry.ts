@@ -16,13 +16,16 @@
 
 // Default matches the muscle memory of the apps this ports from (Claude
 // Desktop's quick entry / ChatGPT's Quick Chat sit on a Cmd+Shift chord).
-const DEFAULT_QUICK_ENTRY_SHORTCUT = 'CommandOrControl+Shift+Space'
+// Hafiye's Linux desktop contract deliberately uses Super rather than the
+// common CommandOrControl alias: GNOME reserves Super+Space for input-source
+// switching, while Super+Shift+Space is the stable Composer chord.
+const DEFAULT_QUICK_ENTRY_SHORTCUT = 'Super+Shift+Space'
 
 // Compact capture surface: wide enough for a sentence, short enough to read as
 // a HUD rather than a second app window. Height covers the composer row plus
 // the session-target picker row; the renderer never grows the OS window in v1.
 const QUICK_ENTRY_WINDOW_WIDTH = 640
-const QUICK_ENTRY_WINDOW_HEIGHT = 168
+const QUICK_ENTRY_WINDOW_HEIGHT = 220
 
 // Spotlight-ish placement: horizontally centered on the active display, a
 // comfortable fraction down from the top rather than dead center.

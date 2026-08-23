@@ -8,12 +8,17 @@ import {
   setQuickEntrySubmitHandler
 } from '@/store/quick-entry'
 import { $gatewayState, $sessions } from '@/store/session'
-import { sessionTileDelegate } from '@/store/session-states'
+import { $activeSessionId, $awaitingResponse, $busy } from '@/store/session'
+import { $sessionStates, sessionTileDelegate } from '@/store/session-states'
 import { isAuxiliaryWindow } from '@/store/windows'
 
 interface QuickEntryBridgeParams {
+  cancelRun: () => Promise<void> | void
+  openSettings: () => void
   startFreshSessionDraft: () => void
+  startVoice: () => void
   submitText: (text: string) => Promise<unknown> | unknown
+  toggleVoice: () => void
 }
 
 // The picker is a capture aid, not a session browser — a handful of recent
@@ -50,11 +55,26 @@ function sessionOptions(): QuickEntrySessionOption[] {
  * secondary session window must not also claim the global capture channel, or
  * one keystroke would send N prompts.
  */
-export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: QuickEntryBridgeParams): void {
+export function useQuickEntryBridge({
+  cancelRun,
+  openSettings,
+  startFreshSessionDraft,
+  startVoice,
+  submitText,
+  toggleVoice
+}: QuickEntryBridgeParams): void {
   const submitTextRef = useRef(submitText)
   submitTextRef.current = submitText
   const startFreshRef = useRef(startFreshSessionDraft)
   startFreshRef.current = startFreshSessionDraft
+  const cancelRunRef = useRef(cancelRun)
+  cancelRunRef.current = cancelRun
+  const openSettingsRef = useRef(openSettings)
+  openSettingsRef.current = openSettings
+  const startVoiceRef = useRef(startVoice)
+  startVoiceRef.current = startVoice
+  const toggleVoiceRef = useRef(toggleVoice)
+  toggleVoiceRef.current = toggleVoice
 
   useEffect(() => {
     if (isAuxiliaryWindow()) {
@@ -92,9 +112,30 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
 
     const dispose = initQuickEntryBridge()
 
+    const tray = window.hermesDesktop?.tray
+    const offNewTask = tray?.onNewTask(() => startFreshRef.current())
+    const offOpenSettings = tray?.onOpenSettings(() => openSettingsRef.current())
+    const offOpenSession = tray?.onOpenSession(sessionId => {
+      const delegate = sessionTileDelegate()
+
+      if (delegate) {
+        void delegate.resumeTile(sessionId).catch(() => undefined)
+      }
+    })
+    const offToggleVoice = tray?.onToggleVoice(() => toggleVoiceRef.current())
+    const quickEntry = window.hermesDesktop?.quickEntry
+    const offStartVoice = quickEntry?.onStartVoice?.(() => startVoiceRef.current())
+    const offStop = quickEntry?.onStop?.(() => void cancelRunRef.current())
+
     return () => {
       setQuickEntrySubmitHandler(null)
       dispose()
+      offNewTask?.()
+      offOpenSettings?.()
+      offOpenSession?.()
+      offToggleVoice?.()
+      offStartVoice?.()
+      offStop?.()
     }
   }, [])
 
@@ -112,17 +153,32 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
     }
 
     const push = () => {
-      api.pushState({ connected: $gatewayState.get() === 'open', sessions: sessionOptions() })
+      const activeRuntimeId = $activeSessionId.get()
+      const activeState = activeRuntimeId ? $sessionStates.get()[activeRuntimeId] : undefined
+      const activity = $busy.get() ? 'WORKING' : $awaitingResponse.get() ? 'PAUSED' : 'IDLE'
+
+      api.pushState({
+        activity,
+        connected: $gatewayState.get() === 'open',
+        currentTask: activeState?.storedSessionId || undefined,
+        sessions: sessionOptions()
+      })
     }
 
     push()
 
     const offGateway = $gatewayState.listen(push)
     const offSessions = $sessions.listen(push)
+    const offBusy = $busy.listen(push)
+    const offAwaiting = $awaitingResponse.listen(push)
+    const offSessionStates = $sessionStates.listen(push)
 
     return () => {
       offGateway()
       offSessions()
+      offBusy()
+      offAwaiting()
+      offSessionStates()
     }
   }, [])
 }

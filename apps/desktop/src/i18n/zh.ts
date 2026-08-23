@@ -922,7 +922,7 @@ export const zh: Translations = {
       enabledTitle: '快速输入',
       enabledDesc: '用全局快捷键在任何地方唤出一个小输入框，无需打开 Hermes 即可发送提示。',
       shortcutTitle: '快速输入快捷键',
-      shortcutDesc: '至少需要一个修饰键，例如 CommandOrControl+Shift+Space。',
+      shortcutDesc: '至少需要一个修饰键，例如 Super+Shift+Space。',
       active: '快捷键已生效。',
       takenBy: '此快捷键已被其他应用占用，请换一个。',
       invalidShortcut: '不是有效的快捷键。请至少包含一个修饰键。'

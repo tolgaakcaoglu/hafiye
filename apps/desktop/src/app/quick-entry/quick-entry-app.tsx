@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 
 import {
   initialQuickComposerState,
@@ -27,6 +27,7 @@ import {
  */
 export function QuickEntryApp() {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [welcome, setWelcome] = useState(false)
 
   // The reducer returns { send, state }; this wrapper performs the side effect
   // (hand the payload to the shell, ask to hide) and stores the next state, so
@@ -57,10 +58,21 @@ export function QuickEntryApp() {
 
     const offState = api?.onState(payload => {
       dispatch({
+        activity: payload?.activity,
         connected: payload?.connected === true,
+        currentTask: payload?.currentTask,
+        currentTool: payload?.currentTool,
+        model: payload?.model,
+        progress: payload?.progress,
         sessions: Array.isArray(payload?.sessions) ? payload.sessions : [],
         type: 'state'
       })
+    })
+
+    const offWelcome = api?.onWelcome(() => {
+      dispatch({ type: 'welcome' })
+      setWelcome(true)
+      window.setTimeout(() => setWelcome(false), 1_800)
     })
 
     inputRef.current?.focus()
@@ -68,8 +80,15 @@ export function QuickEntryApp() {
     return () => {
       offShown?.()
       offState?.()
+      offWelcome?.()
     }
   }, [])
+
+  const activityLabel =
+    state.activity === 'IDLE'
+      ? 'Ready'
+      : state.activity.charAt(0) + state.activity.slice(1).toLowerCase()
+  const working = state.activity !== 'IDLE' && state.activity !== 'ERROR' && state.activity !== 'PAUSED'
 
   return (
     <div
@@ -91,26 +110,120 @@ export function QuickEntryApp() {
           boxShadow: '0 18px 48px rgba(0,0,0,0.38)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
-          padding: '10px 14px',
+          gap: 7,
+          padding: '9px 12px',
           width: '100%'
         }}
       >
-        <div style={{ alignItems: 'center', display: 'flex', gap: 10 }}>
+        <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
           <span
             aria-hidden
             style={{
-              color: 'var(--muted-foreground, #8a8a8a)',
+              alignItems: 'center',
+              background: 'var(--primary, #6d5dfc)',
+              borderRadius: 7,
+              color: '#fff',
+              display: 'inline-flex',
               flexShrink: 0,
-              fontSize: 15,
+              fontSize: 12,
+              fontWeight: 700,
+              height: 22,
+              justifyContent: 'center',
               lineHeight: 1,
-              userSelect: 'none'
+              userSelect: 'none',
+              width: 22
             }}
+          >
+            H
+          </span>
+          <span style={{ color: 'var(--foreground, #eee)', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' }}>
+            Hafiye Composer
+          </span>
+          <span
+            aria-label={`Composer state: ${activityLabel}`}
+            data-composer-state={state.activity}
+            role="status"
+            style={{
+              color: state.activity === 'ERROR' ? '#f87171' : 'var(--muted-foreground, #8a8a8a)',
+              fontSize: 11,
+              marginLeft: 'auto',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {welcome ? 'Hafiye hazır' : activityLabel}
+          </span>
+          <button
+            aria-label={state.activity === 'LISTENING' ? 'Stop microphone' : 'Start microphone'}
+            disabled={!state.connected}
+            onClick={() => {
+              if (state.activity === 'LISTENING') {
+                window.hermesDesktop?.quickEntry.stop()
+                dispatch({
+                  activity: 'PAUSED',
+                  connected: state.connected,
+                  sessions: state.sessions,
+                  type: 'state'
+                })
+              } else {
+                window.hermesDesktop?.quickEntry.startVoice()
+                dispatch({
+                  activity: 'LISTENING',
+                  connected: state.connected,
+                  sessions: state.sessions,
+                  type: 'state'
+                })
+              }
+            }}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--ui-stroke-secondary, rgba(127,127,127,0.35))',
+              borderRadius: 6,
+              color: 'var(--foreground, #eee)',
+              cursor: state.connected ? 'pointer' : 'not-allowed',
+              fontSize: 11,
+              opacity: state.connected ? 1 : 0.45,
+              padding: '3px 6px'
+            }}
+            type="button"
+          >
+            {state.activity === 'LISTENING' ? 'Mic on' : 'Mic'}
+          </button>
+          {working && (
+            <button
+              aria-label="Stop Hafiye task"
+              onClick={() => {
+                window.hermesDesktop?.quickEntry.stop()
+                dispatch({
+                  activity: 'PAUSED',
+                  connected: state.connected,
+                  sessions: state.sessions,
+                  type: 'state'
+                })
+              }}
+              style={{
+                background: '#7f1d1d',
+                border: '1px solid #ef4444aa',
+                borderRadius: 6,
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: 11,
+                padding: '3px 7px'
+              }}
+              type="button"
+            >
+              Stop
+            </button>
+          )}
+        </div>
+        <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
+          <span
+            aria-hidden
+            style={{ color: 'var(--muted-foreground, #8a8a8a)', flexShrink: 0, fontSize: 15, lineHeight: 1 }}
           >
             ›
           </span>
           <input
-            aria-label="Quick Entry"
+            aria-label="Hafiye Composer"
             autoCapitalize="off"
             autoComplete="off"
             autoCorrect="off"
@@ -147,6 +260,24 @@ export function QuickEntryApp() {
             }}
             value={state.draft}
           />
+          <button
+            aria-label="Send prompt"
+            disabled={!state.connected || !state.draft.trim() || state.submitting}
+            onClick={() => dispatch({ type: 'submit' })}
+            style={{
+              background: 'var(--primary, #6d5dfc)',
+              border: 0,
+              borderRadius: 7,
+              color: '#fff',
+              cursor: state.connected && state.draft.trim() && !state.submitting ? 'pointer' : 'not-allowed',
+              fontSize: 12,
+              opacity: state.connected && state.draft.trim() && !state.submitting ? 1 : 0.45,
+              padding: '5px 9px'
+            }}
+            type="button"
+          >
+            Send
+          </button>
         </div>
         <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
           <label
@@ -191,6 +322,19 @@ export function QuickEntryApp() {
             ))}
           </select>
         </div>
+        {(state.currentTask || state.currentTool || state.progress || state.model) && (
+          <div
+            style={{
+              color: 'var(--muted-foreground, #8a8a8a)',
+              fontSize: 10,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {[state.currentTask, state.currentTool, state.progress, state.model].filter(Boolean).join(' · ')}
+          </div>
+        )}
       </div>
     </div>
   )

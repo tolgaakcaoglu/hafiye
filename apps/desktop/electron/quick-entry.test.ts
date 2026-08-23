@@ -106,10 +106,10 @@ describe('createQuickEntryShortcut', () => {
     const onTrigger = vi.fn()
     const controller = createQuickEntryShortcut(globalShortcut, onTrigger)
 
-    const state = controller.apply({ enabled: true, shortcut: 'cmdorctrl+shift+space' })
+    const state = controller.apply({ enabled: true, shortcut: 'super+shift+space' })
 
-    expect(state).toEqual({ error: null, registered: true, shortcut: 'CommandOrControl+Shift+Space' })
-    expect(globalShortcut.register).toHaveBeenCalledWith('CommandOrControl+Shift+Space', onTrigger)
+    expect(state).toEqual({ error: null, registered: true, shortcut: 'Super+Shift+Space' })
+    expect(globalShortcut.register).toHaveBeenCalledWith('Super+Shift+Space', onTrigger)
     expect(controller.current()).toEqual(state)
   })
 
@@ -235,6 +235,6 @@ describe('quickEntryWindowBounds', () => {
   })
 
   it('falls back to the origin without a work area', () => {
-    expect(quickEntryWindowBounds()).toEqual({ height: 168, width: 640, x: 0, y: 0 })
+    expect(quickEntryWindowBounds()).toEqual({ height: 220, width: 640, x: 0, y: 0 })
   })
 })

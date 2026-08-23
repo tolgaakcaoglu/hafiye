@@ -2,11 +2,13 @@ import { useStore } from '@nanostores/react'
 import { useEffect, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useI18n } from '@/i18n'
 import {
   $quickEntry,
   canUseQuickEntry,
   loadQuickEntrySettings,
+  QUICK_ENTRY_COMPOSER_MODES,
   QUICK_ENTRY_DEFAULT_SHORTCUT,
   saveQuickEntrySettings
 } from '@/store/quick-entry'
@@ -97,6 +99,53 @@ export function QuickEntrySettings() {
         }
         description={q.shortcutDesc}
         title={q.shortcutTitle}
+      />
+      <ToggleRow
+        checked={state.showOnLogin}
+        description="Show the Composer briefly after the Desktop starts."
+        label="Show Composer at login"
+        onChange={showOnLogin => void saveQuickEntrySettings({ showOnLogin })}
+      />
+      <ListRow
+        action={
+          <Select
+            onValueChange={mode =>
+              void saveQuickEntrySettings({ mode: mode as (typeof QUICK_ENTRY_COMPOSER_MODES)[number] })
+            }
+            value={state.mode}
+          >
+            <SelectTrigger className="min-w-52 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {QUICK_ENTRY_COMPOSER_MODES.map(mode => (
+                <SelectItem key={mode} value={mode}>
+                  {mode}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+        description="HOTKEY_ONLY waits for the shortcut; SHOW_ON_LOGIN greets you briefly; PINNED stays visible."
+        title="Composer mode"
+      />
+      <ToggleRow
+        checked={state.startAtLogin}
+        description="Start Hafiye Desktop from the XDG user autostart entry."
+        label="Start Hafiye at login"
+        onChange={startAtLogin => void saveQuickEntrySettings({ startAtLogin })}
+      />
+      <ToggleRow
+        checked={state.startGatewayAtLogin}
+        description="Enable the persistent hafiye-gateway.service user unit at login."
+        label="Start gateway at login"
+        onChange={startGatewayAtLogin => void saveQuickEntrySettings({ startGatewayAtLogin })}
+      />
+      <ToggleRow
+        checked={state.launchMinimized}
+        description="Launch the Desktop hidden when started by autostart."
+        label="Launch minimized"
+        onChange={launchMinimized => void saveQuickEntrySettings({ launchMinimized })}
       />
     </>
   )
