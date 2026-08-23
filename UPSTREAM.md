@@ -12,7 +12,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
 - Current Hafiye HEAD (latest product/source commit):
-  ae24562fb9dfeeb4dd58752849b4778b2c8606e8
+  15cbe1f6556addbaf694c36999e0c496730a1730
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -60,6 +60,8 @@ The Hafiye source history contains these separable logical groups:
   Desktop controls.
 - gateway-environment-guard: shared subprocess environment construction for the
   persistent gateway child process.
+- providers-secret-service: provider credential ownership, Linux Secret
+  Service references, local/remote provider paths, and Desktop provider wiring.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -88,13 +90,13 @@ exact five test IDs were:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-After Hafiye source changes, the same five are not regressions. The corrected
-full run covered 3,213 files and measured 37,009 passed, 6 failed, and 291
-skipped in 515.9 seconds. The browser-control failure now passes, so the
-current exact ACCEPTED_UPSTREAM_BASELINE is the remaining four IDs listed in
-KNOWN_ISSUES.md and STATE.md. The two additional full-run async timeouts pass
-in isolation and are tracked as diagnostics, not as accepted baseline. One
-timing-sensitive file passed on runner retry. Hafiye does not fix the
+After Hafiye source changes, the latest full run covered 3,215 files and
+measured 37,137 passed, 5 failed, and 244 skipped in 672.6 seconds. The five
+failures are the same exact IDs above, so they remain `ACCEPTED_UPSTREAM_BASELINE`
+and are not Hafiye regressions. The browser-control file passed in an isolated
+17-test run; the full-suite occurrence is still the same accepted upstream ID.
+The turn-lease file failed once in the parallel run, passed on retry and in
+isolation, and is tracked as timing diagnostics. Hafiye does not fix the
 upstream bugs.
 
 ## Computer-use-linux pinned source
@@ -199,10 +201,24 @@ P0 computer-use acceptance requires:
 - The clean Desktop production build after P4 closure passed with build stamp
   `955a9c3818fa`; Vite, Electron main/preload bundles, native staging, and
   `assert-dist-built` all passed.
-- The corrected full backend regression command completed with the exact four
-  accepted baseline IDs plus the two previously isolated-passing async
-  diagnostics; no new or different failure was found, and no upstream Hermes
-  bug is being fixed as part of P4.
+- The corrected full backend regression command completed with the accepted
+  upstream baseline and documented timing diagnostics; no new or different
+  Hafiye failure was found, and no upstream Hermes bug is being fixed as part
+  of P4.
+
+## P5 source validation
+
+- Provider boundary source commits: `c771c95318516e03450720b5f009dce4017f8600`
+  and the shared provider-alias correction
+  `15cbe1f6556addbaf694c36999e0c496730a1730`.
+- `keyring==25.7.0` is the Hafiye provider-secret dependency. The real Linux
+  Secret Service round-trip passed; Hafiye config retained only keyring refs,
+  and no secret value was recorded in project documentation or test output.
+- Local CUDA llama.cpp, remote OpenAI-compatible HTTP, provider parity,
+  automated Gemini, and Desktop provider/key tests pass. Desktop typecheck and
+  production build pass.
+- Live Gemini test connection is pending because the host has no configured
+  `GEMINI_API_KEY`; P5 is intentionally not closed and P6 has not started.
 
 ## Baseline divergence
 

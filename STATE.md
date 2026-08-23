@@ -1,6 +1,6 @@
 # Hafiye State
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ## Repository and commit state
 
@@ -9,7 +9,7 @@ Last updated: 2026-08-23
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: ae24562fb9dfeeb4dd58752849b4778b2c8606e8 (P4 local runtime cross-platform process fix)
+- Current Hafiye source HEAD: 15cbe1f6556addbaf694c36999e0c496730a1730 (P5 provider credential boundary fix)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -28,8 +28,13 @@ and KI-013.
 
 P4 — llama.cpp managed local runtime: complete. The source implementation,
 real CUDA runtime validation, corrected full backend regression comparison, and
-documentation closure are complete. The next incomplete phase is P5 —
-Providers + Gemini + remote OpenAI-compatible.
+documentation closure are complete.
+
+P5 — Providers + Gemini + remote OpenAI-compatible: in progress. Local
+llama.cpp, remote OpenAI-compatible validation/save, Hermes Gemini provider
+reuse, Desktop provider/key UI, and Secret Service storage are implemented and
+tested. P5 remains open until a real Gemini credential is configured and a
+live Gemini test connection succeeds.
 
 ## Verified working
 
@@ -81,36 +86,44 @@ Providers + Gemini + remote OpenAI-compatible.
 - Hermes one-shot connected to the real local llama-server endpoint and
   returned a non-empty response. The Desktop model settings expose the same
   runtime lifecycle through the authenticated gateway API.
+- Provider credentials for provider-owned variables are stored in the real
+  Linux Secret Service; Hafiye config contains only profile-scoped keyring
+  references and runtime hydration is explicit. Generic channel/tool secrets
+  retain Hermes' `.env` compatibility path.
+- A real local OpenAI-compatible HTTP server passed `/v1/models` validation and
+  chat; the Hafiye custom-endpoint save/validate path stored no raw provider
+  secret in config and returned a real `P5_REMOTE_OK` response.
+- Automated Gemini provider registration, resolution, credential lifecycle,
+  and Desktop surfaces pass. No live Gemini request has been made because this
+  host has no configured Gemini credential.
 
 ## Regression status
 
-The corrected post-Hafiye full backend run covered 3,213 files and reported
-37,009 passed, 6 failed, and 291 skipped in 515.9 seconds. Four failures are
-the reduced ACCEPTED_UPSTREAM_BASELINE set below. Two additional async tests
-timed out only in the full run but passed when isolated; they are recorded as
-diagnostic flakiness, not accepted baseline and not Hafiye regressions. One
-test file failed once and passed on the runner retry; it is recorded as a
-separate timing diagnostic.
+The latest post-Hafiye full backend run covered 3,215 files and reported 37,137
+passed, 5 failed, and 244 skipped in 672.6 seconds. The five failures are
+exactly the original `ACCEPTED_UPSTREAM_BASELINE` IDs below; no new or
+different failure appeared. The remote browser-control baseline test passed in
+the isolated 17-test file run. The turn-lease file failed once in the full
+parallel runner and passed on retry and in isolation; this remains a timing
+diagnostic, not a Hafiye regression.
 
-No Hafiye-specific regression remains in the P1/P2/P3 targeted tests, the P4
-targeted tests, the Desktop suite, or the corrected full backend comparison.
-P3's only measured host issue is the GNOME-owned default shortcut conflict
-documented below.
+The P5 targeted Python tests, Desktop provider tests, typecheck/build, real
+Secret Service round-trip, local CUDA endpoint, and remote OpenAI-compatible
+path pass. Live Gemini acceptance is still pending the host credential.
 
 ## Active blockers
 
-None for the completed P4 runtime. The user service is active in the current
-session. `loginctl` reports `Linger=no`, and a full reboot was not performed in
-this session; the exact autostart command was launched directly with `--hidden`
-as the non-disruptive login-equivalent check. GNOME currently owns
-`Super+Shift+Space` for input-source switching, so the default global shortcut
-reports `taken` until the user changes that binding or chooses a different
-configurable shortcut. These are documented operational warnings, not P4
-blockers.
+P5 has one acceptance blocker: no `GEMINI_API_KEY` is configured in the host's
+Secret Service, `.env`, or process environment, so the required live Gemini
+test connection cannot yet run. This is an environment prerequisite, not a
+provider implementation failure. The user service is active and the local
+CUDA runtime doctor is green. `loginctl` reports `Linger=no`, and a full reboot
+was not performed; GNOME's `Super+Shift+Space` conflict remains the existing
+operational warning.
 
-The accepted upstream failures, the two isolated-passing full-suite async
-timeouts, npm audit warnings, missing pactl, and missing vulkaninfo are
-documented warnings/diagnostics. They are not silently treated as passes.
+The accepted upstream failures, retry-only turn-lease timing, npm audit
+warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
+warnings are documented diagnostics. They are not silently treated as passes.
 
 ## Last tests and commands
 
@@ -118,11 +131,11 @@ documented warnings/diagnostics. They are not silently treated as passes.
 
 - .venv/bin/python -m pytest -q tests/hermes_cli/test_hafiye_identity.py tests/test_hermes_constants.py tests/hermes_cli/test_gateway_service.py
   — 153 passed, 6 skipped.
-- ./scripts/run_tests.sh
+- Historical P4 closure `./scripts/run_tests.sh`
   — 3,213 files; 37,009 passed, 6 failed, 291 skipped in 515.9 seconds; exit 1
-  because of the documented baseline/diagnostic failures. The run was made
-  with the persistent Hafiye gateway and managed local model server stopped
-  temporarily, then both were restored by the exit trap.
+  because of the then-documented baseline/diagnostic failures. The run stopped
+  the persistent Hafiye gateway and managed local model server temporarily and
+  restored both by the exit trap. The latest P5 comparison is recorded below.
 - .venv/bin/ruff check on all changed Python files
   — All checks passed.
 - ./scripts/run_tests.sh tests/hermes_cli/test_local_runtime.py -q
@@ -265,30 +278,75 @@ directory:
   — active, enabled; `ok=true`, `blockers=[]`, `warnings=[]`, expected and
   selected backend `CUDA`, managed server ready on `127.0.0.1:11435`.
 
+### P5 providers, Gemini, and credential storage
+
+- `./scripts/run_tests.sh tests/hermes_cli/test_hafiye_keyring.py
+  tests/hermes_cli/test_p5_provider_paths.py
+  tests/hermes_cli/test_credential_lifecycle.py
+  tests/hermes_cli/test_prompt_api_key.py tests/hermes_cli/test_web_server.py
+  tests/hermes_cli/test_runtime_provider_resolution.py
+  tests/hermes_cli/test_model_switch_custom_providers.py
+  tests/agent/test_credential_pool.py
+  tests/hermes_cli/test_secret_source_bootstrap.py
+  tests/secret_sources/test_secret_source_registry.py
+  tests/secret_sources/test_profile_secrets.py
+  tests/test_env_loader_secret_sources.py tests/hermes_cli/test_provider_parity.py
+  tests/hermes_cli/test_gemini_provider.py
+  tests/agent/test_gemini_native_adapter.py -q`
+  — 15 files, 467 passed, 0 failed.
+- `./scripts/run_tests.sh tests/hermes_cli/test_env_export_line_lifecycle.py
+  tests/hermes_cli/test_set_config_value.py
+  tests/hermes_cli/test_hafiye_keyring.py
+  tests/hermes_cli/test_p5_provider_paths.py -q`
+  — 4 files, 92 passed, 0 failed.
+- Real host Secret Service round-trip — provider secret was written, read,
+  deleted, and removed from the keyring; config contained no secret value.
+- Real managed local endpoint — `/v1/models` and `/v1/chat/completions`
+  returned HTTP 200 with non-empty model/reply data; runtime doctor remained
+  `ok=true`, `blockers=[]`, selected backend `CUDA`.
+- Real remote OpenAI-compatible path — a local HTTP test server passed model
+  validation, custom-endpoint save, authenticated chat, and no-raw-config
+  assertions; reply marker was `P5_REMOTE_OK`.
+- `cd apps/desktop && npm run test` — 79 provider-related files, 634 tests
+  passed; `npm run typecheck && npm run build` passed.
+- Live Gemini connection — not run; no `GEMINI_API_KEY` is configured on this
+  host. This remains the P5 acceptance blocker and is not counted as a pass.
+
+### Latest full backend comparison
+
+- `./scripts/run_tests.sh` with the persistent gateway and managed local model
+  server stopped temporarily and restored by the exit trap — 3,215 files;
+  37,137 passed, 5 failed, 244 skipped in 672.6 seconds, exit 1.
+- The five failures are exactly the accepted upstream baseline IDs below.
+- `./scripts/run_tests.sh tests/gateway/test_browser_control_api.py -q` — 17
+  passed in isolation.
+- `./scripts/run_tests.sh tests/gateway/test_turn_lease.py -q` — 12 passed in
+  isolation; the full runner's one first-attempt timeout passed on retry.
+
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
-changes. The post-Hafiye full run reduced the measured exact set to these
-four, so the current regression baseline is updated accordingly:
+changes. The latest post-Hafiye full run contains the same exact five IDs, so
+they remain the accepted regression baseline:
 
-1. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
-2. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
-3. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
-4. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
+1. tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip
+2. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
+3. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
+4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
+5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The original browser-control failure
-tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip
-passed in the current full run and in isolated checks; it is retained as
-historical baseline evidence, not as a current failure. The upstream bugs are
-not being fixed by Hafiye.
+The remote browser-control test passes when its file is run in isolation, but
+its full-suite failure is still the same accepted upstream baseline ID, not a
+new Hafiye regression. The upstream bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Start P5 — Providers + Gemini + remote OpenAI-compatible — using Secret
-   Service-backed credentials and the existing Hafiye local runtime boundary.
-2. Read the P5 acceptance criteria and current Hermes provider/secret
-   implementations before editing source; preserve the existing provider
-   resolution and credential lifecycle contracts.
+1. Configure `GEMINI_API_KEY` through the Hafiye Desktop/CLI Secret Service
+   path; do not place or send the key in chat or plaintext config.
+2. Run the real Gemini test connection and record its exact result.
+3. Re-run the P5 acceptance matrix and compare the full backend result using
+   the exact five-ID baseline rule. If live Gemini passes and no new failure
+   appears, mark P5 complete and begin P6.
 
 ## Environment changes
 
@@ -300,7 +358,10 @@ by the user in a visible terminal. No sudo, root, passwordless sudo, or NOPASSWD
 sudoers change was made. User-manager linger remains disabled. P1's XDG
 alignment and P0's real Ubuntu, GNOME Wayland, NVIDIA/CUDA,
 PipeWire/WirePlumber, Python, Node, Rust, systemd-user, AT-SPI, ydotool, and
-uinput observations remain in ENVIRONMENT.md.
+uinput observations remain in ENVIRONMENT.md. P5 added the Hafiye Linux Secret
+Service provider-credential path, `keyring==25.7.0`, provider/key UI wiring,
+and the remote OpenAI-compatible test boundary. No sudo, root, passwordless
+sudo, or NOPASSWD sudoers change was made during P5.
 
 ### P4 source validation
 
@@ -310,6 +371,19 @@ uinput observations remain in ENVIRONMENT.md.
   `127.0.0.1:11435`, and the current upstream `llama-server` CLI.
 - A rebuild stops the managed server before publishing the binary, avoiding
   Linux `ETXTBSY` when a live server maps the old executable.
-- The corrected final full backend suite completed with the exact four
-  accepted baseline failures plus the two isolated-passing async diagnostics;
-  no new or different Hafiye regression was found.
+- The corrected P4 closure suite was a historical baseline/diagnostic run; the
+  latest P5 comparison and exact current five-ID baseline are recorded above.
+  No new or different Hafiye regression was found.
+
+### P5 source validation
+
+- Provider credential boundary source commit:
+  `c771c95318516e03450720b5f009dce4017f8600`; shared tool/provider alias
+  classification fix: `15cbe1f6556addbaf694c36999e0c496730a1730`.
+- `keyring==25.7.0` is a core dependency. The real GNOME/Linux Secret Service
+  round-trip passed without recording secret values; config retained only
+  keyring references.
+- Local llama.cpp, remote OpenAI-compatible, provider parity, automated Gemini,
+  and Desktop provider tests pass as recorded above.
+- Live Gemini is intentionally pending because the host has no configured
+  credential; P5 is not complete and P6 has not started.

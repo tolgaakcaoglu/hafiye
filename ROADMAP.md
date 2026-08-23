@@ -145,3 +145,29 @@ llama.cpp checkout is separately pinned to source commit
 `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`. The real runtime, Desktop API,
 and corrected full backend regression checks pass under the documented
 baseline rule. P5 is now the next incomplete phase.
+
+## P5 execution status
+
+- [x] Reuse Hermes provider registry, resolution, fallback, native Gemini, and
+      credential lifecycle contracts.
+- [x] Add the Hafiye provider-secret boundary: provider-owned credentials use
+      Linux Secret Service and config stores only profile-scoped keyring
+      references; generic channel/tool `.env` compatibility remains intact.
+- [x] Verify provider-secret deletion, stale-reference cleanup, legacy raw
+      config migration, runtime hydration, and shared provider-alias edge cases.
+- [x] Verify the managed local llama.cpp OpenAI-compatible provider against the
+      real CUDA endpoint on the host.
+- [x] Verify a remote OpenAI-compatible provider through a real local HTTP test
+      server, including authenticated model validation, save, and chat.
+- [x] Expose provider/key/model/custom-endpoint behavior through the existing
+      Hafiye Desktop surface and pass its provider tests, typecheck, and build.
+- [x] Exercise Hermes Gemini registration/resolution and automated credential
+      paths without inventing a second provider implementation.
+- [ ] Configure a real Gemini credential and pass the live Gemini test
+      connection on the host.
+
+P5 remains incomplete because the live Gemini acceptance check has not run:
+the host has no `GEMINI_API_KEY` in Secret Service, `.env`, or process
+environment. Do not start P6 until that credential is configured, the live
+connection succeeds, the P5 matrix is rerun, and the full backend comparison
+shows no new or different failure beyond the exact accepted upstream baseline.

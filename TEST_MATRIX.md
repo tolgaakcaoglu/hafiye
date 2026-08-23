@@ -71,21 +71,31 @@ its result says so.
 | P4-REST-01 | Authenticated persistent gateway runtime API | `systemctl --user restart hafiye-gateway.service`; authenticated `GET /api/local-runtime` | `ok=true`, blockers empty, expected/selected backend `CUDA` | PASS |
 | P4-BE-01 | Corrected backend full regression comparison | `./scripts/run_tests.sh` with persistent Hafiye gateway and managed local model server stopped temporarily | 3,213 files; 37,009 passed, 6 failed, 291 skipped in 515.9s; exact four accepted upstream failures plus the two isolated-passing async diagnostics; one retry-only flake recorded separately | PASS WITH DOCUMENTED BASELINE/DIAGNOSTICS |
 
+| P5-PY-01 | Secret Service provider credential lifecycle | `./scripts/run_tests.sh tests/hermes_cli/test_hafiye_keyring.py tests/hermes_cli/test_p5_provider_paths.py tests/hermes_cli/test_credential_lifecycle.py tests/hermes_cli/test_prompt_api_key.py tests/hermes_cli/test_web_server.py tests/hermes_cli/test_runtime_provider_resolution.py tests/hermes_cli/test_model_switch_custom_providers.py tests/agent/test_credential_pool.py tests/hermes_cli/test_secret_source_bootstrap.py tests/secret_sources/test_secret_source_registry.py tests/secret_sources/test_profile_secrets.py tests/test_env_loader_secret_sources.py tests/hermes_cli/test_provider_parity.py tests/hermes_cli/test_gemini_provider.py tests/agent/test_gemini_native_adapter.py -q` | 15 files; 467 passed; 0 failed | PASS |
+| P5-PY-02 | Provider/tool credential storage boundary | `./scripts/run_tests.sh tests/hermes_cli/test_env_export_line_lifecycle.py tests/hermes_cli/test_set_config_value.py tests/hermes_cli/test_hafiye_keyring.py tests/hermes_cli/test_p5_provider_paths.py -q` | 4 files; 92 passed; 0 failed | PASS |
+| P5-REMOTE-01 | Real remote OpenAI-compatible provider path | `tests/hermes_cli/test_p5_provider_paths.py` with a local `ThreadingHTTPServer` | Authenticated `/v1/models` and chat passed; config contained no raw key; reply marker `P5_REMOTE_OK` | PASS |
+| P5-REAL-01 | Real host Linux Secret Service round-trip | Live keyring write/read/delete/remove probe; secret value omitted from output | All round-trip booleans true; config contained no secret value | PASS |
+| P5-LOCAL-01 | Real managed local provider endpoint | `GET /v1/models` and `POST /v1/chat/completions` against `127.0.0.1:11435`; runtime doctor | HTTP 200/non-empty model and reply; doctor `ok=true`, `blockers=[]`, selected backend `CUDA` | PASS |
+| P5-D-01 | Desktop provider/key/model/custom endpoint surface | `cd apps/desktop && npm run test` (provider-focused execution) | 79 files; 634 tests passed | PASS |
+| P5-D-02 | Desktop provider integration typecheck/build | `cd apps/desktop && npm run typecheck && npm run build` | Typecheck and production build passed | PASS |
+| P5-GEMINI-REAL | Live Gemini test connection | Hafiye Desktop/CLI Secret Service credential entry, then real Gemini test | Not run: no `GEMINI_API_KEY` configured on host | BLOCKED BY ENVIRONMENT PREREQUISITE |
+| P5-BE-01 | Latest backend regression comparison | `./scripts/run_tests.sh` with persistent gateway and managed local model server stopped temporarily and restored by exit trap | 3,215 files; 37,137 passed, 5 failed, 244 skipped in 672.6s; exact original five accepted baseline IDs; turn-lease retry-only flake recorded | PASS WITH ACCEPTED BASELINE/DIAGNOSTIC |
+
 ## Current ACCEPTED_UPSTREAM_BASELINE
 
-The post-source run has this exact four-failure comparison set:
+The latest post-source run has this exact five-failure comparison set:
 
-1. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
-2. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
-3. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
-4. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
+1. tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip
+2. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
+3. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
+4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
+5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The original pre-source five included
-tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip.
-That test passes in the current full run and isolated checks, so it is
-historical baseline evidence rather than a current failure.
+The browser-control file passes in isolation (17 tests), but its full-suite
+failure remains the same accepted upstream ID rather than a new Hafiye
+regression.
 
-The same current four after future Hafiye changes are accepted. Fewer failures
+The same current five after future Hafiye changes are accepted. Fewer failures
 update the baseline. Any new or different failure is a regression to
 investigate. The upstream baseline bugs are not fixed by Hafiye P0/P1.
 

@@ -53,6 +53,7 @@ Captured on `2026-08-23T23:28:36+03:00` in `/home/tolga/projects/hafiye`.
 | Tool | Version / status |
 |---|---|
 | System Python | `3.14.4` (outside upstream constraint) |
+| Repository Python selector | `.python-version` is `3.11` (upstream convention) |
 | Hermes Python | CPython `3.13.15` in `.venv` |
 | uv | `0.12.5` at `/home/tolga/.local/bin/uv` |
 | Node | `v22.22.1` |
@@ -70,6 +71,12 @@ Captured on `2026-08-23T23:28:36+03:00` in `/home/tolga/projects/hafiye`.
 | ffmpeg | `8.0.1` |
 | jq | `1.8.1` |
 | Rust / Cargo | Rustup stable, Cargo/Rustc `1.98.0` at `/home/tolga/.cargo/bin`; user-space PATH reload may be needed |
+
+The repository's `.python-version` remains the upstream `3.11` selector, but
+the active `.venv` is explicitly created/synchronized with `uv ... --python
+3.13` because this host's supported Hermes baseline is CPython 3.13 and the
+system Python 3.14 is outside the declared `<3.14` range. The active venv
+contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 
 ## systemd user session
 
@@ -103,6 +110,22 @@ Captured on `2026-08-23T23:28:36+03:00` in `/home/tolga/projects/hafiye`.
 - After P0, the user installed `nvidia-cuda-toolkit`, `libvulkan-dev`, and
   `pkg-config` through a normal visible terminal. No sudoers policy was
   changed. `nvcc --version` reports CUDA 12.4.131.
+
+## P5 provider credential and optional dependency validation
+
+- The real Linux/GNOME Secret Service backend is available through `keyring
+  25.7.0`. A live round-trip wrote, read, deleted, and removed a provider
+  secret reference without recording the secret value; Hafiye config contained
+  no raw provider secret.
+- No `GEMINI_API_KEY` is configured in the Secret Service, `.env`, or process
+  environment. Automated Gemini provider tests pass, but a live Gemini test
+  connection remains intentionally unrun.
+- `uv sync --locked --all-extras --no-extra wake --no-extra matrix --python
+  3.13` completed with the relevant optional SDKs. The `wake` exclusion is
+  required because `tflite-runtime==2.14.0` has no compatible CPython 3.13
+  wheel; `matrix` is excluded because `python-olm==3.2.16` fails against the
+  current CMake toolchain's legacy minimum-version requirement. These are
+  upstream optional packaging/toolchain warnings, not P5 blockers.
 
 ## P1 path and build validation
 

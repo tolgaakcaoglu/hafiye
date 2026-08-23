@@ -3,7 +3,7 @@
 These are measured issues and accepted baseline findings. They are not
 silently treated as passing.
 
-## KI-001 — ACCEPTED_UPSTREAM_BASELINE: reduced from five to four failures
+## KI-001 — ACCEPTED_UPSTREAM_BASELINE: exact five upstream failures
 
 - Status: ACCEPTED_UPSTREAM_BASELINE; not a Hafiye P0 blocker.
 - The lean pre-change run completed 3,210 files with 36,814 passed, 80 failed,
@@ -16,17 +16,17 @@ silently treated as passing.
   3. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
   4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
   5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
-- The corrected current post-source run completed 3,213 files with 37,009
-  passed, 6 failed, and 291 skipped in 515.9 seconds. The browser-control
-  failure now passes.
-- Therefore the current exact regression comparison set is:
-  1. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
-  2. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
-  3. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
-  4. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
-- The original five are historical evidence; the measured smaller set is the
-  updated baseline under the binding regression rule.
-- The same current four failures are not new Hafiye regressions. A further
+- A later corrected post-source run temporarily measured 3,213 files with
+  37,009 passed, 6 failed, and 291 skipped; the browser-control baseline test
+  passed in that run.
+- The latest post-source full parallel run measured 3,215 files with 37,137
+  passed, 5 failed, and 244 skipped in 672.6 seconds. Its exact five failures
+  are the original five listed above, so the baseline is currently the exact
+  original five again.
+- `tests/gateway/test_browser_control_api.py` passed in an isolated 17-test
+  run. Its full-suite failure is still the same accepted upstream ID, not a
+  new Hafiye regression.
+- The same exact five after future Hafiye changes are not new regressions. A
   reduction updates the baseline; any new or different failure must be
   investigated. Hafiye does not fix these upstream bugs.
 
@@ -103,16 +103,17 @@ silently treated as passing.
   1. tests/gateway/test_browser_control_api.py::test_real_browser_action_routes_through_controller_without_legacy_fallback
   2. tests/gateway/test_turn_lease.py::test_full_dispatch_rejects_lease_timeout_without_running_goal_hook
 - Both tests passed when run in isolation, including repeated isolated checks.
-- The exact current four accepted baseline failures remain KI-001. These two
+- The exact current five accepted baseline failures remain KI-001. These two
   tests require investigation if they reproduce outside the full-suite
   scheduling context or appear after later Hafiye changes.
 
-## KI-015 — One full-suite timing flake passed on retry
+## KI-015 — Full-suite timing flake passed on retry
 
 - Status: DIAGNOSTIC; no confirmed Hafiye regression.
-- `tests/tools/test_zombie_process_cleanup.py` failed once during the corrected
-  full run, then passed on the runner's retry. The final suite summary counts
-  it as passed; it is retained here because the runner reported it as flaky.
+- `tests/gateway/test_turn_lease.py::test_full_dispatch_rejects_lease_timeout_without_running_goal_hook`
+  failed once during the latest full parallel run, then passed on the runner's
+  retry and in an isolated 12-test run. It is retained here because the runner
+  reported it as flaky.
 - Re-run this file in isolation if it fails again or if the failure persists
   after later Hafiye changes.
 
@@ -193,3 +194,26 @@ silently treated as passing.
 - Production model entries must advertise a context window compatible with the
   requested Hafiye agent configuration. This is a model-selection/configuration
   concern, not a reason to weaken the managed runtime contract.
+
+## KI-017 — P5 live Gemini credential is not configured
+
+- Status: P5 acceptance pending; environment prerequisite, not a provider-code
+  failure.
+- No `GEMINI_API_KEY` is present in the Hafiye Secret Service, the active
+  `.env`, or the process environment. Automated Hermes Gemini registration,
+  resolution, provider parity, and credential lifecycle tests pass.
+- No live Gemini request has been made and no Gemini success is claimed.
+  Configure the credential through the Hafiye Desktop/CLI Secret Service path,
+  then run the real test connection and update P5 acceptance records.
+
+## KI-018 — Optional extras are not fully installable on CPython 3.13
+
+- Status: UPSTREAM OPTIONAL-PACKAGING/TOOLCHAIN WARNING; not a P5 blocker.
+- `uv sync --locked --all-extras --python 3.13` cannot install
+  `tflite-runtime==2.14.0`, which publishes only a CPython 3.11-compatible
+  wheel for this environment. Excluding `wake` succeeds.
+- The `matrix` extra remains excluded because `python-olm==3.2.16` fails with
+  the current CMake toolchain's legacy minimum-version requirement. The
+  relevant P5 and full backend tests run with all other optional extras
+  installed; these two upstream optional packaging issues are recorded rather
+  than substituted around.

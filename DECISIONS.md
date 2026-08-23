@@ -109,3 +109,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   does not hit `ETXTBSY` and no hidden model reload occurs. The managed source
   pin `c060ca974c773c7c3d17fd1b66dc9d312bc292c0` is separate from the pinned
   Hermes commit.
+
+## ADR-0010 — Store provider credentials in Linux Secret Service
+
+- Date: 2026-08-24
+- Decision: Provider-owned credentials are canonical in the Linux Secret
+  Service. Hafiye config may store only profile-scoped `keyring://` references;
+  the raw value is hydrated into the process only when provider resolution or a
+  connection test needs it. Generic channel/tool credentials retain Hermes'
+  existing `.env` compatibility path.
+- Reason: P5 requires Secret Service storage and forbids normal plaintext API
+  keys in YAML/JSON while preserving the existing Hermes provider and secret
+  source contracts. Shared aliases such as `GITHUB_TOKEN` must remain owned by
+  their non-provider tool surface rather than being reclassified by a provider
+  fallback alias.
+- Consequence: Legacy raw provider config and `.env` values are migrated or
+  removed through the credential lifecycle, stale keyring references are
+  cleaned on deletion, and no second provider-resolution system is introduced.
+  This is an implementation detail and does not override the master roadmap.
