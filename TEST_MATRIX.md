@@ -15,8 +15,10 @@ Results below are from the unmodified Hermes baseline plus real environment diag
 | P0-BE-06 | Hermes backend full suite, relevant optional SDKs installed | `./scripts/run_tests.sh` after installing `anthropic`, `fal-client`, `hindsight-client`, `daytona`, `modal`, and `parallel-web` into `.venv` | 3,210 files; 36,903 passed; 5 failed; 320 skipped; exit 1; exact five test IDs below | ACCEPTED_UPSTREAM_BASELINE |
 | P0-CU-01 | Historical released-package doctor | released npm `@agent-sh/computer-use-linux@0.4.9` `doctor` | Exit 0, but readiness blockers were reported; report saved under `docs/p0` | HISTORICAL DIAGNOSTIC |
 | P0-CU-02 | Pinned source release asset | source package `0.4.10` installer | Expected x86_64 release asset returned HTTP 404 | WARNING; NOT FINAL PATH |
-| P0-CU-03 | Pinned source official setup | `cd /tmp/hafiye-computer-use-linux.djXfCX/repo && ./install.sh --package-manager apt` | System dependencies, Rustup/Cargo 1.98.0, source build, AT-SPI, ydotool/ydotoold packages, and GNOME extension installation completed with normal interactive sudo | PASS WITH RELOGIN |
-| P0-CU-04 | Pinned source post-setup doctor before relogin | `~/.local/bin/computer-use-linux doctor | jq '{readiness: .readiness, accessibility: .accessibility, windowing: .windowing, input: .input}'` | `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`, `can_send_development_input=true`; `can_query_windows=false`; one window-introspection blocker | BLOCKED — RELOGIN REQUIRED |
+| P0-CU-03 | Pinned source official setup | `cd /home/tolga/.cache/hafiye/computer-use-linux && ./install.sh --skip-system-deps --skip-gnome-extension` | Pinned source rebuilt from commit `94736dc3e0dca56acfc89752c26869fb9ed01202`; AT-SPI, source binaries, ydotoold setup, and installer doctor completed | PASS |
+| P0-CU-04 | Pinned source final doctor | `~/.local/bin/computer-use-linux doctor | jq '{readiness: .readiness, accessibility: .accessibility, windowing: .windowing, input: .input}'` | `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`, `can_send_development_input=true`, `can_query_windows=true`; `blockers=[]` | PASS |
+| P0-CU-05 | User input service | `systemctl --user status ydotool.service`; `systemctl --user is-enabled ydotool.service`; `stat /dev/uinput`; process inspection | Packaged non-root user unit active/enabled; `/dev/uinput` is `root:input 0660`; socket is connectable; no root ydotoold process remains | PASS |
+| P0-CU-06 | Real window query | `~/.local/bin/computer-use-linux windows` | Focused ChatGPT window returned via `gnome-shell-extension` backend | PASS |
 | P0-ENV-01 | User systemd session | `systemctl --user is-system-running` | `running` | PASS |
 | P0-ENV-02 | Vulkan CLI probe | `vulkaninfo` | Command unavailable; Vulkan loader/ICDs are present and Vulkan is a fallback backend | WARNING / DIAGNOSTIC |
 | P0-ENV-03 | Rust source build prerequisite | `~/.cargo/bin/cargo --version` | `cargo 1.98.0`; user-space toolchain installed by the pinned source installer | PASS |
@@ -35,11 +37,11 @@ This exact set is the future regression baseline. The same set after Hafiye sour
 
 ## P0 computer-use acceptance
 
-P0 is not marked complete yet. The final pinned-source doctor must report all of these as true:
+The final pinned-source doctor reports all of these as true:
 
 - `can_register_mcp_tools`
 - `can_build_accessibility_tree`
 - `can_send_development_input`
 - `can_query_windows`
 
-It must also report `blockers: []`. Until that real post-setup command passes, KI-004 remains the only P0 blocker.
+It also reports `blockers: []`. P0 computer-use acceptance passed on the real Ubuntu GNOME Wayland desktop.

@@ -1,0 +1,32 @@
+{
+  "capture": "2026-08-23",
+  "source_commit": "94736dc3e0dca56acfc89752c26869fb9ed01202",
+  "source_checkout": "/home/tolga/.cache/hafiye/computer-use-linux",
+  "binary": "/home/tolga/.local/bin/computer-use-linux",
+  "binary_sha256": "c16f90731a8470284c3ea76436ca528aeff855c17660ece41fe974659b47aa24",
+  "readiness": {
+    "can_register_mcp_tools": true,
+    "can_build_accessibility_tree": true,
+    "can_send_development_input": true,
+    "can_query_windows": true,
+    "blockers": []
+  },
+  "accessibility": {
+    "toolkit_accessibility": true,
+    "at_spi_enabled": true
+  },
+  "windowing": {
+    "backend": "gnome-shell-extension",
+    "can_list_windows": true,
+    "can_focus_windows": true
+  },
+  "input": {
+    "ydotool": true,
+    "ydotoold": true,
+    "ydotool_socket": true,
+    "uinput_read_write": true,
+    "systemd_user_unit": "ydotool.service",
+    "systemd_user_unit_active": true,
+    "root_ydotoold_process": false
+  }
+}

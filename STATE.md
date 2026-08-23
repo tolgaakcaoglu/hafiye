@@ -9,13 +9,13 @@ Last updated: 2026-08-23
 - `upstream`: `https://github.com/NousResearch/hermes-agent.git`
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`
-- Current Hafiye HEAD at this state capture: `80ba038475eedf8effb32590896237bfebe3ad7b`
+- Current Hafiye HEAD at this state capture: `c9680134fade1e91cb07ef24e3c460216be1a3f8`
 
 The baseline merge preserves both the original Hafiye documentation history and the Hermes upstream history. The current repository instructions combine the Hafiye binding instructions with the preserved upstream Hermes development guide.
 
 ## Current phase
 
-P0 — Fork, pin, verify environment. P0 remains open only for the real `computer-use-linux` readiness acceptance. The upstream Hermes five-failure set is an accepted baseline and is not a P0 blocker.
+P0 — Fork, pin, verify environment: complete. The upstream Hermes five-failure set is an accepted baseline and is not a P0 blocker. P1 — Hafiye external identity and data root is the next phase.
 
 ## Verified working
 
@@ -32,8 +32,10 @@ P0 — Fork, pin, verify environment. P0 remains open only for the real `compute
 - NVIDIA RTX 3080 and driver `595.84` are present; the amended compute policy expects CUDA as this host's primary backend, with Vulkan and CPU fallback.
 - The pinned source installer completed its system-dependency, Rust, source-build, and AT-SPI steps. Rust/Cargo 1.98.0 is available at `/home/tolga/.cargo/bin`.
 - `/home/tolga/.local/bin/computer-use-linux` and its COSMIC helper are source-built from commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
-- `computer-use-linux setup-window-targeting` wrote the GNOME extension and enabled it for the next GNOME Shell load.
-- `ydotool`/`ydotoold` and the `root:input 0660` `/dev/uinput` device are installed/configured. The current session has not reloaded the new `input` group membership yet.
+- `computer-use-linux setup-window-targeting` wrote and enabled the GNOME extension; after relogin the extension lists windows through the GNOME Shell backend.
+- `ydotool`/`ydotoold`, the active `ydotool.service` user unit, and the `root:input 0660` `/dev/uinput` device are verified. The duplicate generated `ydotoold.service` and the unrelated root user ydotoold instance were disabled/removed; only the tolga user daemon remains.
+- Final pinned-source doctor reports all required readiness booleans true and `blockers=[]`.
+- Real `computer-use-linux windows` query returns the focused ChatGPT window through the GNOME extension backend.
 - No Hafiye runtime, Desktop, gateway, provider, or product source changes have been made.
 
 ## ACCEPTED_UPSTREAM_BASELINE
@@ -50,22 +52,21 @@ After Hafiye source changes, the same five failures are not new regressions. If 
 
 ## In progress
 
-- Post-setup source doctor now reports `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`, and `can_send_development_input=true`. Only `can_query_windows=false` remains.
-- The GNOME extension files are installed, but the current GNOME Shell has not reloaded them. The input group membership is also not present in this pre-relogin process.
-- Source checkout: `/tmp/hafiye-computer-use-linux.djXfCX/repo`, commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
-- The released npm `0.4.9` binary is historical diagnostic evidence only; it is not the final setup path.
+- P0 acceptance evidence and closure documentation are being committed.
+- P1 external identity and data-root implementation has not yet changed source; it is the exact next work.
+- Persistent source checkout: `/home/tolga/.cache/hafiye/computer-use-linux`, commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
+- The released npm `0.4.9` binary remains historical diagnostic evidence only; it is not the final setup path.
 
 ## Active blocker
 
-The official source setup is complete, but the post-setup doctor in the old GNOME session still has `can_query_windows=false` and one window-introspection blocker. `setup-window-targeting` explicitly requires a GNOME Shell reload, and the new `input` group membership requires a new login. P0 cannot close until the doctor is rerun after logout/login and reports all four required booleans true with `blockers=[]`.
+No active P0 blocker remains. The final post-relogin source doctor reports `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`, `can_send_development_input=true`, `can_query_windows=true`, and `blockers=[]`. The packaged `ydotool.service` is enabled/active; the duplicate generated unit was removed after its socket collision was observed.
 
 `pactl` absence and `vulkaninfo` absence are recorded warnings/diagnostics, not P0 blockers. PipeWire/WirePlumber plus `wpctl` is accepted for audio enumeration, and Vulkan is a fallback rather than this host's primary compute backend.
 
 ## Known regressions
 
-- No Hafiye source regression has been introduced; only repository instructions and P0 evidence documents have changed so far.
 - The accepted five-failure set above is not attributed to Hafiye.
-- The current process still cannot access `/dev/uinput` because group membership is pending relogin; this is an active setup finding, not permission hardening work.
+- No Hafiye source regression has been introduced; the only tracked changes are repository instructions, P0 evidence, and P0 closure documentation.
 
 ## Last tests and commands
 
@@ -87,13 +88,15 @@ The official source setup is complete, but the post-setup doctor in the old GNOM
 ### Readiness
 
 - Historical diagnostic: `node /tmp/hafiye-computer-use-linux-npm/node_modules/@agent-sh/computer-use-linux/npm/bin/computer-use-linux.js doctor` — exit 0 with blockers; saved in `docs/p0/computer-use-linux-doctor-report.json`.
-- Pinned-source post-setup diagnostic: `~/.local/bin/computer-use-linux doctor | jq '{readiness: .readiness, accessibility: .accessibility, windowing: .windowing, input: .input}'` — accessibility tree true, query windows false, one blocker; saved in `docs/p0/computer-use-linux-source-setup-doctor-report.json`.
+- Pinned-source pre-relogin diagnostic: `~/.local/bin/computer-use-linux doctor | jq '{readiness: .readiness, accessibility: .accessibility, windowing: .windowing, input: .input}'` — accessibility tree true, query windows false, one blocker; saved in `docs/p0/computer-use-linux-source-setup-doctor-report.json`.
+- Pinned-source final acceptance: the same doctor filter — all four required booleans true, `blockers=[]`; saved in `docs/p0/computer-use-linux-final-doctor-report.json`.
+- Real window query: `~/.local/bin/computer-use-linux windows` — focused ChatGPT window returned via `gnome-shell-extension`.
+- User service: `systemctl --user status ydotool.service` — active; `systemctl --user is-enabled ydotool.service` — enabled; process inspection confirms only the tolga ydotoold daemon remains.
 
 ## Exact next actions
 
-1. Log out of the GNOME session and log back in once so the GNOME extension and `input` group membership are loaded.
-2. Rerun the source-built doctor and record all required readiness fields plus the empty blockers array.
-3. If and only if the readiness acceptance is green, mark P0 complete with a clean completion commit and begin P1 external identity/data root work.
+1. Commit the P0 closure evidence as a clean completion commit.
+2. Begin P1 external identity and data-root work from the first incomplete roadmap task; do not reopen architecture decisions.
 
 ## Environment changes
 
@@ -101,7 +104,8 @@ The official source setup is complete, but the post-setup doctor in the old GNOM
 - Installed CPython `3.13.15` through uv and created repository `.venv`.
 - Installed upstream Python dependencies and optional provider SDKs only in `.venv`; no dependency manifest or lockfile was changed.
 - Installed root Node dependencies for the upstream Desktop baseline; the upstream lockfile was restored after verification.
-- Ran the pinned source checkout's official `./install.sh --package-manager apt` with normal interactive sudo.
+- Ran the pinned source checkout's official `./install.sh --package-manager apt` with normal interactive sudo, then reran its idempotent build/setup path from the persistent checkout after relogin.
 - Installed Rustup stable 1.98.0, built the two source binaries, and installed them under `/home/tolga/.local/bin`.
-- Enabled GNOME toolkit accessibility, installed `ydotool`, and installed/enabled the CUA GNOME extension for the next shell load.
-- Added `tolga` to the `input` group. The current process requires relogin before that membership is active.
+- Enabled GNOME toolkit accessibility, installed `ydotool`, and installed/enabled the CUA GNOME extension; relogin was completed.
+- Added `tolga` to the `input` group and verified `root:input 0660` `/dev/uinput` access in the new session.
+- Kept Ubuntu's packaged `ydotool.service` as the canonical active user service after removing the duplicate generated `ydotoold.service` socket collision and the root user ydotoold instance.

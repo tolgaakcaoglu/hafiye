@@ -9,7 +9,7 @@
 
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`
-- Current Hafiye HEAD at the last state capture: `80ba038475eedf8effb32590896237bfebe3ad7b`
+- Current Hafiye HEAD at the last state capture: `c9680134fade1e91cb07ef24e3c460216be1a3f8`
 
 The pinned commit is the Hermes code baseline. The baseline merge commit is the Hafiye history-preserving merge. The current Hafiye HEAD is a separate repository commit and must not be confused with either upstream SHA.
 
@@ -59,14 +59,16 @@ After Hafiye source changes, the same five failures are not regressions. A small
 
 - Repository: `https://github.com/agent-sh/computer-use-linux`
 - Pinned source commit: `94736dc3e0dca56acfc89752c26869fb9ed01202`
-- Source checkout used for setup: `/tmp/hafiye-computer-use-linux.djXfCX/repo`
+- Source checkout used for final setup: `/home/tolga/.cache/hafiye/computer-use-linux`
 - Source package version: `0.4.10`
 - Official final P0 setup path: run the pinned checkout's `./install.sh`, allowing its official system-dependency, Rust, build, AT-SPI, ydotoold, and GNOME extension steps. Then run the source-installed `computer-use-linux doctor`.
 - Official setup commands available from this checkout include `computer-use-linux setup` and `computer-use-linux setup-window-targeting` where the installer or doctor requires them.
-- Setup result so far: `./install.sh --package-manager apt` installed the required Debian packages, Rustup stable/Cargo 1.98.0, source-built binaries, AT-SPI configuration, ydotool/ydotoold, and the GNOME window-targeting extension. `setup-window-targeting` reports `requires_shell_reload=true`.
-- `sudo usermod -aG input tolga` was completed; `/dev/uinput` is `root:input 0660`. The current session must be replaced before the input group and ydotoold user service can be verified.
+- Setup result: `./install.sh --package-manager apt` installed the required Debian packages, Rustup stable/Cargo 1.98.0, source-built binaries, AT-SPI configuration, ydotool/ydotoold, and the GNOME window-targeting extension. After relogin, the persistent checkout reran `./install.sh --skip-system-deps --skip-gnome-extension`; source build, AT-SPI, user-service setup, and doctor all passed.
+- `sudo usermod -aG input tolga` was completed; `/dev/uinput` is `root:input 0660` and read/write access is verified in the new session.
+- Ubuntu's packaged `/usr/lib/systemd/user/ydotool.service` was already active and owns the ydotool socket. The source installer generated a duplicate `ydotoold.service` that collided with the same socket; it was disabled/removed, leaving the packaged user unit enabled and active. A separate root user-manager ydotoold instance was also disabled so input is handled only by the logged-in user daemon.
 - The source's expected `0.4.10` GitHub release asset returned HTTP 404. Released npm `0.4.9` was used only for the historical diagnostic and is not the final setup path.
 - Historical normalized doctor output is saved at `docs/p0/computer-use-linux-doctor-report.json`; the pinned-source post-setup pre-relogin report is saved at `docs/p0/computer-use-linux-source-setup-doctor-report.json`.
+- Final pinned-source doctor output is saved at `docs/p0/computer-use-linux-final-doctor-report.json`; all required readiness booleans are true and `blockers=[]`. A real `computer-use-linux windows` query returned the focused ChatGPT window through `gnome-shell-extension`.
 
 P0 computer-use acceptance requires:
 

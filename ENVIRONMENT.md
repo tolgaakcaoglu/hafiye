@@ -78,12 +78,12 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 
 - Source repository: `agent-sh/computer-use-linux`.
 - Pinned source commit: `94736dc3e0dca56acfc89752c26869fb9ed01202`.
-- Checkout: `/tmp/hafiye-computer-use-linux.djXfCX/repo`.
+- Checkout: `/home/tolga/.cache/hafiye/computer-use-linux`.
 - The released npm `0.4.9` doctor result is historical evidence only. The final P0 setup uses the pinned source checkout's official `./install.sh` flow.
-- Official source setup completed system dependencies, Rust/Cargo, source build, AT-SPI, ydotool/ydotoold packages, and GNOME extension installation. `setup-window-targeting` requires a GNOME Shell reload.
-- Current post-setup/pre-relogin doctor: MCP registration true; AT-SPI/toolkit accessibility true; accessibility tree true; `can_send_development_input=true`; GNOME window introspection/extension service unavailable; `can_query_windows=false`; one blocker.
-- `/dev/uinput` is `root:input 0660`. `tolga` was added to the `input` group, but the active session has not reloaded that membership; ydotoold user-service verification is pending.
-- Final acceptance requires all four booleans true and `blockers=[]` after source setup.
+- Official source setup completed system dependencies, Rust/Cargo, source build, AT-SPI, ydotool/ydotoold packages, and GNOME extension installation. After relogin, the extension is serving the window-control DBus API.
+- Final source doctor: all four mandated readiness booleans are true, `blockers=[]`, AT-SPI/toolkit accessibility is true, the GNOME extension backend can list/focus windows, and ydotool/uinput input is read/write-ready.
+- `/dev/uinput` is `root:input 0660`; `tolga` is in the `input` group in the current session.
+- Ubuntu's packaged `ydotool.service` is enabled and active for `tolga`; the duplicate generated `ydotoold.service` was removed after its same-socket collision, and the root user-manager ydotoold instance was disabled.
 
 ## Environment changes made during P0
 
@@ -91,7 +91,8 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 - Created `.venv` and installed upstream Python development dependencies plus optional SDKs.
 - Installed root Node dependencies for the upstream Desktop build; no product lockfile change was retained.
 - Ran the pinned CUA source checkout's official installer and built/installed `/home/tolga/.local/bin/computer-use-linux`.
-- Ran `computer-use-linux setup-window-targeting`; extension files are installed and queued for the next GNOME Shell load.
-- Added `tolga` to the `input` group using normal interactive sudo. Logout/login is required before the current session sees it.
+- Ran `computer-use-linux setup-window-targeting`; extension files are installed and active after relogin.
+- Added `tolga` to the `input` group using normal interactive sudo, then verified the new session has `/dev/uinput` read/write access.
+- Verified `systemctl --user status ydotool.service` as active/enabled; removed the duplicate generated unit and disabled the root user-manager daemon so only the non-root user service remains.
 - No passwordless sudo or `NOPASSWD` sudoers rule was created.
 - `pactl` and `vulkaninfo` remain absent as diagnostic warnings; `wpctl` and the Vulkan loader/ICDs are present.

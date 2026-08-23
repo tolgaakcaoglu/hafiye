@@ -2,7 +2,7 @@
 
 The authoritative phase definitions are in `HAFIYE_MASTER_ROADMAP.md`. This file records execution status only.
 
-- [ ] P0 Fork + environment
+- [x] P0 Fork + environment
 - [ ] P1 Hafiye external identity and data root
 - [ ] P2 Persistent gateway + Desktop connection
 - [ ] P3 Hafiye Composer + tray + autostart
@@ -38,7 +38,7 @@ The authoritative phase definitions are in `HAFIYE_MASTER_ROADMAP.md`. This file
 - [x] Re-run the unmodified backend suite after installing relevant optional test SDKs.
 - [x] Build and test the unmodified Hermes Desktop baseline.
 - [x] Run and record the historical real `computer-use-linux doctor` diagnostic.
-- [ ] Complete the pinned-source official setup and pass the final doctor readiness acceptance.
-- [ ] P0 acceptance: the five Hermes failures are recorded as `ACCEPTED_UPSTREAM_BASELINE`, no new/different Hafiye regression exists, and the pinned-source computer-use-linux doctor reports all required capabilities true with `blockers=[]`.
+- [x] Complete the pinned-source official setup and pass the final doctor readiness acceptance.
+- [x] P0 acceptance: the five Hermes failures are recorded as `ACCEPTED_UPSTREAM_BASELINE`, no new/different Hafiye regression exists, and the pinned-source computer-use-linux doctor reports all required capabilities true with `blockers=[]`.
 
-P0 remains open only for computer-use-linux readiness. The accepted Hermes baseline failures, missing `pactl`, and missing `vulkaninfo` are not P0 blockers. No P1 work has started.
+P0 is complete. The accepted Hermes baseline failures, missing `pactl`, and missing `vulkaninfo` are not blockers. P1 is the next phase.
