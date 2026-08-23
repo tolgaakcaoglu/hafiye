@@ -73,6 +73,20 @@ def _providers_for_env_var(env_var: str) -> List[str]:
 
 def _is_hafiye_provider_secret(env_var: str) -> bool:
     """Return True for provider credentials owned by Hafiye's keyring path."""
+    # Some Hermes provider registries list shared aliases that are owned by a
+    # different product surface.  ``GITHUB_TOKEN`` is the canonical example:
+    # it is a Skills Hub/tool credential even though Copilot accepts it as a
+    # fallback alias.  Respect the authoritative env metadata before looking
+    # at the provider registry so the shared tool value remains on the
+    # upstream .env path.
+    try:
+        from hermes_cli.config_defaults import OPTIONAL_ENV_VARS
+
+        info = OPTIONAL_ENV_VARS.get(env_var)
+        if info and info.get("category") and info.get("category") != "provider":
+            return False
+    except Exception:
+        pass
     if env_var == "AWS_BEARER_TOKEN_BEDROCK":
         return True
     if env_var.startswith("HERMES_CUSTOM_") and env_var.endswith("_API_KEY"):

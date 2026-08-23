@@ -1,4 +1,4 @@
-"""Tests for set_config_value — verifying secrets route to .env and config to config.yaml."""
+"""Tests for set_config_value and Hafiye's credential storage boundaries."""
 
 import argparse
 import json
@@ -12,6 +12,7 @@ from hermes_cli.config import (
     cron_model_drift_guard_enabled,
     set_config_value,
 )
+from hermes_cli import hafiye_keyring
 
 
 @pytest.fixture(autouse=True)
@@ -39,27 +40,39 @@ def _read_config(tmp_path):
 class TestExplicitAllowlist:
     """Keys in the hardcoded allowlist should always go to .env."""
 
-    @pytest.mark.parametrize("key", [
-        "OPENROUTER_API_KEY",
-        "OPENAI_API_KEY",
-        "ANTHROPIC_API_KEY",
-        "HONCHO_API_KEY",
-        "FIRECRAWL_API_KEY",
-        "BROWSERBASE_API_KEY",
-        "FAL_KEY",
-        "SUDO_PASSWORD",
-        "GITHUB_TOKEN",
-        "TELEGRAM_BOT_TOKEN",
-        "DISCORD_BOT_TOKEN",
-        "SLACK_BOT_TOKEN",
-        "SLACK_APP_TOKEN",
-    ])
-    def test_explicit_key_routes_to_env(self, key, _isolated_hermes_home):
+    @pytest.mark.parametrize(
+        ("key", "stored_in_keyring"),
+        [
+            ("OPENROUTER_API_KEY", False),
+            ("OPENAI_API_KEY", True),
+            ("ANTHROPIC_API_KEY", True),
+            ("HONCHO_API_KEY", False),
+            ("FIRECRAWL_API_KEY", False),
+            ("BROWSERBASE_API_KEY", False),
+            ("FAL_KEY", False),
+            ("SUDO_PASSWORD", False),
+            ("GITHUB_TOKEN", False),
+            ("TELEGRAM_BOT_TOKEN", False),
+            ("DISCORD_BOT_TOKEN", False),
+            ("SLACK_BOT_TOKEN", False),
+            ("SLACK_APP_TOKEN", False),
+        ],
+    )
+    def test_explicit_key_routes_to_expected_secret_store(
+        self, key, stored_in_keyring, _isolated_hermes_home
+    ):
         set_config_value(key, "test-value-123")
         env_content = _read_env(_isolated_hermes_home)
-        assert f"{key}=test-value-123" in env_content
-        # Must NOT appear in config.yaml
-        assert key not in _read_config(_isolated_hermes_home)
+        config_content = _read_config(_isolated_hermes_home)
+        if stored_in_keyring:
+            ref = hafiye_keyring.secret_ref_for_env(key, _isolated_hermes_home)
+            assert env_content == ""
+            assert ref in config_content
+            assert "test-value-123" not in config_content
+        else:
+            assert f"{key}=test-value-123" in env_content
+            # Must NOT appear in config.yaml
+            assert key not in config_content
 
 
 # ---------------------------------------------------------------------------
