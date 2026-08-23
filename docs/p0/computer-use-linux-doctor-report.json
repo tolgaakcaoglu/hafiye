@@ -1,0 +1,80 @@
+{
+  "captured_at": "2026-08-23T17:29:15+03:00",
+  "source": {
+    "repository": "https://github.com/agent-sh/computer-use-linux",
+    "source_commit_inspected": "94736dc3e0dca56acfc89752c26869fb9ed01202",
+    "diagnostic_package": "@agent-sh/computer-use-linux@0.4.9",
+    "command": "computer-use-linux doctor",
+    "note": "The inspected source advertises 0.4.10, but its matching GitHub release asset returned HTTP 404; the released 0.4.9 package was used for this diagnostic."
+  },
+  "platform": {
+    "os": "linux",
+    "arch": "x86_64",
+    "desktop_session": "ubuntu",
+    "xdg_session_type": "wayland",
+    "xdg_current_desktop": "ubuntu:GNOME",
+    "wayland_display": "wayland-0",
+    "display": ":0",
+    "gnome_shell_version": "GNOME Shell 50.1",
+    "gnome_screenshot": false
+  },
+  "portals": {
+    "desktop_portal": true,
+    "remote_desktop": true,
+    "screencast": true,
+    "screenshot": true,
+    "input_capture": true,
+    "mutter_remote_desktop": true,
+    "mutter_screencast": true
+  },
+  "accessibility": {
+    "at_spi_bus": true,
+    "toolkit_accessibility": false,
+    "at_spi_enabled": false,
+    "screen_reader_enabled": false
+  },
+  "windowing": {
+    "gnome_shell_introspect": {
+      "ok": false,
+      "detail": "org.freedesktop.DBus.Error.AccessDenied: GetWindows is not allowed"
+    },
+    "gnome_shell_extension": {
+      "ok": false,
+      "detail": "org.freedesktop.DBus.Error.ServiceUnknown: dev.avifenesh.ComputerUseLinux.WindowControl"
+    },
+    "can_list_windows": false,
+    "can_focus_apps": true,
+    "can_focus_windows": false
+  },
+  "input": {
+    "ydotool": false,
+    "ydotoold": false,
+    "ydotool_socket": false,
+    "uinput": false,
+    "xdotool": false,
+    "portal_input": true
+  },
+  "readiness": {
+    "can_register_mcp_tools": true,
+    "can_build_accessibility_tree": false,
+    "can_query_windows": false,
+    "can_focus_apps": true,
+    "can_focus_windows": false,
+    "can_send_development_input": true,
+    "recommended_next_step": "Run setup_accessibility to enable AT-SPI accessibility before element-aware actions.",
+    "blockers": [
+      "AT-SPI accessibility is disabled; enable org.a11y.Status IsEnabled or org.gnome.desktop.interface toolkit-accessibility for tree extraction.",
+      "Window introspection is unavailable; targeted window focus and verification will be disabled."
+    ]
+  },
+  "capabilities": {
+    "input": ["portal"],
+    "screenshot": ["gnome_shell", "portal"],
+    "window_control": [],
+    "accessibility": ["at_spi"],
+    "isolation": ["shared", "headless_gnome"],
+    "preferred_input": "portal",
+    "preferred_screenshot": "gnome_shell",
+    "preferred_window_control": null
+  }
+}
