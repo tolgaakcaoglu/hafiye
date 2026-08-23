@@ -20,7 +20,6 @@ import os
 import platform
 import re
 import shutil
-import signal
 import stat
 import subprocess
 import tempfile
@@ -31,6 +30,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
+
+import psutil
 
 from hermes_constants import get_hafiye_data_home, get_hafiye_state_home
 
@@ -554,9 +555,7 @@ class LocalRuntimeManager:
             return False
         if pid <= 0:
             return False
-        try:
-            os.kill(pid, 0)
-        except (ProcessLookupError, PermissionError, OSError):
+        if not psutil.pid_exists(pid):
             return False
         marker = state.get("start_marker")
         return not marker or marker == _process_start_marker(pid)
@@ -684,16 +683,16 @@ class LocalRuntimeManager:
         if self._server_is_alive(state):
             pid = int(state["pid"])
             try:
-                os.kill(pid, signal.SIGTERM)
-            except ProcessLookupError:
+                psutil.Process(pid).terminate()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
             deadline = time.monotonic() + 15
             while time.monotonic() < deadline and self._server_is_alive(state):
                 time.sleep(0.25)
             if self._server_is_alive(state):
                 try:
-                    os.kill(pid, signal.SIGKILL)
-                except ProcessLookupError:
+                    psutil.Process(pid).kill()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
                     pass
         self._write_server_state({})
         return {"ok": True, "stopped": True}
