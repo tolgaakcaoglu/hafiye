@@ -307,8 +307,11 @@ directory:
 - Real remote OpenAI-compatible path — a local HTTP test server passed model
   validation, custom-endpoint save, authenticated chat, and no-raw-config
   assertions; reply marker was `P5_REMOTE_OK`.
-- `cd apps/desktop && npm run test` — 79 provider-related files, 634 tests
-  passed; `npm run typecheck && npm run build` passed.
+- `cd apps/desktop && npm run test` — 692 test files passed, 1 skipped;
+  7,156 tests passed, 3 skipped; exit 0. The run emitted only the known Vite,
+  npm, and optional canvas test-environment warnings.
+- `cd apps/desktop && npm run typecheck && npm run build` — typecheck and
+  production build passed.
 - Live Gemini connection — not run; no `GEMINI_API_KEY` is configured on this
   host. This remains the P5 acceptance blocker and is not counted as a pass.
 
