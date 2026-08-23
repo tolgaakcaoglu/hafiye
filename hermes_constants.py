@@ -50,13 +50,68 @@ def get_hermes_home_override() -> str | None:
     return str(override)
 
 
-def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+def _has_explicit_hermes_home() -> bool:
+    """Return whether the caller explicitly selected a Hermes home.
+
+    ``HERMES_HOME`` remains an internal compatibility and profile-scoping
+    mechanism.  When it is absent, Hafiye uses the four XDG-compatible roots
+    below; when it is present (or a context override is active), upstream's
+    single-root/profile semantics remain intact.
+    """
+    return bool(get_hermes_home_override() or os.environ.get("HERMES_HOME", "").strip())
+
+
+def _xdg_home(env_name: str, fallback: str) -> Path:
+    """Resolve an XDG base directory, accepting only absolute overrides."""
+    raw = os.environ.get(env_name, "").strip()
+    if raw:
+        candidate = Path(raw).expanduser()
+        if candidate.is_absolute():
+            return candidate
+    return Path.home() / fallback
+
+
+def _get_platform_default_hafiye_config_home() -> Path:
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA", "").strip()
+        base = Path(appdata) if appdata else Path.home() / "AppData" / "Roaming"
+        return base / "hafiye"
+    return _xdg_home("XDG_CONFIG_HOME", ".config") / "hafiye"
+
+
+def _get_platform_default_hafiye_data_home() -> Path:
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "hermes"
-    return Path.home() / ".hermes"
+        return base / "hafiye"
+    return _xdg_home("XDG_DATA_HOME", ".local/share") / "hafiye"
+
+
+def _get_platform_default_hafiye_state_home() -> Path:
+    if sys.platform == "win32":
+        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
+        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
+        return base / "hafiye" / "state"
+    return _xdg_home("XDG_STATE_HOME", ".local/state") / "hafiye"
+
+
+def _get_platform_default_hafiye_cache_home() -> Path:
+    if sys.platform == "win32":
+        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
+        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
+        return base / "hafiye" / "cache"
+    return _xdg_home("XDG_CACHE_HOME", ".cache") / "hafiye"
+
+
+def _get_platform_default_hermes_home() -> Path:
+    """Return the Hafiye data root used by legacy single-root callers.
+
+    The function keeps its upstream name because it is imported throughout
+    Hermes.  New code that needs a specific persistence class should use
+    :func:`get_hafiye_config_home`, :func:`get_hafiye_data_home`,
+    :func:`get_hafiye_state_home`, or :func:`get_hafiye_cache_home`.
+    """
+    return _get_platform_default_hafiye_data_home()
 
 
 def _hermes_home_from_env() -> Path:
@@ -168,6 +223,54 @@ def get_process_hermes_home() -> Path:
     provider config) — those should keep following the override.
     """
     return _hermes_home_from_env()
+
+
+def get_hafiye_config_home() -> Path:
+    """Return Hafiye's configuration root.
+
+    The explicit ``HERMES_HOME``/context override is authoritative for
+    profiles, containers, and existing integrations.  A normal installation
+    uses ``$XDG_CONFIG_HOME/hafiye`` (default ``~/.config/hafiye``).
+    """
+    if _has_explicit_hermes_home():
+        return get_hermes_home()
+    return _get_platform_default_hafiye_config_home()
+
+
+def get_hafiye_data_home() -> Path:
+    """Return Hafiye's persistent data root.
+
+    A normal installation uses ``$XDG_DATA_HOME/hafiye`` (default
+    ``~/.local/share/hafiye``).  Explicit upstream home/profile overrides are
+    returned unchanged for compatibility.
+    """
+    if _has_explicit_hermes_home():
+        return get_hermes_home()
+    return _get_platform_default_hafiye_data_home()
+
+
+def get_hafiye_state_home() -> Path:
+    """Return Hafiye's runtime state root.
+
+    A normal installation uses ``$XDG_STATE_HOME/hafiye`` (default
+    ``~/.local/state/hafiye``).  Explicit profile/home overrides remain
+    single-root so upstream profile isolation is preserved.
+    """
+    if _has_explicit_hermes_home():
+        return get_hermes_home()
+    return _get_platform_default_hafiye_state_home()
+
+
+def get_hafiye_cache_home() -> Path:
+    """Return Hafiye's disposable cache root.
+
+    A normal installation uses ``$XDG_CACHE_HOME/hafiye`` (default
+    ``~/.cache/hafiye``).  Explicit profile/home overrides remain single-root
+    for compatibility with upstream's scoped cache layout.
+    """
+    if _has_explicit_hermes_home():
+        return get_hermes_home()
+    return _get_platform_default_hafiye_cache_home()
 
 
 # Process-level memo for get_default_hermes_root(). The function resolves
@@ -398,9 +501,16 @@ def hermes_managed_node_tree_present(home: Path | None = None) -> bool:
     for directory in iter_hermes_node_dirs(home):
         for name in names:
             candidate = directory / name
-            if candidate.is_file() and (
-                sys.platform == "win32" or os.access(candidate, os.X_OK)
-            ):
+            try:
+                present = candidate.is_file() and (
+                    sys.platform == "win32" or os.access(candidate, os.X_OK)
+                )
+            except OSError:
+                # A service generator may inspect a target user's home while
+                # running under sudo. An unreadable managed tree is simply
+                # unavailable to that caller; it must not abort unit creation.
+                present = False
+            if present:
                 return True
     return False
 
@@ -990,12 +1100,12 @@ def _legacy_path_has_content(path: Path) -> bool:
 
 
 def display_hermes_home() -> str:
-    """Return a user-friendly display string for the current HERMES_HOME.
+    """Return a user-friendly display string for Hafiye's data root.
 
     Uses ``~/`` shorthand for readability::
 
-        default:  ``~/.hermes``
-        profile:  ``~/.hermes/profiles/coder``
+        default:  ``~/.local/share/hafiye``
+        profile/explicit home:  the selected ``HERMES_HOME`` path
         custom:   ``/opt/hermes-custom``
 
     Use this in **user-facing** print/log messages instead of hardcoding
@@ -1007,6 +1117,34 @@ def display_hermes_home() -> str:
         return "~/" + str(home.relative_to(Path.home()))
     except ValueError:
         return str(home)
+
+
+def _display_hafiye_path(path: Path) -> str:
+    """Render an Hafiye XDG path with a readable ``~/`` prefix."""
+    try:
+        return "~/" + str(path.relative_to(Path.home()))
+    except ValueError:
+        return str(path)
+
+
+def display_hafiye_config_home() -> str:
+    """Return the user-facing configuration root path."""
+    return _display_hafiye_path(get_hafiye_config_home())
+
+
+def display_hafiye_data_home() -> str:
+    """Return the user-facing persistent data root path."""
+    return _display_hafiye_path(get_hafiye_data_home())
+
+
+def display_hafiye_state_home() -> str:
+    """Return the user-facing state root path."""
+    return _display_hafiye_path(get_hafiye_state_home())
+
+
+def display_hafiye_cache_home() -> str:
+    """Return the user-facing cache root path."""
+    return _display_hafiye_path(get_hafiye_cache_home())
 
 
 def secure_parent_dir(path: Path) -> None:
@@ -1504,23 +1642,24 @@ def is_container() -> bool:
 
 
 def get_config_path() -> Path:
-    """Return the path to ``config.yaml`` under HERMES_HOME.
+    """Return the path to Hafiye's user configuration file.
 
-    Replaces the ``get_hermes_home() / "config.yaml"`` pattern repeated
-    in 7+ files (skill_utils.py, hermes_logging.py, hermes_time.py, etc.).
+    Normal installations use ``~/.config/hafiye/config.yaml``.  Explicit
+    ``HERMES_HOME`` and profile overrides continue to use their selected home
+    so existing profiles and container deployments remain compatible.
     """
-    return get_hermes_home() / "config.yaml"
+    return get_hafiye_config_home() / "config.yaml"
 
 
 def get_skills_dir() -> Path:
-    """Return the path to the skills directory under HERMES_HOME."""
-    return get_hermes_home() / "skills"
+    """Return the path to the persistent Hafiye skills directory."""
+    return get_hafiye_data_home() / "skills"
 
 
 
 def get_env_path() -> Path:
-    """Return the path to the ``.env`` file under HERMES_HOME."""
-    return get_hermes_home() / ".env"
+    """Return the path to Hafiye's local secret environment file."""
+    return get_hafiye_config_home() / ".env"
 
 
 # ─── Network Preferences ─────────────────────────────────────────────────────

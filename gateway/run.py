@@ -2070,7 +2070,13 @@ _ensure_ssl_certs()
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Resolve Hermes home directory (respects HERMES_HOME override)
-from hermes_constants import get_hermes_home, get_hermes_home_override
+from hermes_constants import (
+    get_config_path,
+    get_env_path,
+    get_hafiye_state_home,
+    get_hermes_home,
+    get_hermes_home_override,
+)
 from utils import atomic_json_write, base_url_hostname, is_truthy_value
 _hermes_home = get_hermes_home()
 
@@ -2078,8 +2084,25 @@ _hermes_home = get_hermes_home()
 # User-managed env files should override stale shell exports on restart.
 from dotenv import load_dotenv  # noqa: F401  # backward-compat for tests that monkeypatch this symbol
 from hermes_cli.env_loader import load_hermes_dotenv
-_env_path = _hermes_home / '.env'
-load_hermes_dotenv(hermes_home=_hermes_home, project_env=Path(__file__).resolve().parents[1] / '.env')
+_env_path = get_env_path()
+
+
+def _load_gateway_dotenv() -> None:
+    """Reload gateway secrets from the normal Hafiye root or active override."""
+    project_env = Path(__file__).resolve().parents[1] / ".env"
+    kwargs = {"project_env": project_env}
+    try:
+        # Normal Hafiye uses the XDG config root. Tests, embedded callers, and
+        # explicit profile homes may pin the gateway to a different runtime
+        # home; preserve that active scope for the reload.
+        if _hermes_home.resolve() != get_hermes_home().resolve():
+            kwargs["hermes_home"] = _hermes_home
+    except OSError:
+        kwargs["hermes_home"] = _hermes_home
+    load_hermes_dotenv(**kwargs)
+
+
+_load_gateway_dotenv()
 
 
 def _reload_runtime_env_preserving_config_authority() -> None:
@@ -2104,16 +2127,21 @@ def _reload_runtime_env_preserving_config_authority() -> None:
         _bridge_max_turns_from_config(_hermes_home)
         return
 
-    load_hermes_dotenv(
-        hermes_home=_hermes_home,
-        project_env=Path(__file__).resolve().parents[1] / '.env',
-    )
+    _load_gateway_dotenv()
     _bridge_max_turns_from_config(_hermes_home)
 
 
 def _bridge_max_turns_from_config(home: "Path") -> None:
     """Bridge config.yaml agent.max_turns into HERMES_MAX_ITERATIONS (a global)."""
-    config_path = home / 'config.yaml'
+    home_path = Path(home)
+    try:
+        config_path = (
+            get_config_path()
+            if home_path.resolve() == get_hermes_home().resolve()
+            else home_path / "config.yaml"
+        )
+    except OSError:
+        config_path = home_path / "config.yaml"
     if not config_path.exists():
         return
     try:
@@ -30654,7 +30682,7 @@ async def start_gateway(config: Optional[GatewayConfig] = None, replace: bool = 
     # and gateway.log (INFO+, gateway-component records only).
     # Idempotent, so repeated calls from AIAgent.__init__ won't duplicate.
     from hermes_logging import setup_logging, _safe_stderr
-    setup_logging(hermes_home=_hermes_home, mode="gateway")
+    setup_logging(hermes_home=get_hafiye_state_home(), mode="gateway")
 
     # Startup security posture audit — warn-on-load, never blocks. Surfaces
     # root / weak-SSH / ephemeral-container / unauthenticated-listener posture

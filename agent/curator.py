@@ -30,7 +30,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
 
-from hermes_constants import get_hermes_home
+from hermes_constants import get_hafiye_state_home, get_hermes_home
 from tools import skill_usage
 from utils import atomic_json_write
 
@@ -603,7 +603,7 @@ def _reports_root() -> Path:
     from an odd entry path (e.g. gateway-only install, bare library use)
     that bypasses both.
     """
-    root = get_hermes_home() / "logs" / "curator"
+    root = get_hafiye_state_home() / "logs" / "curator"
     try:
         root.mkdir(parents=True, exist_ok=True)
     except OSError as e:

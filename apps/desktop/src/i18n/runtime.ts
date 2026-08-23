@@ -26,6 +26,52 @@ function render(value: unknown, args: unknown[]): null | string {
   return null
 }
 
+/**
+ * Keep the upstream translation catalog and its keys intact while ensuring
+ * normal Hafiye UI never exposes the inherited product name.  Delimiters
+ * used by package names, protocol headers, storage keys, and URLs are kept
+ * intact; standalone CLI examples and prose are intentionally rebranded.
+ */
+export function rebrandUserFacingMessage(value: string): string {
+  return value
+    .replace(/(?<![A-Za-z0-9_@./-])Hermes(?![A-Za-z0-9_.-]|:\/\/)/g, 'Hafiye')
+    .replace(/(?<![A-Za-z0-9_@./-])hermes(?![A-Za-z0-9_.-]|:\/\/)/g, 'hafiye')
+}
+
+const rebrandedTrees = new WeakMap<object, object>()
+
+/**
+ * Rebrand the catalog shape used by React's `useI18n().t` without copying the
+ * large locale objects or changing their keys. Functions are wrapped too, so
+ * interpolated messages receive the same product-name treatment as literals.
+ */
+export function rebrandTranslationTree<T>(value: T): T {
+  if (typeof value === 'string') {
+    return rebrandUserFacingMessage(value) as T
+  }
+
+  if (typeof value === 'function') {
+    return ((...args: unknown[]) => rebrandUserFacingMessage(String(value(...args)))) as T
+  }
+
+  if (!isRecord(value)) {
+    return value
+  }
+
+  const cached = rebrandedTrees.get(value)
+  if (cached) {
+    return cached as T
+  }
+
+  const proxy = new Proxy(value, {
+    get(target, property, receiver) {
+      return rebrandTranslationTree(Reflect.get(target, property, receiver))
+    }
+  })
+  rebrandedTrees.set(value, proxy)
+  return proxy as T
+}
+
 /** The active → DEFAULT → key resolution every translator shares. `source`
  *  yields a message tree per locale — the app catalog, or a plugin's bundles. */
 export function translateFrom(
@@ -37,14 +83,14 @@ export function translateFrom(
   const active = render(resolvePath(source(locale), key), args)
 
   if (active !== null) {
-    return active
+    return rebrandUserFacingMessage(active)
   }
 
   if (locale !== DEFAULT_LOCALE) {
     const fallback = render(resolvePath(source(DEFAULT_LOCALE), key), args)
 
     if (fallback !== null) {
-      return fallback
+      return rebrandUserFacingMessage(fallback)
     }
   }
 

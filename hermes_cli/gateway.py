@@ -2058,7 +2058,7 @@ def is_linux() -> bool:
     return sys.platform.startswith("linux")
 
 
-from hermes_constants import is_container, is_termux, is_wsl
+from hermes_constants import get_hafiye_state_home, is_container, is_termux, is_wsl
 
 
 def _wsl_systemd_operational() -> bool:
@@ -3309,31 +3309,41 @@ def _remap_path_for_user(path: str, target_home_dir: str) -> str:
 
 
 def _hermes_home_for_target_user(target_home_dir: str) -> str:
-    """Remap the current HERMES_HOME to the equivalent under a target user's home.
+    """Remap the current runtime home to the equivalent target-user path.
 
     When installing a system service via sudo, get_hermes_home() resolves to
-    root's home.  This translates it to the target user's equivalent path:
+    root's home. Normal Hafiye installs use the XDG data root, while an
+    explicitly supplied HERMES_HOME keeps the upstream single-root mapping:
+      /root/.local/share/hafiye       → /home/alice/.local/share/hafiye
       /root/.hermes                    → /home/alice/.hermes
       /root/.hermes/profiles/coder     → /home/alice/.hermes/profiles/coder
       /opt/custom-hermes               → /opt/custom-hermes  (kept as-is)
     """
     current_hermes_raw = os.environ.get("HERMES_HOME", "").strip()
-    current_hermes = (
-        Path(current_hermes_raw).expanduser()
-        if current_hermes_raw
-        else get_hermes_home()
-    )
+    explicit_home = bool(current_hermes_raw)
+    if explicit_home:
+        current_hermes = Path(current_hermes_raw).expanduser()
+        current_default = Path.home() / ".hermes"
+        target_default = Path(target_home_dir) / ".hermes"
+    else:
+        from hermes_constants import get_hafiye_data_home
+
+        current_hermes = get_hermes_home()
+        current_default = get_hafiye_data_home()
+        try:
+            relative_default = current_default.relative_to(Path.home())
+        except ValueError:
+            relative_default = Path(".local") / "share" / "hafiye"
+        target_default = Path(target_home_dir) / relative_default
     # Keep explicit custom paths lexical. Resolving a non-existent custom path
     # can rewrite it through host-specific path mappings, which would bake a
     # different HERMES_HOME into the generated service unit.
-    current_default = Path.home() / ".hermes"
-    target_default = Path(target_home_dir) / ".hermes"
 
-    # Default ~/.hermes → remap to target user's default
+    # Default runtime home → remap to target user's default.
     if current_hermes == current_default:
         return str(target_default)
 
-    # Profile or subdir of ~/.hermes → preserve the relative structure
+    # Profile or subdir of the default home → preserve the relative structure.
     try:
         relative = current_hermes.relative_to(current_default)
         return str(target_default / relative)
@@ -4558,7 +4568,7 @@ def _launchctl_bootstrap(
 
 def _launchd_reload_log_path() -> Path:
     """Path the launchd reload watchdog tails for persistent-orphan detection."""
-    return get_hermes_home() / "logs" / "launchd-reload.log"
+    return get_hafiye_state_home() / "logs" / "launchd-reload.log"
 
 
 def _append_launchd_reload_log(message: str) -> None:
@@ -4747,7 +4757,7 @@ def _spawn_detached_gateway() -> bool:
     """
     from hermes_cli._subprocess_compat import windows_detach_popen_kwargs
 
-    log_dir = get_hermes_home() / "logs"
+    log_dir = get_hafiye_state_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     out_path = log_dir / "gateway.log"
     err_path = log_dir / "gateway.error.log"
@@ -4802,7 +4812,7 @@ def generate_launchd_plist() -> str:
     # to launchd's WorkingDirectory as to systemd's).
     working_dir = _stable_service_working_dir()
     hermes_home = str(get_hermes_home().resolve())
-    log_dir = get_hermes_home() / "logs"
+    log_dir = get_hafiye_state_home() / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     label = get_launchd_label()
     # Build a sane PATH for the launchd plist.  launchd provides only a
@@ -4992,7 +5002,7 @@ def refresh_launchd_plist_if_needed() -> bool:
         # to ~/.hermes/logs/launchd-reload.log, which the health watchdog
         # can tail to detect a persistent orphan. See hermes-restart
         # rootcause handoff (2026-06-26 incident).
-        reload_log_path = get_hermes_home() / "logs" / "launchd-reload.log"
+        reload_log_path = get_hafiye_state_home() / "logs" / "launchd-reload.log"
         try:
             reload_log_path.parent.mkdir(parents=True, exist_ok=True)
         except OSError:
@@ -5581,7 +5591,7 @@ def launchd_status(deep: bool = False):
             print(f"  Note: a detached gateway process is running (PID {fallback_pid})")
 
     if deep:
-        log_file = get_hermes_home() / "logs" / "gateway.log"
+        log_file = get_hafiye_state_home() / "logs" / "gateway.log"
         if log_file.exists():
             print()
             print("Recent logs:")

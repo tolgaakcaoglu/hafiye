@@ -5,6 +5,7 @@ are rebound onto server.py's globals at install time — see method_ctx.py.
 """
 
 from .method_ctx import HandlerRegistry
+from hermes_constants import get_config_path
 
 _registry = HandlerRegistry()
 method = _registry.method
@@ -1482,7 +1483,7 @@ def _(rid, params: dict) -> dict:
                 "title": "Environment",
                 "rows": [
                     ["Working Dir", os.getcwd()],
-                    ["Config File", str(_hermes_home / "config.yaml")],
+                    ["Config File", str(get_config_path())],
                 ],
             },
         ]

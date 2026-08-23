@@ -4,7 +4,7 @@ import { getHermesConfigRecord, type HermesConfigRecord, saveHermesConfig } from
 
 import { TRANSLATIONS } from './catalog'
 import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
-import { setRuntimeI18nLocale } from './runtime'
+import { rebrandTranslationTree, setRuntimeI18nLocale } from './runtime'
 import type { Locale, Translations } from './types'
 
 export { LOCALE_META } from './languages'
@@ -83,7 +83,7 @@ const I18nContext = createContext<I18nContextValue>({
   locale: DEFAULT_LOCALE,
   saveError: null,
   setLocale: async () => {},
-  t: TRANSLATIONS[DEFAULT_LOCALE]
+  t: rebrandTranslationTree(TRANSLATIONS[DEFAULT_LOCALE])
 })
 
 export interface I18nProviderProps {
@@ -183,7 +183,7 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
       locale,
       saveError,
       setLocale,
-      t: TRANSLATIONS[locale]
+      t: rebrandTranslationTree(TRANSLATIONS[locale])
     }),
     [configLoadError, isLoadingConfig, isSavingLocale, locale, saveError, setLocale]
   )

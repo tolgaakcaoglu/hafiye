@@ -44,7 +44,7 @@ from typing import Any, List, Optional, Protocol
 # the module) fail with ModuleNotFoundError for hermes_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from hermes_constants import get_hermes_home
+from hermes_constants import get_config_path, get_hermes_home
 from hermes_cli._subprocess_compat import windows_hide_flags
 from hermes_cli.config import (
     _expand_env_vars,
@@ -5587,7 +5587,16 @@ def run_job(
         _model_cfg = {}
         try:
             from hermes_cli.config import read_user_config_raw
-            _cfg_path = str(_get_hermes_home() / "config.yaml")
+            _active_home = _get_hermes_home()
+            try:
+                _cfg_home = get_hermes_home()
+                _cfg_path = str(
+                    get_config_path()
+                    if _active_home.resolve() == _cfg_home.resolve()
+                    else _active_home / "config.yaml"
+                )
+            except OSError:
+                _cfg_path = str(_active_home / "config.yaml")
             if os.path.exists(_cfg_path):
                 _cfg = read_user_config_raw(Path(_cfg_path))
                 # Managed scope: a scheduled job must honor administrator-pinned

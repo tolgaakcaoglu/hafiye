@@ -11,6 +11,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from utils import atomic_replace, fast_safe_load
+from hermes_constants import get_env_path
 
 
 # Env var name suffixes that indicate credential values.  These are the
@@ -486,8 +487,15 @@ def load_hermes_dotenv(
     """
     loaded: list[Path] = []
 
-    home_path = Path(hermes_home or os.getenv("HERMES_HOME", Path.home() / ".hermes"))
-    user_env = home_path / ".env"
+    if hermes_home is not None:
+        home_path = Path(hermes_home)
+        user_env = home_path / ".env"
+    elif os.getenv("HERMES_HOME", "").strip():
+        home_path = Path(os.environ["HERMES_HOME"])
+        user_env = home_path / ".env"
+    else:
+        user_env = get_env_path()
+        home_path = user_env.parent
     project_env_path = Path(project_env) if project_env else None
 
     # Normalize safe formatting and remove invalid NUL bytes before parsing.

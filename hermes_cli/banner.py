@@ -799,7 +799,8 @@ def banner_snapshot_fingerprint() -> Optional[str]:
     parts = [f"v{_BANNER_SNAPSHOT_VERSION}"]
     try:
         from hermes_cli.config import get_config_path
-        for p in (get_config_path(), get_hermes_home() / ".env"):
+        from hermes_constants import get_env_path
+        for p in (get_config_path(), get_env_path()):
             try:
                 st = p.stat()
                 parts.append(f"{p.name}:{st.st_mtime_ns}:{st.st_size}")

@@ -335,7 +335,9 @@ def cmd_setup(args) -> None:
     if not isinstance(provider_config, dict):
         provider_config = {}
 
-    env_path = get_hermes_home() / ".env"
+    from hermes_constants import get_env_path
+
+    env_path = get_env_path()
     env_writes = {}
 
     if schema:

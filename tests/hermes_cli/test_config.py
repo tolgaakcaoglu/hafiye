@@ -29,6 +29,7 @@ from hermes_cli.config import (
     write_platform_config_field,
     _sanitize_env_lines,
 )
+from hermes_constants import get_hafiye_data_home
 
 
 class TestGetHermesHome:
@@ -36,7 +37,7 @@ class TestGetHermesHome:
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("HERMES_HOME", None)
             home = get_hermes_home()
-            assert home == Path.home() / ".hermes"
+            assert home == get_hafiye_data_home() == Path.home() / ".local" / "share" / "hafiye"
 
 
 class TestEnsureHermesHome:

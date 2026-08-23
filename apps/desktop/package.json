@@ -1,9 +1,9 @@
 {
   "name": "hermes",
-  "productName": "Hermes",
+  "productName": "Hafiye",
   "private": true,
   "version": "0.17.0",
-  "description": "Native desktop shell for Hermes Agent.",
+  "description": "Native desktop shell for Hafiye.",
   "author": "Nous Research",
   "repository": {
     "type": "git",
@@ -187,19 +187,20 @@
   },
   "build": {
     "electronVersion": "40.10.2",
-    "appId": "com.nousresearch.hermes",
-    "productName": "Hermes",
-    "executableName": "Hermes",
+    "appId": "com.hafiye.desktop",
+    "productName": "Hafiye",
+    "executableName": "hafiye-desktop",
     "protocols": [
       {
-        "name": "Hermes Protocol",
+        "name": "Hafiye Protocol",
         "schemes": [
+          "hafiye",
           "hermes"
         ]
       }
     ],
-    "artifactName": "Hermes-${version}-${os}-${arch}.${ext}",
-    "icon": "assets/icon",
+    "artifactName": "Hafiye-${version}-${os}-${arch}.${ext}",
+    "icon": "assets/hafiye-icon.png",
     "directories": {
       "output": "release"
     },
@@ -218,7 +219,7 @@
         "to": "install-stamp.json"
       },
       {
-        "from": "assets/icon.ico",
+        "from": "assets/hafiye-icon.ico",
         "to": "icon.ico"
       }
     ],
@@ -234,12 +235,12 @@
       "entitlements": "electron/entitlements.mac.plist",
       "entitlementsInherit": "electron/entitlements.mac.inherit.plist",
       "extendInfo": {
-        "CFBundleDisplayName": "Hermes",
-        "CFBundleExecutable": "Hermes",
-        "CFBundleName": "Hermes",
-        "NSAudioCaptureUsageDescription": "Hermes uses audio capture for voice conversations.",
-        "NSCameraUsageDescription": "Hermes uses the camera when a plugin or feature you enable requests it.",
-        "NSMicrophoneUsageDescription": "Hermes uses the microphone for voice input and voice conversations."
+        "CFBundleDisplayName": "Hafiye",
+        "CFBundleExecutable": "Hafiye",
+        "CFBundleName": "Hafiye",
+        "NSAudioCaptureUsageDescription": "Hafiye uses audio capture for voice conversations.",
+        "NSCameraUsageDescription": "Hafiye uses the camera when a plugin or feature you enable requests it.",
+        "NSMicrophoneUsageDescription": "Hafiye uses the microphone for voice input and voice conversations."
       },
       "gatekeeperAssess": false,
       "hardenedRuntime": true,
@@ -249,7 +250,7 @@
       ]
     },
     "dmg": {
-      "title": "Install Hermes",
+      "title": "Install Hafiye",
       "backgroundColor": "#f5f5f7",
       "iconSize": 96,
       "window": {
@@ -271,7 +272,8 @@
       ]
     },
     "win": {
-      "legalTrademarks": "Hermes",
+      "icon": "assets/hafiye-icon.ico",
+      "legalTrademarks": "Hafiye",
       "target": [
         "nsis",
         "msi"
@@ -279,9 +281,10 @@
       "signAndEditExecutable": false
     },
     "linux": {
+      "icon": "assets/hafiye-icon.png",
       "category": "Development",
       "maintainer": "Nous Research <support@nousresearch.com>",
-      "synopsis": "Native desktop shell for Hermes Agent.",
+      "synopsis": "Native desktop shell for Hafiye.",
       "target": [
         "AppImage",
         "deb",
@@ -292,8 +295,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
-      "shortcutName": "Hermes",
-      "uninstallDisplayName": "Hermes",
+      "shortcutName": "Hafiye",
+      "uninstallDisplayName": "Hafiye",
       "warningsAsErrors": false
     }
   }

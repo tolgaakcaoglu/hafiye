@@ -33,7 +33,7 @@ except ImportError:  # pragma: no cover - non-Windows
     msvcrt = None
 from datetime import datetime, timedelta
 from pathlib import Path
-from hermes_constants import get_hermes_home
+from hermes_constants import get_config_path, get_hermes_home
 from typing import Optional, Dict, List, Any, Set, Tuple, Union, Collection
 
 logger = logging.getLogger(__name__)
@@ -1654,7 +1654,7 @@ def _resolve_default_model_snapshot() -> Optional[str]:
     try:
         from hermes_cli.config import _expand_env_vars, read_user_config_raw
 
-        cfg_path = get_hermes_home() / "config.yaml"
+        cfg_path = get_config_path()
         if not cfg_path.exists():
             return None
         cfg = read_user_config_raw(cfg_path)

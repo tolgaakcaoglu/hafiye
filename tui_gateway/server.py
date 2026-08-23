@@ -26,7 +26,9 @@ from agent.secret_scope import (
 from hermes_constants import (
     DEFAULT_INDICATOR_STYLE,
     INDICATOR_STYLES,
+    get_config_path,
     get_hermes_home,
+    get_hafiye_state_home,
     get_hermes_home_override,
     reset_hermes_home_override,
     set_hermes_home_override,
@@ -55,9 +57,31 @@ from tui_gateway.transport import (
 logger = logging.getLogger(__name__)
 
 _hermes_home = get_hermes_home()
-load_hermes_dotenv(
-    hermes_home=_hermes_home, project_env=Path(__file__).parent.parent / ".env"
-)
+load_hermes_dotenv(project_env=Path(__file__).parent.parent / ".env")
+
+
+def _config_path_for_active_home() -> Path:
+    """Return the config path for the current TUI launch/profile scope.
+
+    Normal Hafiye launches use the XDG configuration root.  The TUI server
+    still exposes ``_hermes_home`` as a supported embedding/test seam, and a
+    session-scoped profile override must continue to resolve inside that
+    profile's single-root layout.
+    """
+    override = get_hermes_home_override()
+    if isinstance(override, (str, Path)) and str(override):
+        return Path(override) / "config.yaml"
+
+    try:
+        active_home = Path(_hermes_home)
+        launch_home = Path(get_hermes_home())
+        if active_home.resolve() != launch_home.resolve():
+            return active_home / "config.yaml"
+    except (OSError, TypeError, ValueError):
+        # Test doubles and unusual embedders may not return path-like values;
+        # the canonical resolver remains the safe default in that case.
+        pass
+    return get_config_path()
 
 
 # ── Panic logger ─────────────────────────────────────────────────────
@@ -69,7 +93,7 @@ load_hermes_dotenv(
 # AND re-emits a one-line summary to stderr so the TUI can surface it in
 # Activity — exactly what was missing when the voice-mode turns started
 # exiting the gateway mid-TTS.
-_CRASH_LOG = os.path.join(_hermes_home, "logs", "tui_gateway_crash.log")
+_CRASH_LOG = os.path.join(get_hafiye_state_home(), "logs", "tui_gateway_crash.log")
 
 
 def _panic_hook(exc_type, exc_value, exc_tb):
@@ -3332,8 +3356,11 @@ def _load_cfg_raw() -> dict:
         # launch profile's _hermes_home. Cache is keyed on the resolved path, so
         # profiles don't clobber each other.
         override = get_hermes_home_override()
-        home = override if isinstance(override, str) and override else _hermes_home
-        p = Path(home) / "config.yaml"
+        home = override if isinstance(override, (str, Path)) and override else _hermes_home
+        if isinstance(override, (str, Path)) and override:
+            p = Path(home) / "config.yaml"
+        else:
+            p = _config_path_for_active_home()
         mtime = p.stat().st_mtime if p.exists() else None
         with _cfg_lock:
             if _cfg_cache is not None and _cfg_mtime == mtime and _cfg_path == p:
@@ -3403,7 +3430,7 @@ def _save_cfg(cfg: dict):
 
     from utils import atomic_roundtrip_yaml_save
 
-    path = _hermes_home / "config.yaml"
+    path = _config_path_for_active_home()
     # Comment-, ordering-, and Unicode-preserving full-state write.
     # Replaces the previous `yaml.safe_dump(cfg, f)` (and later
     # `atomic_config_write`, which is not comment-preserving) which clobbered

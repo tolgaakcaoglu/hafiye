@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fieldCopyForSchemaKey } from '@/app/settings/field-copy'
 
 import { TRANSLATIONS } from './catalog'
-import { setRuntimeI18nLocale, translateNow } from './runtime'
+import { rebrandTranslationTree, setRuntimeI18nLocale, translateFrom, translateNow } from './runtime'
 import { zh } from './zh'
 
 describe('desktop i18n runtime translator', () => {
@@ -18,7 +18,7 @@ describe('desktop i18n runtime translator', () => {
   it('translates string paths for the active runtime locale', () => {
     setRuntimeI18nLocale('zh')
 
-    expect(translateNow('boot.ready')).toBe('Hermes 桌面版已就绪')
+    expect(translateNow('boot.ready')).toBe('Hafiye 桌面版已就绪')
     expect(translateNow('notifications.voice.noSpeechDetected')).toBe('没有检测到语音')
     expect(translateNow('composer.lookupNoMatches')).toBe('没有匹配项。')
     expect(translateNow('assistant.tool.statusRecovered')).toBe('已恢复')
@@ -26,6 +26,31 @@ describe('desktop i18n runtime translator', () => {
 
   it('passes arguments to function translations', () => {
     expect(translateNow('notifications.updateReadyMessage', 2)).toBe('2 new changes available.')
+  })
+
+  it('rebrands visible product copy without changing identifiers or URLs', () => {
+    expect(
+      translateFrom(
+        () => ({
+          probe: 'Hermes @hermes ~/.hermes https://hermes-agent.nousresearch.com hermes://legacy'
+        }),
+        'en',
+        'probe',
+        []
+      )
+    ).toBe('Hafiye @hermes ~/.hermes https://hermes-agent.nousresearch.com hermes://legacy')
+  })
+
+  it('rebrands the catalog shape consumed by React context', () => {
+    const tree = rebrandTranslationTree({
+      nested: {
+        literal: 'Hermes is ready',
+        interpolated: (count: number) => `${count} Hermes chats`
+      }
+    })
+
+    expect(tree.nested.literal).toBe('Hafiye is ready')
+    expect(tree.nested.interpolated(3)).toBe('3 Hafiye chats')
   })
 
   it('translates migrated overlap keys for newly supported locales', () => {
@@ -67,7 +92,7 @@ describe('desktop i18n runtime translator', () => {
       boot.ready = undefined
       setRuntimeI18nLocale('ja')
 
-      expect(translateNow('boot.ready')).toBe('Hermes Desktop is ready')
+      expect(translateNow('boot.ready')).toBe('Hafiye Desktop is ready')
     } finally {
       boot.ready = originalReady
     }

@@ -11,6 +11,39 @@ because its dispatch is tightly coupled to module-level ``cmd_*`` functions.
 """
 
 import argparse
+import os
+import re
+import sys
+
+
+def _cli_command_name() -> str:
+    """Use the Hafiye command name for the new launcher, keep Hermes compat."""
+    executable = os.path.basename(sys.argv[0]).lower()
+    return "hafiye" if executable.startswith("hafiye") else "hermes"
+
+
+_CLI_COMMAND = _cli_command_name()
+
+
+def _rebrand_cli_help(value: str) -> str:
+    """Render inherited argparse copy with the Hafiye product identity."""
+    if _CLI_COMMAND != "hafiye":
+        return value
+    return re.sub(
+        r"(?<![A-Za-z0-9_@./-])Hermes(?![A-Za-z0-9_.-])|(?<![A-Za-z0-9_@./-])hermes(?![A-Za-z0-9_.-])",
+        lambda match: "Hafiye" if match.group(0) == "Hermes" else "hafiye",
+        value.replace("~/.hermes", "~/.config/hafiye"),
+    )
+
+
+class _HafiyeArgumentParser(argparse.ArgumentParser):
+    """Keep upstream parser wiring while branding displayed Hafiye help."""
+
+    def format_help(self) -> str:
+        return _rebrand_cli_help(super().format_help())
+
+    def format_usage(self) -> str:
+        return _rebrand_cli_help(super().format_usage())
 
 
 # `--profile` / `-p` is consumed by ``main._apply_profile_override`` before
@@ -82,6 +115,7 @@ Examples:
 For more help on a command:
     hermes <command> --help
 """
+_EPILOGUE = _EPILOGUE.replace("hermes", _CLI_COMMAND)
 
 
 def build_top_level_parser():
@@ -91,9 +125,9 @@ def build_top_level_parser():
     ``chat_parser.set_defaults(func=cmd_chat)`` and continues registering
     other subparsers via ``subparsers.add_parser(...)``.
     """
-    parser = argparse.ArgumentParser(
-        prog="hermes",
-        description="Hermes Agent - AI assistant with tool-calling capabilities",
+    parser = _HafiyeArgumentParser(
+        prog=_CLI_COMMAND,
+        description="Hafiye - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_EPILOGUE,
     )
@@ -251,7 +285,7 @@ def build_top_level_parser():
         "--ignore-user-config",
         action="store_true",
         default=False,
-        help="Ignore ~/.hermes/config.yaml and fall back to built-in defaults (credentials in .env are still loaded)",
+        help="Ignore ~/.config/hafiye/config.yaml and fall back to built-in defaults (credentials in .env are still loaded)",
     )
     _inherited_flag(
         parser,
@@ -290,7 +324,9 @@ def build_top_level_parser():
         help="With --tui: run TypeScript sources via tsx (skip dist build)",
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+    subparsers = parser.add_subparsers(
+        dest="command", help="Command to run", parser_class=_HafiyeArgumentParser
+    )
 
     # =========================================================================
     # chat command
@@ -298,7 +334,7 @@ def build_top_level_parser():
     chat_parser = subparsers.add_parser(
         "chat",
         help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent",
+        description="Start an interactive chat session with Hafiye",
     )
     _query_group = chat_parser.add_mutually_exclusive_group()
     _query_group.add_argument(
@@ -493,7 +529,7 @@ def build_top_level_parser():
         "--ignore-user-config",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Ignore ~/.hermes/config.yaml and fall back to built-in defaults (credentials in .env are still loaded). Useful for isolated CI runs, reproduction, and third-party integrations.",
+        help="Ignore ~/.config/hafiye/config.yaml and fall back to built-in defaults (credentials in .env are still loaded). Useful for isolated CI runs, reproduction, and third-party integrations.",
     )
     _inherited_flag(
         chat_parser,
@@ -507,7 +543,7 @@ def build_top_level_parser():
         "--safe-mode",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Hermes itself.",
+        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Hafiye itself.",
     )
     chat_parser.add_argument(
         "--source",

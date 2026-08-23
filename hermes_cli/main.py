@@ -250,7 +250,8 @@ def _set_process_title() -> None:
     try:
         import setproctitle  # type: ignore[import-untyped]
 
-        setproctitle.setproctitle("hermes")
+        process_name = "hafiye" if Path(sys.argv[0]).stem.lower().startswith("hafiye") else "hermes"
+        setproctitle.setproctitle(process_name)
         return
     except ImportError:
         pass
@@ -263,10 +264,12 @@ def _set_process_title() -> None:
         system = platform.system()
         if system == "Linux":
             libc = ctypes.CDLL("libc.so.6", use_errno=True)
-            libc.prctl(15, b"hermes", 0, 0, 0)  # PR_SET_NAME = 15
+            process_name = "hafiye" if Path(sys.argv[0]).stem.lower().startswith("hafiye") else "hermes"
+            libc.prctl(15, process_name.encode(), 0, 0, 0)  # PR_SET_NAME = 15
         elif system == "Darwin":
             libc = ctypes.CDLL("libc.dylib", use_errno=True)
-            libc.pthread_setname_np(b"hermes")
+            process_name = "hafiye" if Path(sys.argv[0]).stem.lower().startswith("hafiye") else "hermes"
+            libc.pthread_setname_np(process_name.encode())
         # Windows: the .exe name is already ``hermes.exe`` — nothing to do.
     except Exception:
         pass
@@ -288,11 +291,9 @@ def _config_default_interface_early() -> str:
         return _EARLY_INTERFACE_CACHE[0]
     value = "cli"
     try:
-        home = os.environ.get("HERMES_HOME")
-        if home:
-            cfg_path = os.path.join(home, "config.yaml")
-        else:
-            cfg_path = os.path.join(os.path.expanduser("~"), ".hermes", "config.yaml")
+        from hermes_constants import get_config_path
+
+        cfg_path = str(get_config_path())
         if os.path.exists(cfg_path):
             import yaml as _yaml_iface
 
@@ -720,7 +721,7 @@ if sys.platform == "win32":
 
 # Load .env from ~/.hermes/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from hermes_cli.config import get_hermes_home
+from hermes_cli.config import get_config_path, get_hermes_home
 from hermes_cli.env_loader import load_hermes_dotenv
 
 # Updating dependencies must not import optional secret-manager libraries into
@@ -752,7 +753,7 @@ try:
     # 3-4 config.yaml parses per invocation into one.
     from hermes_cli.config import read_raw_config as _read_raw_early
 
-    _cfg_path = get_hermes_home() / "config.yaml"
+    _cfg_path = get_config_path()
     if _cfg_path.exists():
         _early_cfg_raw = _read_raw_early() or {}
         # Managed scope: overlay administrator-pinned values so a managed
@@ -8442,7 +8443,9 @@ def _respawn_dashboard_processes(commands: list[list[str]]) -> list[list[str]]:
 
     respawned: list[list[str]] = []
     failed: list[tuple[list[str], str]] = []
-    log_path = get_hermes_home() / "logs" / "dashboard-restart.log"
+    from hermes_constants import get_hafiye_state_home
+
+    log_path = get_hafiye_state_home() / "logs" / "dashboard-restart.log"
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
     except OSError:
@@ -10219,11 +10222,14 @@ def _install_hangup_protection(gateway_mode: bool = False):
     # (2) Mirror output to update.log and wrap stdio for broken-pipe
     # tolerance.  Any failure here is non-fatal; we just skip the wrap.
     try:
-        # Late-bound import so tests can monkeypatch
-        # hermes_cli.config.get_hermes_home to simulate setup failure.
+        # Late-bound import so tests can monkeypatch the upstream resolver.
+        # Calling it first preserves the non-fatal setup-failure contract;
+        # normal Hafiye installs still place operational logs in XDG state.
         from hermes_cli.config import get_hermes_home as _get_hermes_home
+        from hermes_constants import get_hafiye_state_home
 
-        logs_dir = _get_hermes_home() / "logs"
+        _get_hermes_home()
+        logs_dir = get_hafiye_state_home() / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         log_path = logs_dir / "update.log"
         log_file = open(log_path, "a", buffering=1, encoding="utf-8")
@@ -12896,7 +12902,7 @@ def main():
     # =========================================================================
     # migrate command
     # =========================================================================
-    from hermes_cli.migrate import cmd_migrate, cmd_migrate_xai
+    from hermes_cli.migrate import cmd_migrate, cmd_migrate_legacy_home, cmd_migrate_xai
 
     migrate_parser = subparsers.add_parser(
         "migrate",
@@ -12907,6 +12913,36 @@ def main():
         ),
     )
     migrate_subparsers = migrate_parser.add_subparsers(dest="migrate_type")
+
+    migrate_legacy_home = migrate_subparsers.add_parser(
+        "legacy-home",
+        help="Import a legacy ~/.hermes profile into Hafiye's XDG roots",
+        description=(
+            "Preview a one-time, non-destructive import from ~/.hermes into "
+            "Hafiye's XDG configuration, data, state, and cache roots."
+        ),
+    )
+    migrate_legacy_home.add_argument(
+        "--source",
+        metavar="PATH",
+        help="Legacy Hermes home to import (default: ~/.hermes)",
+    )
+    migrate_legacy_home.add_argument(
+        "--apply",
+        action="store_true",
+        help="Write the reviewed import plan (default: dry-run)",
+    )
+    migrate_legacy_home.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Explicitly preview the import without writing files",
+    )
+    migrate_legacy_home.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace destination files/directories that already exist",
+    )
+    migrate_legacy_home.set_defaults(func=cmd_migrate_legacy_home)
 
     migrate_xai = migrate_subparsers.add_parser(
         "xai",

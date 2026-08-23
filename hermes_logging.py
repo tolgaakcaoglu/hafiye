@@ -69,7 +69,7 @@ else:
     from logging.handlers import RotatingFileHandler  # noqa: E402
 
 
-from hermes_constants import get_config_path, get_hermes_home
+from hermes_constants import get_config_path, get_hermes_home, get_hafiye_state_home
 
 # Sentinel to track whether setup_logging() has already run.  The function
 # is idempotent — calling it twice is safe but the second call is a no-op
@@ -300,7 +300,10 @@ def setup_logging(
         The ``logs/`` directory where files are written.
     """
     global _logging_initialized
-    home = hermes_home or get_hermes_home()
+    # Keep explicit/profile homes intact.  A normal Hafiye install stores
+    # operational logs in the XDG state root rather than beside persistent
+    # user data.
+    home = hermes_home or get_hafiye_state_home()
     log_dir = home / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 

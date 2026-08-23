@@ -21,15 +21,15 @@ const OPTIONS: ModeOption[] = [
   {
     mode: 'gui',
     title: 'Uninstall Chat GUI only',
-    description: 'Remove this desktop app. The Hermes agent, your config, and chats all stay.',
+    description: 'Remove this desktop app. The Hafiye agent, your config, and chats all stay.',
     consequence: 'the desktop Chat GUI (this app and its data)',
     needsAgent: false
   },
   {
     mode: 'lite',
     title: 'Uninstall GUI + agent, keep my data',
-    description: 'Remove the app and the Hermes agent, but keep config, chats, and secrets for a future reinstall.',
-    consequence: 'the Chat GUI and the Hermes agent (config, chats, and secrets are kept)',
+    description: 'Remove the app and the Hafiye agent, but keep config, chats, and secrets for a future reinstall.',
+    consequence: 'the Chat GUI and the Hafiye agent (config, chats, and secrets are kept)',
     needsAgent: true
   },
   {

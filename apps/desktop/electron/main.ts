@@ -121,6 +121,7 @@ import { describeCrashReason, installCrashForensics } from './crash-forensics'
 import { adoptServedDashboardToken } from './dashboard-token'
 import { loadOrCreateInstallationId, sshOwnershipId } from './desktop-installation'
 import { formatDesktopLogLine } from './desktop-log-line'
+import { resolveHafiyeDataHome, resolveHafiyeStateHome } from './hafiye-paths'
 import { resolveDesktopRemoteRoute } from './desktop-remote-route'
 import {
   buildPosixCleanupScript,
@@ -655,21 +656,14 @@ if (INSTALL_STAMP) {
   )
 }
 
-// HERMES_HOME — the user-facing root for everything Hermes-related. Mirrors
-// scripts/install.ps1's $HermesHome and scripts/install.sh's $HERMES_HOME.
-//
-// Defaults:
-//   Windows: %LOCALAPPDATA%\hermes (matches install.ps1)
-//   macOS / Linux: ~/.hermes (matches install.sh)
-//
-// Special case for Windows: if the user has a legacy ~/.hermes directory
-// (e.g., from a prior pip install or a manual setup) AND no
-// %LOCALAPPDATA%\hermes yet, prefer the legacy path so we don't orphan their
-// existing config / sessions / .env. New installs go to %LOCALAPPDATA%.
+// HERMES_HOME — the internal upstream-compatible data root used by the
+// backend. Normal Hafiye installations use the XDG-compatible Hafiye data
+// root; the environment name and variable are retained for profile and
+// upstream compatibility.
 //
 // HERMES_DESKTOP_USER_DATA_DIR (used by test:desktop:fresh) puts the sandbox
 // HERMES_HOME beneath the throwaway userData dir so a fresh-install run never
-// touches the user's real ~/.hermes / %LOCALAPPDATA%\hermes.
+// touches the user's real Hafiye or legacy Hermes data.
 function resolveHermesHome() {
   if (process.env.HERMES_HOME) {
     return normalizeHermesHomeRoot(process.env.HERMES_HOME)
@@ -693,23 +687,16 @@ function resolveHermesHome() {
     }
   }
 
-  if (IS_WINDOWS && process.env.LOCALAPPDATA) {
-    const localappdata = path.join(process.env.LOCALAPPDATA, 'hermes')
-    const legacy = path.join(app.getPath('home'), '.hermes')
-
-    // Migrate transparently to LOCALAPPDATA, but honour an existing legacy
-    // ~/.hermes setup (no LOCALAPPDATA install yet) so users don't lose state.
-    if (!directoryExists(localappdata) && directoryExists(legacy)) {
-      return legacy
-    }
-
-    return localappdata
-  }
-
-  return path.join(app.getPath('home'), '.hermes')
+  return resolveHafiyeDataHome({ env: process.env, home: app.getPath('home'), platform: process.platform })
 }
 
 const HERMES_HOME = resolveHermesHome()
+const HERMES_HOME_IS_EXPLICIT = Boolean(
+  process.env.HERMES_HOME || USER_DATA_OVERRIDE || (IS_WINDOWS && readWindowsUserEnvVar('HERMES_HOME'))
+)
+const HAFIYE_STATE_HOME = HERMES_HOME_IS_EXPLICIT
+  ? HERMES_HOME
+  : resolveHafiyeStateHome({ env: process.env, home: app.getPath('home'), platform: process.platform })
 
 function pathWithHermesManagedNode(...entries) {
   const managed = hermesManagedNodePathEntries(HERMES_HOME).filter(directoryExists)
@@ -761,10 +748,9 @@ const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/
 // tracks main. User can also override at runtime via
 // hermesDesktop.updates.setBranch().
 const DEFAULT_UPDATE_BRANCH = 'main'
-// desktop.log lives under HERMES_HOME/logs/ so it sits next to agent.log,
-// errors.log, gateway.log produced by hermes_logging.setup_logging — one log
-// directory per user, regardless of which UI surface produced the line.
-const DESKTOP_LOG_PATH = path.join(HERMES_HOME, 'logs', 'desktop.log')
+// desktop.log follows the XDG state root used by the Python backend. Explicit
+// HERMES_HOME/profile overrides remain single-root for upstream compatibility.
+const DESKTOP_LOG_PATH = path.join(HAFIYE_STATE_HOME, 'logs', 'desktop.log')
 const DESKTOP_LOG_FLUSH_MS = 120
 const DESKTOP_LOG_BUFFER_MAX_CHARS = 64 * 1024
 // Bound desktop.log on disk. It is an append-only forensic log, so a boot loop
@@ -803,10 +789,16 @@ const BOOT_FAKE_STEP_MS = (() => {
   return Math.max(120, raw)
 })()
 
-const APP_NAME = process.env.HERMES_DESKTOP_APP_NAME || 'Hermes'
+const APP_NAME = process.env.HERMES_DESKTOP_APP_NAME || 'Hafiye'
 const HUD_WINDOW_TITLE = `${APP_NAME} HUD`
 const TITLEBAR_HEIGHT = 34
 const MACOS_TRAFFIC_LIGHTS_HEIGHT = 14
+
+function rebrandDesktopText(value: unknown): string {
+  return String(value ?? '')
+    .replace(/(?<![A-Za-z0-9_.-])Hermes(?![A-Za-z0-9_.-])/g, APP_NAME)
+    .replace(/(?<![A-Za-z0-9_.-])hermes(?![A-Za-z0-9_.-])/g, APP_NAME.toLowerCase())
+}
 
 const WINDOW_BUTTON_POSITION = {
   x: 24,
@@ -820,11 +812,11 @@ const WINDOW_BUTTON_POSITION = {
 // The apple-touch PNG bakes in the macOS-style ~10% margin, which is correct
 // for the dock but renders visibly smaller than neighboring taskbar icons on
 // Windows, where icons are full-bleed. Windows prefers the full-bleed
-// assets/icon.ico (shipped to resources/ via extraResources) and only falls
+// assets/hafiye-icon.ico (shipped to resources/ via extraResources) and only falls
 // back to the padded PNG if the ico is missing.
 const APP_ICON_PATHS = [
   ...(IS_WINDOWS
-    ? [path.join(process.resourcesPath ?? '', 'icon.ico'), path.join(APP_ROOT, 'assets', 'icon.ico')]
+    ? [path.join(process.resourcesPath ?? '', 'icon.ico'), path.join(APP_ROOT, 'assets', 'hafiye-icon.ico')]
     : []),
   path.join(APP_ROOT, 'public', 'apple-touch-icon.png'),
   path.join(APP_ROOT, 'dist', 'apple-touch-icon.png'),
@@ -1215,7 +1207,7 @@ app.setName(APP_NAME)
 // need this, so gate it on Windows. (Fixes: desktop approval/turn notifications
 // never firing on Windows.)
 if (IS_WINDOWS) {
-  app.setAppUserModelId('com.nousresearch.hermes')
+  app.setAppUserModelId('com.hafiye.desktop')
 }
 
 // Seed the native About panel with the live Hermes version. This is refreshed
@@ -1373,7 +1365,7 @@ let bootProgressState = {
   error: null,
   fakeMode: BOOT_FAKE_MODE,
   isCloudBackendDown: false,
-  message: 'Waiting to start Hermes backend',
+  message: 'Waiting to start Hafiye backend',
   phase: 'idle',
   progress: 0,
   retryable: false,
@@ -1933,28 +1925,39 @@ function abandonFirstRunSetupChoiceForRemoteApply() {
 }
 
 function updateBootProgress(update, options: { allowDecrease?: boolean } = {}) {
+  const normalizedUpdate = { ...update }
+
+  if (update.message !== undefined && update.message !== null) {
+    normalizedUpdate.message = rebrandDesktopText(update.message)
+  }
+
+  if (update.error !== undefined && update.error !== null) {
+    normalizedUpdate.error = rebrandDesktopText(update.error)
+  }
   const nextProgressRaw =
-    typeof update.progress === 'number' ? clampBootProgress(update.progress) : bootProgressState.progress
+    typeof normalizedUpdate.progress === 'number'
+      ? clampBootProgress(normalizedUpdate.progress)
+      : bootProgressState.progress
 
   const nextProgress = options.allowDecrease ? nextProgressRaw : Math.max(bootProgressState.progress, nextProgressRaw)
 
   bootProgressState = {
     ...bootProgressState,
-    ...update,
-    error: update.error === undefined ? bootProgressState.error : update.error,
-    fakeMode: BOOT_FAKE_MODE || Boolean(update.fakeMode),
+    ...normalizedUpdate,
+    error: normalizedUpdate.error === undefined ? bootProgressState.error : normalizedUpdate.error,
+    fakeMode: BOOT_FAKE_MODE || Boolean(normalizedUpdate.fakeMode),
     progress: nextProgress,
     // `retryable` rides with `error`: it survives updates that preserve the
     // error and resets alongside a new/cleared error unless explicitly set.
     retryable:
-      update.retryable === undefined
-        ? update.error === undefined && Boolean(bootProgressState.retryable)
-        : Boolean(update.retryable),
+      normalizedUpdate.retryable === undefined
+        ? normalizedUpdate.error === undefined && Boolean(bootProgressState.retryable)
+        : Boolean(normalizedUpdate.retryable),
     timestamp: Date.now()
   }
 
-  if (update.message) {
-    rememberLog(`[boot] ${update.message}`)
+  if (normalizedUpdate.message) {
+    rememberLog(`[boot] ${normalizedUpdate.message}`)
   }
 
   broadcastBootProgress()
@@ -2046,7 +2049,7 @@ async function waitForUpdateToFinish() {
 
       await advanceBootProgress(
         'backend.update-wait',
-        'An update is finishing — Hermes will start automatically when it completes…',
+        `An update is finishing — ${APP_NAME} will start automatically when it completes…`,
         12
       )
     },
@@ -2070,7 +2073,7 @@ async function waitForUpdateToFinish() {
       rememberLog(`[updates] detached update finished with manual action (branch ${result.branch}): ${result.message}`)
       dialog.showMessageBox({
         type: 'warning',
-        title: 'Hermes update',
+        title: `${APP_NAME} update`,
         message: 'The update finished, but needs one more step',
         detail: result.message
       })
@@ -2079,8 +2082,8 @@ async function waitForUpdateToFinish() {
     } else if (result) {
       rememberLog(`[updates] detached update FAILED (exit ${result.exitCode}): ${result.message}`)
       dialog.showErrorBox(
-        'Hermes update did not finish',
-        `${result.message}\n\nDetails: ${path.join(HERMES_HOME, 'logs', 'desktop-update-handoff.log')}`
+        `${APP_NAME} update did not finish`,
+        `${result.message}\n\nDetails: ${path.join(HAFIYE_STATE_HOME, 'logs', 'desktop-update-handoff.log')}`
       )
     }
   } catch (err) {
@@ -2717,6 +2720,12 @@ async function getOriginUrl(updateRoot) {
 
 function emitUpdateProgress(payload) {
   const merged = { stage: 'idle', message: '', percent: null, error: null, ...payload, at: Date.now() }
+  if (merged.message) {
+    merged.message = rebrandDesktopText(merged.message)
+  }
+  if (merged.error) {
+    merged.error = rebrandDesktopText(merged.error)
+  }
   rememberLog(`[updates] ${merged.stage}: ${merged.message || merged.error || ''}`)
 
   for (const window of BrowserWindow.getAllWindows()) {
@@ -3342,7 +3351,7 @@ async function claimBackendChild(child, command, profile, nonce) {
   } catch (error) {
     stopBackendChild(child)
     await waitForBackendExit(child)
-    throw new Error(`Could not persist ownership for the Hermes backend: ${error.message}`)
+    throw new Error(`Could not persist ownership for the ${APP_NAME} backend: ${error.message}`)
   }
 }
 
@@ -3561,7 +3570,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     emitUpdateProgress({
       stage: 'restart',
       message:
-        'Updating Hermes — this window will close and the updater will open. Don’t reopen Hermes yourself; it restarts automatically when the update finishes.',
+        `Updating ${APP_NAME} — this window will close and the updater will open. Don’t reopen ${APP_NAME} yourself; it restarts automatically when the update finishes.`,
       percent: 100
     })
     repairMacUpdaterHelper(updater)
@@ -3596,8 +3605,8 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
       // user close the holder and retry. Restart our own backend so the app
       // keeps working after the failed attempt.
       const message =
-        'Update aborted: another process is holding the Hermes install open ' +
-        '(a second Hermes window or a terminal running hermes?). Close it and retry.'
+        `Update aborted: another process is holding the ${APP_NAME} install open ` +
+        `(a second ${APP_NAME} window or a terminal running ${APP_NAME.toLowerCase()}). Close it and retry.`
 
       emitUpdateProgress({ stage: 'error', message, percent: null })
       startHermes().catch(() => {})
@@ -3766,7 +3775,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     const handoffOutcome = await observeUpdaterHandoff(child, UPDATE_HANDOFF_DWELL_MS)
 
     if (!handoffOutcome.ok) {
-      const message = `Update failed to start: ${handoffOutcome.message}. Hermes will keep running — try again, or run \`hermes update\` from a terminal.`
+      const message = rebrandDesktopText('Update failed to start: ' + handoffOutcome.message + '. ' + APP_NAME + ' will keep running — try again, or run `' + APP_NAME.toLowerCase() + ' update` from a terminal.')
 
       rememberLog(`[updates] hand-off not viable, aborting quit: ${handoffOutcome.message}`)
       emitUpdateProgress({ stage: 'error', message, percent: null })
@@ -4097,8 +4106,7 @@ async function applyUpdatesPosixHandoff(opts: any) {
   rememberLog(`[updates] launched posix hand-off: ${handoff.scriptPath} (branch ${branch}); quitting to hand off`)
   emitUpdateProgress({
     stage: 'restart',
-    message:
-      'Updating Hermes — this window will close. Don’t reopen Hermes yourself; it restarts automatically when the update finishes.',
+    message: `Updating ${APP_NAME} — this window will close. Don’t reopen ${APP_NAME} yourself; it restarts automatically when the update finishes.`,
     percent: 100
   })
 
@@ -4111,7 +4119,7 @@ async function applyUpdatesPosixHandoff(opts: any) {
   const handoffOutcome = await observeUpdaterHandoff(child, UPDATE_HANDOFF_DWELL_MS)
 
   if (!handoffOutcome.ok) {
-    const message = `Update failed to start: ${handoffOutcome.message}. Hermes will keep running — try again, or run \`hermes update\` from a terminal.`
+    const message = rebrandDesktopText('Update failed to start: ' + handoffOutcome.message + '. ' + APP_NAME + ' will keep running — try again, or run `' + APP_NAME.toLowerCase() + ' update` from a terminal.')
 
     rememberLog(`[updates] posix hand-off not viable, aborting quit: ${handoffOutcome.message}`)
     emitUpdateProgress({ stage: 'error', message, percent: null })
@@ -4431,7 +4439,7 @@ function createActiveBackend(backendArgs) {
 
   return {
     kind: 'python',
-    label: `Hermes at ${ACTIVE_HERMES_ROOT}`,
+    label: `${APP_NAME} at ${ACTIVE_HERMES_ROOT}`,
     command,
     args: ['-m', 'hermes_cli.main', ...backendArgs],
     env: buildDesktopBackendEnv({
@@ -4451,7 +4459,7 @@ function resolveHermesBackend(backendArgs) {
   const overrideRoot = process.env.HERMES_DESKTOP_HERMES_ROOT && path.resolve(process.env.HERMES_DESKTOP_HERMES_ROOT)
 
   if (overrideRoot && isHermesSourceRoot(overrideRoot)) {
-    const backend = createPythonBackend(overrideRoot, `Hermes source at ${overrideRoot}`, backendArgs)
+    const backend = createPythonBackend(overrideRoot, `${APP_NAME} source at ${overrideRoot}`, backendArgs)
 
     if (backend) {
       return backend
@@ -4463,7 +4471,7 @@ function resolveHermesBackend(backendArgs) {
   //    installed `hermes` on PATH so local Python edits are actually exercised.
   //    (In dev with no checkout, SOURCE_REPO_ROOT won't pass isHermesSourceRoot.)
   if (!IS_PACKAGED && isHermesSourceRoot(SOURCE_REPO_ROOT)) {
-    const backend = createPythonBackend(SOURCE_REPO_ROOT, `Hermes source at ${SOURCE_REPO_ROOT}`, backendArgs)
+    const backend = createPythonBackend(SOURCE_REPO_ROOT, `${APP_NAME} source at ${SOURCE_REPO_ROOT}`, backendArgs)
 
     if (backend) {
       return backend
@@ -4483,7 +4491,7 @@ function resolveHermesBackend(backendArgs) {
   if (activeRuntime.shouldUseActiveRuntime && !bootstrapRepairRequested) {
     if (!activeRuntime.hasValidMarker) {
       rememberLog(
-        `[bootstrap] Active Hermes runtime at ${ACTIVE_HERMES_ROOT} is usable but the bootstrap marker is missing or stale; skipping first-run bootstrap.`
+        `[bootstrap] Active ${APP_NAME} runtime at ${ACTIVE_HERMES_ROOT} is usable but the bootstrap marker is missing or stale; skipping first-run bootstrap.`
       )
     }
 
@@ -4551,7 +4559,7 @@ function resolveHermesBackend(backendArgs) {
         // same un-memoized import probe, costing up to another full probe
         // timeout on the boot path for an answer we already have.
         return {
-          label: `existing Hermes CLI at ${hermesCommand}`,
+          label: `existing ${APP_NAME} CLI at ${hermesCommand}`,
           command: hermesCommand,
           args: backendArgs,
           bootstrap: false,
@@ -4584,7 +4592,7 @@ function resolveHermesBackend(backendArgs) {
     if (canImportHermesCli(python)) {
       return {
         kind: 'python',
-        label: `installed hermes_cli module via ${python}`,
+        label: `installed ${APP_NAME} module via ${python}`,
         command: python,
         args: ['-m', 'hermes_cli.main', ...backendArgs],
         bootstrap: false,
@@ -4608,7 +4616,7 @@ function resolveHermesBackend(backendArgs) {
   //    is a recoverable state the GUI can drive through.
   return {
     kind: 'bootstrap-needed',
-    label: 'Hermes Agent not installed yet; bootstrap required',
+    label: `${APP_NAME} Agent not installed yet; bootstrap required`,
     command: null,
     args: backendArgs,
     bootstrap: true,
@@ -4639,11 +4647,11 @@ async function ensureRuntime(backend) {
   // will rewire startup to spawn the window first and route bootstrap events
   // to a renderer-side install overlay.
   if (backend.kind === 'bootstrap-needed') {
-    rememberLog('[bootstrap] no Hermes install found; starting first-launch bootstrap')
+    rememberLog(`[bootstrap] no ${APP_NAME} install found; starting first-launch bootstrap`)
 
     if (await handOffWindowsBootstrapRecovery('bootstrap-needed')) {
       const handoffError: Error & { isBootstrapFailure?: boolean; bootstrapHandedOff?: boolean } = new Error(
-        'Hermes recovery was handed off to Hermes Setup. The desktop will restart when recovery completes.'
+        `${APP_NAME} recovery was handed off to ${APP_NAME} Setup. The desktop will restart when recovery completes.`
       )
 
       handoffError.isBootstrapFailure = true
@@ -4680,7 +4688,7 @@ async function ensureRuntime(backend) {
       activeRoot: backend.activeRoot,
       sourceRepoRoot: SOURCE_REPO_ROOT,
       hermesHome: HERMES_HOME,
-      logRoot: path.join(HERMES_HOME, 'logs'),
+      logRoot: path.join(HAFIYE_STATE_HOME, 'logs'),
       abortSignal: bootstrapAbortController.signal,
       onEvent: ev => {
         // Tee every bootstrap event to (a) the desktop log for forensics
@@ -4705,7 +4713,7 @@ async function ensureRuntime(backend) {
     bootstrapAbortController = null
 
     if (bootstrapResult.cancelled) {
-      const cancelledError = new Error('Hermes install was cancelled.') as any
+      const cancelledError = new Error(`${APP_NAME} install was cancelled.`) as any
       cancelledError.isBootstrapFailure = true
       cancelledError.bootstrapCancelled = true
       bootstrapFailure = cancelledError
@@ -4714,9 +4722,9 @@ async function ensureRuntime(backend) {
 
     if (!bootstrapResult.ok) {
       const bootstrapError = new Error(
-        `Hermes bootstrap failed${bootstrapResult.failedStage ? ` at stage '${bootstrapResult.failedStage}'` : ''}: ` +
+        `${APP_NAME} bootstrap failed${bootstrapResult.failedStage ? ` at stage '${bootstrapResult.failedStage}'` : ''}: ` +
           `${bootstrapResult.error || 'unknown error'}. ` +
-          `Check ${path.join(HERMES_HOME, 'logs', 'desktop.log')} for the full transcript.`
+          `Check ${DESKTOP_LOG_PATH} for the full transcript.`
       ) as any
 
       bootstrapError.isBootstrapFailure = true
@@ -4743,8 +4751,8 @@ async function ensureRuntime(backend) {
   // attests they ran successfully).
   if (!isHermesSourceRoot(ACTIVE_HERMES_ROOT)) {
     throw new Error(
-      `Hermes install at ${ACTIVE_HERMES_ROOT} is missing or incomplete. ` +
-        'Reinstall via the desktop installer or scripts/install.ps1.'
+      `${APP_NAME} install at ${ACTIVE_HERMES_ROOT} is missing or incomplete. ` +
+        `Reinstall via the desktop installer or scripts/install.ps1.`
     )
   }
 
@@ -4756,10 +4764,10 @@ async function ensureRuntime(backend) {
   // here via an external `hermes` on PATH, this check still helps.
   if (IS_WINDOWS && !findGitBash()) {
     throw new Error(
-      'Git for Windows is required for Hermes on Windows (provides Git Bash, ' +
+      `Git for Windows is required for ${APP_NAME} on Windows (provides Git Bash, ` +
         "which the agent's terminal tool uses). Install it from " +
         'https://git-scm.com/download/win or run `winget install -e --id Git.Git`, ' +
-        'then relaunch Hermes.'
+        `then relaunch ${APP_NAME}.`
     )
   }
 
@@ -4779,10 +4787,10 @@ async function ensureRuntime(backend) {
   }
 
   backend.command = getVenvPython(VENV_ROOT)
-  backend.label = `Hermes at ${ACTIVE_HERMES_ROOT} (venv: ${VENV_ROOT})`
+  backend.label = `${APP_NAME} at ${ACTIVE_HERMES_ROOT} (venv: ${VENV_ROOT})`
   updateBootProgress({
     phase: 'runtime.ready',
-    message: 'Hermes runtime is ready',
+    message: `${APP_NAME} runtime is ready`,
     progress: 82,
     running: true,
     error: null
@@ -4825,7 +4833,7 @@ function fetchJson(url, token, options: any = {}) {
     const timeoutMs = resolveTimeoutMs(options.timeoutMs, DEFAULT_FETCH_TIMEOUT_MS)
 
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      reject(new Error(`Unsupported Hermes backend URL protocol: ${parsed.protocol}`))
+      reject(new Error(`Unsupported ${APP_NAME} backend URL protocol: ${parsed.protocol}`))
 
       return
     }
@@ -4878,7 +4886,7 @@ function fetchJson(url, token, options: any = {}) {
             reject(
               new Error(
                 `Expected JSON from ${url} but got HTML (status ${res.statusCode}). ` +
-                  'The endpoint is likely missing on the Hermes backend.'
+                  `The endpoint is likely missing on the ${APP_NAME} backend.`
               )
             )
 
@@ -4896,7 +4904,7 @@ function fetchJson(url, token, options: any = {}) {
 
     req.on('error', reject)
     req.setTimeout(timeoutMs, () => {
-      req.destroy(new Error(`Timed out connecting to Hermes backend after ${timeoutMs}ms`))
+      req.destroy(new Error(`Timed out connecting to ${APP_NAME} backend after ${timeoutMs}ms`))
     })
 
     if (body) {
@@ -4925,7 +4933,7 @@ function downloadViaTokenToFile(url, token, ctx, options: any = {}) {
     }
 
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      reject(new Error(`Unsupported Hermes backend URL protocol: ${parsed.protocol}`))
+      reject(new Error(`Unsupported ${APP_NAME} backend URL protocol: ${parsed.protocol}`))
 
       return
     }
@@ -4958,7 +4966,7 @@ function downloadViaTokenToFile(url, token, ctx, options: any = {}) {
 
     req.on('error', reject)
     req.setTimeout(timeoutMs, () => {
-      req.destroy(new Error(`Timed out connecting to Hermes backend after ${timeoutMs}ms`))
+      req.destroy(new Error(`Timed out connecting to ${APP_NAME} backend after ${timeoutMs}ms`))
     })
     req.end()
   })
@@ -4986,7 +4994,7 @@ function fetchPublicJson(url, options: any = {}) {
     const timeoutMs = resolveTimeoutMs(options.timeoutMs, DEFAULT_FETCH_TIMEOUT_MS)
 
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      reject(new Error(`Unsupported Hermes backend URL protocol: ${parsed.protocol}`))
+      reject(new Error(`Unsupported ${APP_NAME} backend URL protocol: ${parsed.protocol}`))
 
       return
     }
@@ -5027,7 +5035,7 @@ function fetchPublicJson(url, options: any = {}) {
             reject(
               new Error(
                 `Expected JSON from ${url} but got HTML (status ${res.statusCode}). ` +
-                  'The endpoint is likely missing on the Hermes backend.'
+                  `The endpoint is likely missing on the ${APP_NAME} backend.`
               )
             )
 
@@ -5045,7 +5053,7 @@ function fetchPublicJson(url, options: any = {}) {
 
     req.on('error', reject)
     req.setTimeout(timeoutMs, () => {
-      req.destroy(new Error(`Timed out connecting to Hermes backend after ${timeoutMs}ms`))
+      req.destroy(new Error(`Timed out connecting to ${APP_NAME} backend after ${timeoutMs}ms`))
     })
 
     if (body) {
@@ -6982,7 +6990,7 @@ function openOauthLoginWindow(baseUrl, { silent = false } = {}) {
       win = new BrowserWindow({
         width: 520,
         height: 720,
-        title: silent ? 'Connecting to Hermes Cloud agent…' : 'Sign in to Hermes gateway',
+        title: silent ? `Connecting to ${APP_NAME} Cloud agent…` : `Sign in to ${APP_NAME} gateway`,
         autoHideMenuBar: true,
         // Silent cascade: start HIDDEN. The auto-SSO 302 chain completes in
         // well under a second, so the window normally never needs to show. We
@@ -7077,7 +7085,7 @@ function fetchJsonViaOauthSession(url, options: any = {}) {
     }
 
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      reject(new Error(`Unsupported Hermes backend URL protocol: ${parsed.protocol}`))
+      reject(new Error(`Unsupported ${APP_NAME} backend URL protocol: ${parsed.protocol}`))
 
       return
     }
@@ -7110,7 +7118,7 @@ function fetchJsonViaOauthSession(url, options: any = {}) {
         // already finished
       }
 
-      reject(new Error(`Timed out connecting to Hermes backend after ${timeoutMs}ms`))
+      reject(new Error(`Timed out connecting to ${APP_NAME} backend after ${timeoutMs}ms`))
     }, timeoutMs)
 
     request.on('response', res => {
@@ -7328,7 +7336,7 @@ function downloadViaOauthSessionToFile(url, ctx, options: any = {}) {
     }
 
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      reject(new Error(`Unsupported Hermes backend URL protocol: ${parsed.protocol}`))
+      reject(new Error(`Unsupported ${APP_NAME} backend URL protocol: ${parsed.protocol}`))
 
       return
     }
@@ -7358,7 +7366,7 @@ function downloadViaOauthSessionToFile(url, ctx, options: any = {}) {
         // already finished
       }
 
-      reject(new Error(`Timed out connecting to Hermes backend after ${timeoutMs}ms`))
+      reject(new Error(`Timed out connecting to ${APP_NAME} backend after ${timeoutMs}ms`))
     }, timeoutMs)
 
     request.on('response', res => {
@@ -7825,7 +7833,7 @@ function renewPortalAccessSilently() {
           width: 520,
           height: 720,
           show: false,
-          title: 'Renewing Hermes Cloud session…',
+          title: `Renewing ${APP_NAME} Cloud session…`,
           autoHideMenuBar: true,
           webPreferences: {
             contextIsolation: true,
@@ -7872,7 +7880,7 @@ function openPortalLoginWindow() {
 
   return new Promise((resolve, reject) => {
     if (!app.isReady()) {
-      reject(new Error('Desktop is not ready to start a Hermes Cloud sign-in.'))
+      reject(new Error(`Desktop is not ready to start a ${APP_NAME} Cloud sign-in.`))
 
       return
     }
@@ -7930,7 +7938,7 @@ function openPortalLoginWindow() {
       win = new BrowserWindow({
         width: 520,
         height: 720,
-        title: 'Sign in to Hermes Cloud',
+        title: `Sign in to ${APP_NAME} Cloud`,
         autoHideMenuBar: true,
         webPreferences: {
           contextIsolation: true,
@@ -7983,7 +7991,7 @@ async function discoverCloudAgents(org?: string) {
 
   if (!(await hasLivePortalSession())) {
     const err = new Error(
-      'You are not signed in to Hermes Cloud. Open Settings → Gateway, choose Hermes Cloud, and sign in.'
+      `You are not signed in to ${APP_NAME} Cloud. Open Settings → Gateway, choose ${APP_NAME} Cloud, and sign in.`
     ) as any
 
     err.needsCloudLogin = true
@@ -8030,7 +8038,7 @@ async function discoverCloudAgents(org?: string) {
       // recover it) — surface it as a re-login, not a generic failure.
       if (error && error.statusCode === 401) {
         const err = new Error(
-          'Your Hermes Cloud session has expired. Open Settings → Gateway and sign in again.'
+          `Your ${APP_NAME} Cloud session has expired. Open Settings → Gateway and sign in again.`
         ) as any
 
         err.needsCloudLogin = true
@@ -8138,7 +8146,7 @@ async function cloudAgentSilentSignIn(dashboardUrl) {
   // interactive prompt rather than a silent cascade. Discovery already gates on
   // this, but a selection can arrive after the session lapsed.
   if (!(await hasLivePortalSession())) {
-    const err = new Error('Your Hermes Cloud session has expired. Sign in to Hermes Cloud again.') as any
+    const err = new Error(`Your ${APP_NAME} Cloud session has expired. Sign in to ${APP_NAME} Cloud again.`) as any
     err.needsCloudLogin = true
     throw err
   }
@@ -8969,7 +8977,7 @@ async function buildRemoteConnection(
       oauthGuardMayHardFail(await gatewayAuthProviders(baseUrl, remoteHeaders))
     ) {
       const err = new Error(
-        'Remote Hermes gateway uses OAuth, but you are not signed in. ' +
+        `Remote ${APP_NAME} gateway uses OAuth, but you are not signed in. ` +
           'Open Settings → Gateway and click "Sign in", or switch back to Local.'
       ) as any
 
@@ -8998,7 +9006,7 @@ async function buildRemoteConnection(
       throw gatewayTicketFailure(
         error,
         'Your remote gateway session has expired. Open Settings → Gateway and click "Sign in" again.',
-        'Could not reach the remote Hermes gateway while refreshing its WebSocket ticket. Try reconnecting.'
+        `Could not reach the remote ${APP_NAME} gateway while refreshing its WebSocket ticket. Try reconnecting.`
       )
     }
 
@@ -9023,7 +9031,7 @@ async function buildRemoteConnection(
 
   if (!token) {
     throw new Error(
-      'Remote Hermes gateway is selected, but no session token is saved. ' +
+      `Remote ${APP_NAME} gateway is selected, but no session token is saved. ` +
         'Open Settings → Gateway and save a token, or switch back to Local.'
     )
   }
@@ -10905,7 +10913,7 @@ async function startHermes() {
       throw error
     }
 
-    const message = error instanceof Error ? error.message : String(error)
+    const message = rebrandDesktopText(error instanceof Error ? error.message : String(error))
     const hostKeyChanged = isHostKeyChangedBootFailure(error)
 
     // Carry structured Cloud-down metadata through the boot-progress / IPC
@@ -11085,7 +11093,7 @@ function spawnSecondaryWindow({ sessionId, watch }: { sessionId?: string; watch?
     height: SESSION_WINDOW_MIN_HEIGHT,
     minWidth: SESSION_WINDOW_MIN_WIDTH,
     minHeight: SESSION_WINDOW_MIN_HEIGHT,
-    title: 'Hermes',
+    title: APP_NAME,
     titleBarStyle: 'hidden',
     titleBarOverlay: getTitleBarOverlayOptions(),
     trafficLightPosition: IS_MAC ? WINDOW_BUTTON_POSITION : undefined,
@@ -11189,7 +11197,7 @@ function createInstanceWindow() {
     ...nextInstanceBounds(),
     minWidth: WINDOW_MIN_WIDTH,
     minHeight: WINDOW_MIN_HEIGHT,
-    title: 'Hermes',
+    title: APP_NAME,
     titleBarStyle: 'hidden',
     titleBarOverlay: getTitleBarOverlayOptions(),
     trafficLightPosition: IS_MAC ? WINDOW_BUTTON_POSITION : undefined,
@@ -12052,7 +12060,7 @@ function createWindow() {
     ...computeWindowOptions(savedWindowState, screen.getAllDisplays()),
     minWidth: WINDOW_MIN_WIDTH,
     minHeight: WINDOW_MIN_HEIGHT,
-    title: 'Hermes',
+    title: APP_NAME,
     // Frameless title bar on every platform so the renderer can paint the
     // "hide sidebar" button (and other left-side titlebar tools) flush with
     // the top edge — matching the macOS layout where the traffic lights sit
@@ -12375,7 +12383,7 @@ ipcMain.handle('hermes:window:openInTerminal', async (_event, sessionId, opts) =
     const backend = resolveHermesBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
 
     if (!backend.command) {
-      return { ok: false, error: 'Hermes is not installed yet' }
+      return { ok: false, error: `${APP_NAME} is not installed yet` }
     }
 
     const { cwd } = sanitizeWorkspaceCwd(opts?.cwd)
@@ -13861,8 +13869,8 @@ ipcMain.handle('hermes:notify', (_event, payload) => {
   const icon = typeof payload?.icon === 'string' && payload.icon.trim() ? payload.icon.trim() : undefined
 
   const notification = new Notification({
-    title: payload?.title || 'Hermes',
-    body: payload?.body || '',
+    title: rebrandDesktopText(payload?.title || APP_NAME),
+    body: rebrandDesktopText(payload?.body || ''),
     silent: Boolean(payload?.silent),
     ...(icon ? { icon } : {}),
     actions: actions.map(action => ({ type: 'button', text: String(action?.text || '') }))
@@ -14834,7 +14842,7 @@ async function runDesktopUninstall(mode) {
     return {
       ok: false,
       error: 'agent-missing',
-      message: `Can't run the uninstaller: no Hermes agent venv at ${VENV_ROOT}.`
+      message: `Can't run the uninstaller: no ${APP_NAME} agent venv at ${VENV_ROOT}.`
     }
   }
 

@@ -218,7 +218,7 @@ _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧
 
 # Load .env from ~/.hermes/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from hermes_constants import get_hermes_home, display_hermes_home
+from hermes_constants import get_config_path, get_hermes_home, display_hermes_home
 from hermes_cli.browser_connect import (
     DEFAULT_BROWSER_CDP_URL,
     is_browser_debug_ready,
@@ -229,8 +229,12 @@ from hermes_cli.env_loader import load_hermes_dotenv
 from utils import base_url_host_matches, base_url_hostname, fast_safe_load
 
 _hermes_home = get_hermes_home()
+# Keep the import-time value so tests and embedding callers that intentionally
+# replace the legacy module-level home continue to get a scoped config file.
+# Normal Hafiye launches use the canonical XDG config path below.
+_initial_hermes_home = _hermes_home
 _project_env = Path(__file__).parent / '.env'
-load_hermes_dotenv(hermes_home=_hermes_home, project_env=_project_env)
+load_hermes_dotenv(project_env=_project_env)
 
 
 _REASONING_TAGS = (
@@ -425,8 +429,12 @@ def load_cli_config() -> Dict[str, Any]:
     Credentials in ``.env`` are still loaded — this flag only suppresses
     behavioral/config settings.
     """
-    # Check user config first ({HERMES_HOME}/config.yaml)
-    user_config_path = _hermes_home / 'config.yaml'
+    # Check user config first.  Normal Hafiye launches resolve this through
+    # the XDG config root.  Preserve the upstream module-level override
+    # contract for embedders/tests that replace ``cli._hermes_home``.
+    user_config_path = get_config_path()
+    if _hermes_home != _initial_hermes_home:
+        user_config_path = _hermes_home / "config.yaml"
     project_config_path = Path(__file__).parent / 'cli-config.yaml'
 
     # --ignore-user-config: force-skip the user config.yaml (still honor project
@@ -4925,7 +4933,7 @@ def save_config_value(key_path: str, value: any) -> bool:
     # exists in the checkout) while startup read HERMES_HOME/config.yaml, so the
     # setting silently vanished every restart on any install whose
     # HERMES_HOME/config.yaml didn't exist yet.
-    config_path = get_hermes_home() / 'config.yaml'
+    config_path = get_config_path()
     
     try:
         # Ensure parent directory exists (for ~/.hermes/config.yaml on first use)
@@ -9542,7 +9550,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         terminal_cwd = os.getenv("TERMINAL_CWD", os.getcwd())
         terminal_timeout = os.getenv("TERMINAL_TIMEOUT", "60")
         
-        user_config_path = _hermes_home / 'config.yaml'
+        user_config_path = get_config_path()
         project_config_path = Path(__file__).parent / 'cli-config.yaml'
         if user_config_path.exists():
             config_path = user_config_path
@@ -14332,7 +14340,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                         if not is_seen(CLI_CONFIG, TOOL_PROGRESS_FLAG):
                             self._long_tool_hint_fired = True
                             _cprint(f"  {_DIM}{tool_progress_hint_cli()}{_RST}")
-                            mark_seen(_hermes_home / "config.yaml", TOOL_PROGRESS_FLAG)
+                            mark_seen(get_config_path(), TOOL_PROGRESS_FLAG)
                             CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[TOOL_PROGRESS_FLAG] = True
                 except Exception:
                     pass
@@ -17999,7 +18007,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                         if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
                             _hint_mode = "redirect" if redirected else _effective_mode
                             _cprint(f"  {_DIM}{busy_input_hint_cli(_hint_mode)}{_RST}")
-                            mark_seen(_hermes_home / "config.yaml", BUSY_INPUT_FLAG)
+                            mark_seen(get_config_path(), BUSY_INPUT_FLAG)
                             CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
                     except Exception:
                         pass

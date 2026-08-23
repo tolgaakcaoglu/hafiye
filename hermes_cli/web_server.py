@@ -57,6 +57,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from hermes_cli import __version__, __release_date__
+from hermes_constants import get_hafiye_state_home
 from hermes_cli.config import (
     build_cron_model_impact,
     cfg_get,
@@ -4361,7 +4362,7 @@ async def run_debug_share_endpoint(body: DebugShareRequest | None = None):
 # the dashboard can tail them back to the user.
 # ---------------------------------------------------------------------------
 
-_ACTION_LOG_DIR: Path = get_hermes_home() / "logs"
+_ACTION_LOG_DIR: Path = get_hafiye_state_home() / "logs"
 _ACTION_LOG_TAIL_MAX_BYTES = 256 * 1024
 _ACTION_LOG_TAIL_INITIAL_CHUNK_BYTES = 8 * 1024
 _ACTION_LOG_TAIL_MAX_CHUNK_BYTES = 64 * 1024
@@ -12570,7 +12571,7 @@ async def get_logs(
     log_name = LOG_FILES.get(file)
     if not log_name:
         raise HTTPException(status_code=400, detail=f"Unknown log file: {file}")
-    log_path = get_hermes_home() / "logs" / log_name
+    log_path = get_hafiye_state_home() / "logs" / log_name
     if not log_path.exists():
         return {"file": file, "lines": []}
 

@@ -51,7 +51,7 @@ from agent.skill_commands import (
     SKILL_SCAFFOLD_SQL_LIKE,
     describe_skill_invocation,
 )
-from hermes_constants import get_hermes_home
+from hermes_constants import get_hermes_home, get_hafiye_state_home
 from hermes_cli.sqlite_runtime import (
     is_sqlite_wal_reset_vulnerable as _is_sqlite_wal_reset_vulnerable,
 )
@@ -356,7 +356,7 @@ def _delete_delegate_children(conn, parent_ids: List[str]) -> List[str]:
 
 T = TypeVar("T")
 
-DEFAULT_DB_PATH = get_hermes_home() / "state.db"
+DEFAULT_DB_PATH = get_hafiye_state_home() / "state.db"
 
 # How long SessionDB stops attempting read-only opens after one fails, before
 # probing again. Long enough that a genuinely unreadable file isn't retried per
@@ -403,7 +403,7 @@ def _default_db_path() -> Path:
     """
     if DEFAULT_DB_PATH != _IMPORT_DEFAULT_DB_PATH:
         return DEFAULT_DB_PATH
-    return get_hermes_home() / "state.db"
+    return get_hafiye_state_home() / "state.db"
 
 
 # ---------------------------------------------------------------------------
@@ -466,7 +466,13 @@ def _real_platform_state_root() -> Optional[Path]:
                 else Path(os.path.expanduser("~")) / "AppData" / "Local" / "hermes"
             )
         else:
-            root = Path(os.path.expanduser("~")) / ".hermes"
+            xdg_state = os.environ.get("XDG_STATE_HOME", "").strip()
+            base = (
+                Path(xdg_state).expanduser()
+                if xdg_state and Path(xdg_state).expanduser().is_absolute()
+                else Path(os.path.expanduser("~")) / ".local" / "state"
+            )
+            root = base / "hafiye"
         return root.resolve()
     except Exception:
         return None

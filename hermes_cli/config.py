@@ -1,9 +1,10 @@
 """
 Configuration management for Hermes Agent.
 
-Config files are stored in ~/.hermes/ for easy access:
-- ~/.hermes/config.yaml  - All settings (model, toolsets, terminal, etc.)
-- ~/.hermes/.env         - API keys and secrets
+Config files are stored in Hafiye's XDG configuration root for normal
+installations:
+- ~/.config/hafiye/config.yaml  - All settings (model, toolsets, terminal, etc.)
+- ~/.config/hafiye/.env         - API keys and secrets
 
 This module provides:
 - hermes config          - Show current configuration
@@ -720,16 +721,25 @@ def get_container_exec_info() -> Optional[dict]:
 # =============================================================================
 
 # Re-export from hermes_constants — canonical definition lives there.
-from hermes_constants import get_hermes_home, get_process_hermes_home  # noqa: F811,E402
+from hermes_constants import (  # noqa: F811,E402
+    get_hermes_home,
+    get_process_hermes_home,
+    get_config_path as _get_config_path,
+    get_env_path as _get_env_path,
+    get_hafiye_config_home,
+    get_hafiye_data_home,
+    get_hafiye_state_home,
+    get_hafiye_cache_home,
+)
 from utils import atomic_replace, fast_safe_load
 
 def get_config_path() -> Path:
     """Get the main config file path."""
-    return get_hermes_home() / "config.yaml"
+    return _get_config_path()
 
 def get_env_path() -> Path:
     """Get the .env file path (for API keys)."""
-    return get_hermes_home() / ".env"
+    return _get_env_path()
 
 def get_project_root() -> Path:
     """Get the project installation directory."""
@@ -897,7 +907,7 @@ _HERMES_HOME_ENSURED: set = set()
 
 
 def ensure_hermes_home():
-    """Ensure ~/.hermes directory structure exists with secure permissions.
+    """Ensure Hafiye's XDG roots and data structure exist securely.
 
     In managed mode (NixOS), dirs are created by the activation script with
     setgid + group-writable (2770). We skip mkdir and set umask(0o007) so
@@ -912,9 +922,20 @@ def ensure_hermes_home():
     ``get_hermes_home()`` and therefore re-run for the new path.
     """
     home = get_hermes_home()
-    key = str(home)
+    roots = tuple(
+        dict.fromkeys(
+            (
+                home,
+                get_hafiye_config_home(),
+                get_hafiye_data_home(),
+                get_hafiye_state_home(),
+                get_hafiye_cache_home(),
+            )
+        )
+    )
+    key = "|".join(str(root) for root in roots)
 
-    if key in _HERMES_HOME_ENSURED and home.is_dir():
+    if key in _HERMES_HOME_ENSURED and all(root.is_dir() for root in roots):
         return
     # Named profiles must be created explicitly (e.g. ``hermes profile create``).
     # If a stale process keeps running after the profile was renamed/deleted,
@@ -932,8 +953,9 @@ def ensure_hermes_home():
         finally:
             os.umask(old_umask)
     else:
-        home.mkdir(parents=True, exist_ok=True)
-        _secure_dir(home)
+        for root in roots:
+            root.mkdir(parents=True, exist_ok=True)
+            _secure_dir(root)
         for subdir in (
             "cron", "sessions", "logs", "logs/curator", "memories",
             "pairing", "hooks", "image_cache", "audio_cache", "skills",
@@ -941,6 +963,19 @@ def ensure_hermes_home():
             d = home / subdir
             d.mkdir(parents=True, exist_ok=True)
             _secure_dir(d)
+        # Normal Hafiye installs keep operational logs and disposable cache
+        # outside the persistent data root.  Explicit/profile homes collapse
+        # back to ``home`` above, so these remain harmlessly idempotent there.
+        for root, subdirs in (
+            (get_hafiye_state_home(), ("logs", "logs/curator")),
+            (get_hafiye_cache_home(), ()),
+        ):
+            root.mkdir(parents=True, exist_ok=True)
+            _secure_dir(root)
+            for subdir in subdirs:
+                d = root / subdir
+                d.mkdir(parents=True, exist_ok=True)
+                _secure_dir(d)
         _ensure_default_soul_md(home)
 
     _HERMES_HOME_ENSURED.add(key)
