@@ -398,12 +398,13 @@ async def _lifespan(app: "FastAPI"):
 
     record_boot_fingerprint()
 
-    # Desktop-spawned backends (HERMES_DESKTOP=1) fire cron jobs themselves,
-    # since the app has no gateway running the scheduler. Server `hermes
-    # dashboard` is unaffected — it relies on its own gateway.
+    # Desktop-spawned backends (HERMES_DESKTOP=1) and Hafiye's persistent
+    # Desktop backend fire cron jobs themselves, since the app has no separate
+    # scheduler process in this topology. Server `hermes dashboard` is
+    # unaffected — it relies on its own gateway.
     cron_stop: "threading.Event | None" = None
     cron_thread: "threading.Thread | None" = None
-    if os.getenv("HERMES_DESKTOP") == "1":
+    if os.getenv("HERMES_DESKTOP") == "1" or os.getenv("HAFIYE_PERSISTENT_GATEWAY") == "1":
         # Before forking a fresh gateway, reap any orphan left by a previous
         # serve session. Graceful shutdown reaps the managed child, but an
         # abnormal exit (crash, SIGKILL, power loss, forced update) reparents
@@ -446,7 +447,7 @@ async def _lifespan(app: "FastAPI"):
         selftest_task.cancel()
         auto_archive_task.cancel()
         await PTY_REGISTRY.close_all()
-        if os.getenv("HERMES_DESKTOP") == "1":
+        if os.getenv("HERMES_DESKTOP") == "1" or os.getenv("HAFIYE_PERSISTENT_GATEWAY") == "1":
             _terminate_desktop_managed_gateway()
 
 
@@ -4528,6 +4529,34 @@ def _spawn_hermes_action(
     return proc
 
 
+def _spawn_persistent_gateway_restart() -> subprocess.Popen:
+    """Restart the Hafiye-owned persistent backend through user systemd."""
+    log_file_name = _ACTION_LOG_FILES["gateway-restart"]
+    _ACTION_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = _ACTION_LOG_DIR / log_file_name
+    log_file = open(log_path, "ab", buffering=0)
+    log_file.write(
+        f"\n=== gateway-restart (hafiye-gateway.service) started {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n".encode()
+    )
+    try:
+        proc = subprocess.Popen(
+            ["systemctl", "--user", "restart", "hafiye-gateway.service"],
+            cwd=str(PROJECT_ROOT),
+            stdin=subprocess.DEVNULL,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            env={**os.environ, "HERMES_NONINTERACTIVE": "1"},
+            start_new_session=sys.platform != "win32",
+        )
+    finally:
+        log_file.close()
+    _ACTION_RESULTS.pop("gateway-restart", None)
+    _ACTION_COMMANDS["gateway-restart"] = ("systemctl", "--user", "restart", "hafiye-gateway.service")
+    _ACTION_PROCS["gateway-restart"] = proc
+    _ACTION_IDS.pop("gateway-restart", None)
+    return proc
+
+
 def _tail_lines(path: Path, n: int) -> List[str]:
     """Return the last ``n`` lines of ``path`` without loading huge logs."""
     if n <= 0 or not path.exists():
@@ -4690,6 +4719,28 @@ def _spawn_gateway_restart(profile: Optional[str] = None) -> Tuple[subprocess.Po
 
     Returns ``(proc, reused)``.
     """
+    global _LAST_GATEWAY_RESTART
+
+    # Hafiye Desktop's persistent backend is supervised by user systemd. Its
+    # restart must target that unit, not spawn a detached upstream messaging
+    # gateway child from inside the JSON-RPC backend.
+    if os.getenv("HAFIYE_PERSISTENT_GATEWAY") == "1":
+        existing = _ACTION_PROCS.get("gateway-restart")
+        if existing is not None and existing.poll() is None:
+            return existing, True
+        recent = _LAST_GATEWAY_RESTART
+        if recent is not None:
+            spawned_at, recent_proc, _recent_command = recent
+            if time.monotonic() - spawned_at < GATEWAY_RESTART_COOLDOWN_SECONDS:
+                return recent_proc, True
+        proc = _spawn_persistent_gateway_restart()
+        _LAST_GATEWAY_RESTART = (
+            time.monotonic(),
+            proc,
+            ("systemctl", "--user", "restart", "hafiye-gateway.service"),
+        )
+        return proc, False
+
     # Reap orphaned gateways before spawning a new one (#77276).
     try:
         from hermes_cli.gateway import _reap_unsupervised_gateway_orphans
@@ -4697,8 +4748,6 @@ def _spawn_gateway_restart(profile: Optional[str] = None) -> Tuple[subprocess.Po
         _reap_unsupervised_gateway_orphans()
     except Exception:
         pass  # best-effort — don't block the restart on a reap failure
-
-    global _LAST_GATEWAY_RESTART
 
     subcommand = _gateway_subcommand(profile, "restart")
     existing = _ACTION_PROCS.get("gateway-restart")

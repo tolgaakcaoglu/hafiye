@@ -3,7 +3,12 @@ import path from 'node:path'
 
 import { test } from 'vitest'
 
-import { resolveHafiyeDataHome, resolveHafiyePaths, resolveHafiyeStateHome } from './hafiye-paths'
+import {
+  resolveHafiyeDataHome,
+  resolveHafiyePaths,
+  resolveHafiyeStateHome,
+  resolvePersistentGatewayPaths
+} from './hafiye-paths'
 
 test('POSIX Desktop roots follow the XDG Hafiye layout', () => {
   const env = {
@@ -55,5 +60,21 @@ test('relative XDG overrides are ignored', () => {
       platform: 'linux'
     }),
     '/home/test/.local/share/hafiye'
+  )
+})
+
+test('persistent gateway paths use the Hafiye state root and owner service unit', () => {
+  assert.deepEqual(
+    resolvePersistentGatewayPaths({
+      env: { XDG_STATE_HOME: '/tmp/hafiye-state' },
+      home: '/home/test',
+      platform: 'linux'
+    }),
+    {
+      stateDir: '/tmp/hafiye-state/hafiye/gateway',
+      tokenFile: '/tmp/hafiye-state/hafiye/gateway/session-token',
+      descriptorFile: '/tmp/hafiye-state/hafiye/gateway/connection.json',
+      serviceUnit: '/home/test/.config/systemd/user/hafiye-gateway.service'
+    }
   )
 })

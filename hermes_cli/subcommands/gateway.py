@@ -248,6 +248,15 @@ def build_gateway_parser(
         help="Skip the confirmation prompt",
     )
 
+    # Hafiye's persistent Desktop JSON-RPC backend is intentionally a
+    # separate lifecycle from Hermes' upstream messaging gateway.  Keep the
+    # upstream verbs above unchanged and expose the Hafiye service under a
+    # nested command so existing `hermes gateway start|stop|...` semantics do
+    # not change.
+    from hermes_cli.persistent_gateway import build_service_parser
+
+    build_service_parser(gateway_subparsers)
+
     # gateway enroll — enroll a self-hosted gateway with a relay connector
     # (connector⇄gateway auth). Redeems a single-use enrollment token for the
     # per-gateway secret + per-tenant delivery key and writes them to .env.

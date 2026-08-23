@@ -3295,6 +3295,14 @@ def cmd_gateway(args):
     """Gateway management commands."""
     _sync_bundled_skills_quietly()
 
+    if getattr(args, "gateway_command", None) == "service":
+        from hermes_cli.persistent_gateway import persistent_gateway_command
+
+        result = persistent_gateway_command(args)
+        if isinstance(result, int) and result != 0:
+            raise SystemExit(result)
+        return
+
     from hermes_cli.gateway import gateway_command
 
     gateway_command(args)

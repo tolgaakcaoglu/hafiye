@@ -69,4 +69,23 @@ function resolveHafiyeStateHome(options: HafiyePathOptions = {}) {
   return resolveHafiyePaths(options).state
 }
 
-export { resolveHafiyeDataHome, resolveHafiyePaths, resolveHafiyeStateHome }
+function resolvePersistentGatewayPaths(options: HafiyePathOptions = {}) {
+  const roots = resolveHafiyePaths(options)
+  const home = options.home || os.homedir()
+  const pathModule = (options.platform || process.platform) === 'win32' ? path.win32 : path.posix
+  const stateDir = pathModule.join(roots.state, 'gateway')
+
+  return {
+    stateDir,
+    tokenFile: pathModule.join(stateDir, 'session-token'),
+    descriptorFile: pathModule.join(stateDir, 'connection.json'),
+    serviceUnit: pathModule.join(home, '.config', 'systemd', 'user', 'hafiye-gateway.service')
+  }
+}
+
+export {
+  resolveHafiyeDataHome,
+  resolveHafiyePaths,
+  resolveHafiyeStateHome,
+  resolvePersistentGatewayPaths
+}

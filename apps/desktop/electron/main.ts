@@ -121,7 +121,7 @@ import { describeCrashReason, installCrashForensics } from './crash-forensics'
 import { adoptServedDashboardToken } from './dashboard-token'
 import { loadOrCreateInstallationId, sshOwnershipId } from './desktop-installation'
 import { formatDesktopLogLine } from './desktop-log-line'
-import { resolveHafiyeDataHome, resolveHafiyeStateHome } from './hafiye-paths'
+import { resolveHafiyeDataHome, resolveHafiyeStateHome, resolvePersistentGatewayPaths } from './hafiye-paths'
 import { resolveDesktopRemoteRoute } from './desktop-remote-route'
 import {
   buildPosixCleanupScript,
@@ -9498,6 +9498,105 @@ function primaryBackendIsRemote() {
   return Boolean(profileHasRemoteOverride(primaryProfileKey())) || globalRemoteActive()
 }
 
+// Hafiye Desktop normally connects to the user-scoped persistent backend.
+// Keep the descriptor and token outside Electron's userData directory so the
+// CLI, systemd user service, and Desktop all resolve the same XDG state root.
+// A missing unit is an intentional development/legacy fallback: the existing
+// ephemeral local backend path below remains available until the installer has
+// provisioned hafiye-gateway.service.
+async function resolvePersistentGatewayConnection(profile: string) {
+  if (process.platform !== 'linux' || process.env.HAFIYE_DESKTOP_DISABLE_PERSISTENT_GATEWAY === '1') {
+    return null
+  }
+
+  const gatewayPaths = resolvePersistentGatewayPaths({
+    env: process.env,
+    home: app.getPath('home'),
+    platform: process.platform
+  })
+
+  if (!fs.existsSync(gatewayPaths.serviceUnit)) {
+    return null
+  }
+
+  let token: string
+  let descriptor: any
+
+  try {
+    const tokenStat = await fs.promises.stat(gatewayPaths.tokenFile)
+
+    if ((tokenStat.mode & 0o077) !== 0 || !tokenStat.isFile()) {
+      throw new Error('persistent gateway token has unsafe permissions')
+    }
+
+    token = (await fs.promises.readFile(gatewayPaths.tokenFile, 'utf8')).trim()
+    if (!/^[A-Za-z0-9_-]{32,128}$/.test(token)) {
+      throw new Error('persistent gateway token has an invalid format')
+    }
+
+    descriptor = JSON.parse(await fs.promises.readFile(gatewayPaths.descriptorFile, 'utf8'))
+    if (
+      !descriptor ||
+      descriptor.service !== 'hafiye-gateway.service' ||
+      descriptor.host !== '127.0.0.1' ||
+      !Number.isInteger(descriptor.port) ||
+      descriptor.port < 1024 ||
+      descriptor.port > 65535
+    ) {
+      throw new Error('persistent gateway descriptor is invalid')
+    }
+  } catch (error: any) {
+    rememberLog(`[persistent-gateway] descriptor unavailable: ${error.message}`)
+
+    return null
+  }
+
+  const baseUrl = `http://127.0.0.1:${descriptor.port}`
+  const connect = async () => {
+    await waitForHermes(baseUrl, token, undefined, 'token')
+    const wsUrl = `ws://127.0.0.1:${descriptor.port}/api/ws?token=${encodeURIComponent(token)}`
+    const wsProbe = await probeGatewayWebSocket(wsUrl, { WebSocketImpl: globalThis.WebSocket })
+
+    if (!wsProbe.ok) {
+      throw new Error(`persistent gateway WebSocket rejected the session token: ${wsProbe.reason}`)
+    }
+
+    return {
+      baseUrl,
+      mode: 'local' as const,
+      source: 'persistent',
+      authMode: 'token' as const,
+      token,
+      profile,
+      wsUrl,
+      logs: hermesLog.slice(-80),
+      ...getWindowState()
+    }
+  }
+
+  try {
+    return await connect()
+  } catch (firstError: any) {
+    // The unit may be enabled but stopped after a logout, package update, or
+    // an earlier crash. Starting the existing user unit is bounded and keeps
+    // the service lifecycle independent from Electron's process tree.
+    try {
+      await execText('systemctl', ['--user', 'start', 'hafiye-gateway.service'], { timeout: 5000 })
+      await new Promise(resolve => setTimeout(resolve, 250))
+
+      return await connect()
+    } catch (secondError: any) {
+      rememberLog(
+        `[persistent-gateway] unavailable; falling back to an ephemeral backend: ${
+          secondError?.message || firstError?.message || String(secondError)
+        }`
+      )
+
+      return null
+    }
+  }
+}
+
 // GET a profile's resolved backend (remote pool or local primary), parsed JSON.
 async function fetchJsonForProfile(profile, path) {
   return requestJsonForProfile(profile, path, 'GET')
@@ -10666,6 +10765,23 @@ async function startHermes() {
       rememberLog('[env] merged login-shell PATH into process.env for backend spawn')
     } else if (loginShellPath.reason && !['win32', 'unchanged'].includes(loginShellPath.reason)) {
       rememberLog(`[env] login-shell PATH resolution unavailable (${loginShellPath.reason}); keeping inherited PATH`)
+    }
+
+    if (!primaryBackendIsRemote()) {
+      const persistentConnection = await resolvePersistentGatewayConnection(primaryProfile)
+
+      if (persistentConnection) {
+        setWslBridgeProfileState(primaryProfile, true)
+        updateBootProgress({
+          phase: 'backend.ready',
+          message: 'Persistent Hafiye backend is ready. Finalizing desktop startup',
+          progress: 94,
+          running: true,
+          error: null
+        })
+
+        return persistentConnection
+      }
     }
 
     const token = crypto.randomBytes(32).toString('base64url')
