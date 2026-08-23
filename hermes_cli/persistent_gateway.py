@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from hermes_constants import get_hafiye_data_home, get_hafiye_state_home
+from tools.environments.local import build_subprocess_env
 
 
 SERVICE_NAME = "hafiye-gateway"
@@ -325,13 +326,14 @@ def run_foreground() -> None:
     targets = paths()
     token = ensure_session_token(targets)
     write_connection_descriptor(targets)
-    environment = os.environ.copy()
-    environment.update(
-        {
+    environment = build_subprocess_env(
+        scrub_secrets=False,
+        inherit_profile_home=False,
+        extra={
             "HERMES_DASHBOARD_SESSION_TOKEN": token,
             "HERMES_DESKTOP": "1",
             "HAFIYE_PERSISTENT_GATEWAY": "1",
-        }
+        },
     )
     argv = [
         sys.executable,
