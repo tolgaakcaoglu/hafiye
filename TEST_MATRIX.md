@@ -35,6 +35,16 @@ its result says so.
 | P1-CLI-01 | Real temporary-root identity smoke | HERMES_HOME unset; XDG base variables set to temporary roots; .venv/bin/hafiye --help | Hafiye usage and command names rendered; exit 0; internal HERMES compatibility names remain intentionally visible where required | PASS |
 | P1-CLI-02 | Real temporary-root config write | Same temporary-root setup; .venv/bin/hafiye config set model.default smoke-test-model | Wrote config/hafiye/config.yaml and created expected config, data, state, and cache roots | PASS |
 
+| P2-PY-01 | Persistent gateway unit/token/descriptor logic | ./scripts/run_tests.sh tests/hermes_cli/test_persistent_gateway.py -q | 4 passed | PASS |
+| P2-PY-02 | Persistent gateway and restart integration tests | ./scripts/run_tests.sh tests/hermes_cli/test_persistent_gateway.py tests/hermes_cli/test_dashboard_admin_endpoints.py tests/hermes_cli/test_spawn_gateway_restart_cooldown.py tests/hermes_cli/test_web_server_profile_unification.py -q | 75 passed | PASS |
+| P2-D-01 | Desktop persistent gateway path tests | cd apps/desktop && npm exec vitest run electron/hafiye-paths.test.ts --project electron | Electron project: 108 files; 1,546 passed; 3 skipped | PASS |
+| P2-D-02 | Desktop TypeScript | cd apps/desktop && npm run typecheck | Passed | PASS |
+| P2-D-03 | Desktop production build | cd apps/desktop && npm run build | Vite, Electron bundles, native staging, and assert-dist-built passed; stamp e2e22c10b49ec01ef7d8420f1158668718b03fa9 | PASS |
+| P2-REAL-01 | Real persistent user service | .venv/bin/hafiye gateway service install; systemctl --user is-enabled/is-active/show | Enabled, active, `NRestarts=0`, loopback `127.0.0.1:9120` | PASS |
+| P2-REAL-02 | Authenticated persistent backend | Real Python HTTP/WS probe against `127.0.0.1:9120` | HTTP succeeded, version `0.20.5`, WebSocket `OPEN` | PASS |
+| P2-REAL-03 | Desktop close persistence | Real Electron launch/close with `HERMES_DESKTOP_SKIP_QUIT_CONFIRM=1` | Persistent readiness logged; service stayed active and endpoint stayed reachable | PASS |
+| P2-REAL-04 | Persistent gateway restart control | Authenticated `POST /api/gateway/restart` | Success returned; new active PID observed; endpoint reachable | PASS |
+
 ## Current ACCEPTED_UPSTREAM_BASELINE
 
 The post-source run has this exact four-failure comparison set:

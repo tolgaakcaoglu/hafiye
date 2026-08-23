@@ -9,7 +9,7 @@ Last updated: 2026-08-23
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 34f1d8c2472e6b70b71bbdbfc9d3292761dbb67b
+- Current Hafiye source HEAD: e2e22c10b49ec01ef7d8420f1158668718b03fa9
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -19,8 +19,10 @@ the third is the current Hafiye product source commit.
 
 P0 — Fork, pin, verify environment: complete.
 
-P1 — Hafiye external identity and data root: complete. The next incomplete
-phase is P2 — Persistent gateway + Desktop connection.
+P1 — Hafiye external identity and data root: complete.
+
+P2 — Persistent gateway + Desktop connection: complete. The next incomplete
+phase is P3 — Hafiye Composer + tray + autostart.
 
 ## Verified working
 
@@ -43,6 +45,14 @@ phase is P2 — Persistent gateway + Desktop connection.
 - Desktop normal data and state roots follow the same XDG policy as Python.
 - The pinned computer-use-linux source doctor remains accepted from P0:
   all four required readiness booleans are true and blockers is empty.
+- The real user-scoped `hafiye-gateway.service` is enabled and active on
+  `127.0.0.1:9120`; its owner-only token and descriptor are under
+  `~/.local/state/hafiye/gateway/`.
+- Desktop boot authenticated to the persistent backend, and closing the real
+  Electron process left the service active with `NRestarts=0` and the endpoint
+  reachable.
+- An authenticated Desktop gateway restart request restarted the service and
+  returned after the new backend PID was reachable.
 
 ## Regression status
 
@@ -52,12 +62,14 @@ below. Two additional async tests timed out only in the full run but passed
 when isolated; they are recorded as diagnostic flakiness, not accepted
 baseline and not Hafiye regressions.
 
-No Hafiye-specific regression remains in the P1 targeted tests or Desktop
+No Hafiye-specific regression remains in the P1/P2 targeted tests or Desktop
 suite.
 
 ## Active blockers
 
-None for P1.
+None for P2. The user service is active in the current session. `loginctl`
+reports `Linger=no`, so logout/reboot persistence is not claimed by P2 and is
+deferred to the later Composer/onboarding/packaging acceptance work.
 
 The accepted upstream failures, the two isolated-passing full-suite async
 timeouts, npm audit warnings, missing pactl, and missing vulkaninfo are
@@ -110,6 +122,32 @@ directory:
 - ~/.local/bin/computer-use-linux windows
   — returned the focused real desktop window through the GNOME extension.
 
+### P2 persistent gateway and Desktop connection
+
+- `./scripts/run_tests.sh tests/hermes_cli/test_persistent_gateway.py -q`
+  — 4 passed.
+- `./scripts/run_tests.sh tests/hermes_cli/test_persistent_gateway.py tests/hermes_cli/test_dashboard_admin_endpoints.py tests/hermes_cli/test_spawn_gateway_restart_cooldown.py tests/hermes_cli/test_web_server_profile_unification.py -q`
+  — 75 passed.
+- `cd apps/desktop && npm exec vitest run electron/hafiye-paths.test.ts --project electron`
+  — Electron project completed with 108 files, 1,546 passed, 3 skipped.
+- `cd apps/desktop && npm run typecheck`
+  — passed.
+- `cd apps/desktop && npm run build`
+  — Vite, Electron bundles, native staging, and assert-dist-built passed; the
+  build stamp recorded `e2e22c10b49ec01ef7d8420f1158668718b03fa9`.
+- `.venv/bin/hafiye gateway service install`
+  — installed/enabled the real user service; systemd reported enabled, active,
+  and `NRestarts=0` on loopback port 9120.
+- Real authenticated HTTP/WS probe against `127.0.0.1:9120`
+  — HTTP request succeeded, backend version `0.20.5` returned, and the
+  authenticated WebSocket reached `OPEN`.
+- Real Electron launch/close with `HERMES_DESKTOP_SKIP_QUIT_CONFIRM=1`
+  — Desktop log recorded persistent backend readiness; service remained active
+  and reachable after Electron exit.
+- Authenticated `POST /api/gateway/restart`
+  — returned success, systemd reported a new active backend PID, and the
+  endpoint became reachable again.
+
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
@@ -129,15 +167,15 @@ not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Start P2 from the first incomplete roadmap item.
+1. Start P3 — Hafiye Composer + tray + autostart.
 2. Keep the four current accepted failures as the regression comparison set.
 3. Preserve the Hafiye source commit, upstream pin, and separable patch groups
-   during P2 gateway work.
+   during the P3 work.
 
 ## Environment changes
 
-No new privileged environment change was required for P1. P1 only aligned the
-Desktop and Python path resolvers with the already documented XDG policy.
-P0's real Ubuntu, GNOME Wayland, NVIDIA/CUDA, PipeWire/WirePlumber, Python,
-Node, Rust, systemd-user, AT-SPI, ydotool, and uinput observations remain in
-ENVIRONMENT.md.
+P2 installed and enabled the user-scoped `hafiye-gateway.service`; no sudo,
+root, passwordless sudo, or NOPASSWD sudoers change was made. User-manager
+linger remains disabled. P1's XDG alignment and P0's real Ubuntu, GNOME
+Wayland, NVIDIA/CUDA, PipeWire/WirePlumber, Python, Node, Rust, systemd-user,
+AT-SPI, ydotool, and uinput observations remain in ENVIRONMENT.md.

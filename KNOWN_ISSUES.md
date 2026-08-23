@@ -112,3 +112,24 @@ silently treated as passing.
   Linux unpacked packaging, lint, and temporary-root CLI smoke tests passed.
 - This entry is retained to make the P1 acceptance state explicit; it is not a
   workaround or a fabricated pass.
+
+## KI-010 — User-systemd linger is disabled on this host
+
+- Status: P2 warning; not a Desktop-close blocker.
+- The `hafiye-gateway.service` is enabled and active in the current user
+  session and remained active after the real Electron process closed.
+- `loginctl show-user "$USER" -p Linger` reports `Linger=no`; full logout/reboot
+  persistence is therefore not claimed by P2 and belongs to later Composer,
+  onboarding, and packaging work.
+- No passwordless sudo or NOPASSWD sudoers change was made. Any later linger
+  change must use the normal user/system authorization path.
+
+## KI-011 — Persistent gateway uses a fixed implementation port
+
+- Status: diagnostic.
+- P2 binds the persistent service to `127.0.0.1:9120` and records that port in
+  the connection descriptor. A collision prevents startup and is handled by
+  the systemd restart policy.
+- This fixed loopback port is intentional for the P2 Desktop connection
+  contract; user-facing port configuration is later work if the roadmap
+  requires it.

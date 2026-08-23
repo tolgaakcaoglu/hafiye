@@ -141,6 +141,19 @@ P0 computer-use acceptance requires:
 - The source changes are limited to the P1 identity/path boundary and tests;
   upstream internal compatibility identifiers remain intentionally intact.
 
+## P2 source validation
+
+- Current Hafiye source commit: e2e22c10b49ec01ef7d8420f1158668718b03fa9.
+- The persistent gateway is a Hafiye lifecycle layer; the upstream Hermes
+  gateway service and internal module names remain intact.
+- Hafiye adds a separate user-scoped `hafiye-gateway.service`, stable loopback
+  binding at `127.0.0.1:9120`, owner-only token/descriptor files in the Hafiye
+  XDG state root, and a service-first Desktop connection path with an existing
+  ephemeral fallback for installation/development scenarios.
+- The persistent-gateway Python tests, Desktop tests/typecheck/build, real
+  systemd service, authenticated HTTP/WS probe, Desktop close persistence, and
+  authenticated restart control passed. No upstream commit was rewritten.
+
 ## Baseline divergence
 
 The upstream Hermes baseline contains its own cua-driver computer-use

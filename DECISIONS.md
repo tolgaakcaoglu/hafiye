@@ -56,3 +56,19 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   symbols while requiring that normal Hafiye use present no Hermes branding.
 - Consequence: Hafiye has one user-facing identity without a parallel,
   incompatible internal protocol or a compatibility-breaking module rename.
+
+## ADR-0007 — Separate the persistent Hafiye gateway lifecycle from Hermes
+
+- Date: 2026-08-23
+- Decision: Keep the upstream `hermes-gateway.service` lifecycle intact and add
+  a separate user-scoped `hafiye-gateway.service` for Hafiye Desktop's
+  persistent JSON-RPC/WebSocket backend. Bind it to loopback `127.0.0.1:9120`,
+  authenticate with an owner-only token, and publish its descriptor under the
+  Hafiye XDG state root.
+- Reason: P2 requires Desktop to reconnect to a backend that survives Desktop
+  shutdown, while upstream Hermes lifecycle behavior and history must remain
+  preserved.
+- Consequence: Desktop uses the persistent service first and retains the
+  existing ephemeral backend path as an installation/development fallback;
+  persistent restart control goes through the user systemd unit. This is an
+  implementation detail and does not override the master roadmap.

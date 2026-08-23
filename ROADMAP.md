@@ -5,7 +5,7 @@ records execution status only.
 
 - [x] P0 Fork + environment
 - [x] P1 Hafiye external identity and data root
-- [ ] P2 Persistent gateway + Desktop connection
+- [x] P2 Persistent gateway + Desktop connection
 - [ ] P3 Hafiye Composer + tray + autostart
 - [ ] P4 llama.cpp managed local runtime
 - [ ] P5 Providers + Gemini + remote OpenAI-compatible
@@ -69,5 +69,24 @@ vulkaninfo are documented warnings/diagnostics and are not P0 blockers.
 P1 is complete. Its source implementation is recorded in commit
 34f1d8c2472e6b70b71bbdbfc9d3292761dbb67b. The P1 exit condition is satisfied:
 normal Hafiye use has no user-facing Hermes branding except legal/upstream
-attribution and retained compatibility machinery. The next incomplete phase is
-P2 — Persistent gateway + Desktop connection.
+attribution and retained compatibility machinery.
+
+## P2 execution status
+
+- [x] Add a user-scoped `hafiye-gateway.service` without replacing the upstream
+      `hermes-gateway.service`.
+- [x] Bind the persistent Hafiye JSON-RPC/WebSocket backend to loopback at
+      stable `127.0.0.1:9120`.
+- [x] Store the local Desktop token and connection descriptor in the Hafiye
+      XDG state root with owner-only permissions.
+- [x] Make Desktop detect and authenticate to the existing persistent backend;
+      retain ephemeral local spawn as an install/development fallback.
+- [x] Verify Desktop shutdown does not terminate the persistent backend.
+- [x] Route Desktop gateway restart control through the persistent systemd
+      topology.
+- [x] Verify the real service, authenticated HTTP/WS connection, Desktop boot,
+      Desktop shutdown persistence, and restart control.
+
+P2 is complete. The source implementation is recorded in commit
+e2e22c10b49ec01ef7d8420f1158668718b03fa9. The next incomplete phase is P3 —
+Hafiye Composer + tray + autostart.
