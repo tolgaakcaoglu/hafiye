@@ -96,3 +96,21 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 - Verified `systemctl --user status ydotool.service` as active/enabled; removed the duplicate generated unit and disabled the root user-manager daemon so only the non-root user service remains.
 - No passwordless sudo or `NOPASSWD` sudoers rule was created.
 - `pactl` and `vulkaninfo` remain absent as diagnostic warnings; `wpctl` and the Vulkan loader/ICDs are present.
+
+## P1 path and build validation
+
+- With HERMES_HOME unset and all four XDG base variables pointed at a
+  temporary directory, .venv/bin/hafiye --help rendered Hafiye usage and
+  .venv/bin/hafiye config set model.default smoke-test-model wrote
+  config/hafiye/config.yaml.
+- The same smoke test created the expected temporary config, data, state, and
+  cache roots without modifying the real home.
+- Desktop normal data and state resolution now follows the same Hafiye policy:
+  data under ~/.local/share/hafiye and logs/state under ~/.local/state/hafiye.
+- The clean Desktop build recorded source commit
+  34f1d8c2472e6b70b71bbdbfc9d3292761dbb67b with dirty=false.
+- The Linux unpacked package produced an executable x86-64
+  release/linux-unpacked/hafiye-desktop and included resources/icon.ico.
+- No new privileged environment change was required for P1. The P0
+  systemd-user, AT-SPI, GNOME Wayland, ydotool, uinput, CUDA, and audio
+  observations above remain the active host evidence.

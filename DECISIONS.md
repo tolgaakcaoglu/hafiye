@@ -29,3 +29,30 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
 - Decision: Use Ubuntu's active/enabled `ydotool.service` as the canonical per-user ydotoold service when present. Disable and remove the source installer-generated duplicate `ydotoold.service` if it targets the same socket.
 - Evidence: The packaged unit runs `/usr/bin/ydotoold` successfully; the duplicate unit failed with `Another ydotoold is running with the same socket`. The root user-manager instance was also disabled. The final doctor and real window/input checks remain green through the non-root packaged unit.
 - Consequence: This is an environment-specific service collision resolution; it does not change Hafiye's prescribed computer-use-linux architecture or the pinned source commit.
+
+## ADR-0005 — Align normal storage with Hafiye XDG roots
+
+- Date: 2026-08-23
+- Decision: When no explicit HERMES_HOME or profile/context override is
+  supplied, use ~/.config/hafiye, ~/.local/share/hafiye,
+  ~/.local/state/hafiye, and ~/.cache/hafiye for configuration, data, state,
+  and cache respectively. Keep explicit HERMES_HOME and upstream profile
+  overrides on the existing single-root behavior.
+- Reason: P1 requires Hafiye user-facing data roots while preserving upstream
+  compatibility and existing profile semantics.
+- Consequence: Python and Desktop use matching root resolution. The legacy
+  migration command copies data conservatively and non-destructively; it does
+  not delete or replace the legacy home.
+
+## ADR-0006 — Rebrand the external boundary, retain upstream compatibility
+
+- Date: 2026-08-23
+- Decision: Rebrand normal user-facing CLI and Desktop identity to Hafiye,
+  including package metadata, visible text, app identifiers, update/bootstrap
+  messages, and neutral H monogram assets. Retain upstream Hermes module names,
+  IPC keys, compatibility environment names, legacy protocol scheme, and
+  upstream/legal attribution where they are part of the integration contract.
+- Reason: P1 explicitly prohibits mass-renaming upstream internal source
+  symbols while requiring that normal Hafiye use present no Hermes branding.
+- Consequence: Hafiye has one user-facing identity without a parallel,
+  incompatible internal protocol or a compatibility-breaking module rename.
