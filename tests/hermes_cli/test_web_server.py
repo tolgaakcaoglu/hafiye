@@ -1627,13 +1627,24 @@ class TestWebServerEndpoints:
         assert _parse_model_ids(FakeResp(ValueError("bad json"))) == []
 
 
-    def test_set_model_main_custom_persists_api_key_and_registers_provider(self):
-        """A custom endpoint that requires auth must persist model.api_key (where
-        the runtime reads it) AND register a named custom_providers entry so the
-        endpoint reappears as a ready row in the picker — matching the
-        ``hermes model`` custom flow. Regression for the desktop loop where a
-        keyed custom endpoint could never be configured from the GUI."""
+    def test_set_model_main_custom_stores_keyring_ref_and_registers_provider(
+        self, monkeypatch
+    ):
+        """A custom endpoint key is stored out of config.yaml and referenced
+        by both the active model and the picker entry."""
         from hermes_cli.config import load_config
+        from hermes_cli.config import custom_endpoint_key_env
+
+        saved_secrets = {}
+
+        def fake_save(env_var, value):
+            saved_secrets[env_var] = value
+            return {"ok": True, "key": env_var, "secret_store": "test"}
+
+        monkeypatch.setattr(
+            "hermes_cli.credential_lifecycle.save_provider_env_credential",
+            fake_save,
+        )
 
         resp = self.client.post(
             "/api/model/set",
@@ -1653,7 +1664,11 @@ class TestWebServerEndpoints:
         assert isinstance(model_cfg, dict)
         assert model_cfg["provider"] == "custom"
         assert model_cfg["base_url"] == "https://text.example.com/v1"
-        assert model_cfg["api_key"] == "sk-secret"
+        env_var = custom_endpoint_key_env("https://text.example.com/v1")
+        assert model_cfg["key_env"] == env_var
+        assert "api_key" not in model_cfg
+        assert saved_secrets[env_var] == "sk-secret"
+        assert "sk-secret" not in yaml.safe_dump(cfg)
 
         # Registered in custom_providers (dedup by base_url) so the picker shows
         # a proper ready row instead of the "needs setup" dead-end.
@@ -1661,7 +1676,8 @@ class TestWebServerEndpoints:
         assert any(
             isinstance(e, dict)
             and e.get("base_url") == "https://text.example.com/v1"
-            and e.get("api_key") == "sk-secret"
+            and e.get("key_env") == env_var
+            and "api_key" not in e
             and e.get("model") == "gpt-oss-120b"
             for e in custom
         )
@@ -1769,7 +1785,9 @@ class TestWebServerEndpoints:
         worker_cfg = (worker_home / "config.yaml").read_text()
         assert "worker-proxy" in worker_cfg
         assert env_var in worker_cfg
-        assert "sk-worker-secret" in (worker_home / ".env").read_text()
+        assert "sk-worker-secret" not in worker_cfg
+        worker_env = worker_home / ".env"
+        assert not worker_env.exists() or "sk-worker-secret" not in worker_env.read_text()
 
         for leaked in (default_home / "config.yaml", default_home / ".env"):
             text = leaked.read_text() if leaked.exists() else ""
@@ -1896,8 +1914,8 @@ class TestWebServerEndpoints:
         assert "sk-in-env" not in (endpoint["api_key_preview"] or "")
 
     def test_activating_an_endpoint_carries_its_credential_either_way(self):
-        """Activate must work for both key_env and pre-#69449 plaintext entries."""
-        from hermes_cli.config import load_config, save_config
+        """Activate must migrate both key_env and pre-#69449 entries."""
+        from hermes_cli.config import custom_endpoint_key_env, load_config, save_config
 
         cfg = load_config()
         cfg["providers"] = {
@@ -1925,7 +1943,8 @@ class TestWebServerEndpoints:
 
         self.client.post("/api/providers/custom-endpoints/legacy/activate", json={})
         model_cfg = load_config()["model"]
-        assert model_cfg["api_key"] == "sk-legacy"
+        assert model_cfg["key_env"] == custom_endpoint_key_env("legacy")
+        assert "api_key" not in model_cfg
 
     def test_get_sessions_rejects_negative_limit(self):
         """limit=-1 must be rejected (422), not passed through to SQLite as

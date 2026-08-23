@@ -122,6 +122,7 @@ export interface EnvVarInfo {
   provider?: string
   provider_label?: string
   redacted_value: null | string
+  secret_store?: null | string
   tools: string[]
   url: null | string
 }
@@ -1320,9 +1321,9 @@ export interface MoaConfigResponse {
 }
 
 export interface ModelAssignmentRequest {
-  /** Optional API key for a custom/local endpoint. Persisted to model.api_key
-   *  (where the runtime reads it) for self-hosted endpoints that require auth.
-   *  Only honored for custom/local providers on the main slot. */
+  /** Optional API key for a custom/local endpoint. Stored in Linux Secret
+   *  Service; config.yaml receives only a key_env reference. Only honored for
+   *  custom/local providers on the main slot. */
   api_key?: string
   /** OpenAI-compatible endpoint URL. Only honored for custom/local providers
    *  on the main slot — wires a self-hosted endpoint into runtime resolution. */

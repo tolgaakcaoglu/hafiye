@@ -21,13 +21,15 @@ Currently bundled:
   - ``onepassword`` — 1Password ``op://`` secret references (`op` CLI).
     See ``agent.secret_sources.onepassword`` for the integration and
     ``hermes_cli.onepassword_secrets_cli`` for the user-facing commands.
+  - ``keyring`` — Hafiye Linux Secret Service references backed by Python
+    ``keyring``. Provider writes are handled by
+    ``hermes_cli.credential_lifecycle``; startup hydration uses the generic
+    secret-source orchestrator.
 
-The bundled set is deliberately closed (policy mirrors memory
-providers): new third-party secret managers ship as standalone plugin
-repos that subclass ``SecretSource`` and register through
-``PluginContext.register_secret_source()`` — they are NOT added to this
-package.  A generic ``command`` source is a possible future exception;
-OS keystores (Keychain/DPAPI/libsecret) are under discussion.
+New third-party secret managers ship as standalone plugin repos that subclass
+``SecretSource`` and register through ``PluginContext.register_secret_source``
+— they are NOT added to this package. The Hafiye Linux Secret Service source
+is a product-owned exception; other OS keystores remain outside this bundle.
 """
 
 from agent.secret_sources.base import (  # noqa: F401

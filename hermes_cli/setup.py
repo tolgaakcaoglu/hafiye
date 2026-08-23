@@ -1277,8 +1277,10 @@ def _setup_tts_provider(config: dict):
             print_info("Get a free API key at https://aistudio.google.com/app/apikey")
             api_key = prompt("Gemini API key for TTS", password=True)
             if api_key:
-                save_env_value("GEMINI_API_KEY", api_key)
-                print_success("Gemini TTS API key saved")
+                from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+                save_provider_env_credential("GEMINI_API_KEY", api_key)
+                print_success("Gemini TTS API key saved to Linux Secret Service")
             else:
                 print_warning("No API key provided. Falling back to Edge TTS.")
                 selected = "edge"

@@ -4799,10 +4799,24 @@ def _save_custom_provider(
     model name, context_length, and api_mode but doesn't add a duplicate entry.
     Uses *name* when provided, otherwise auto-generates from the URL.
 
-    When *key_env* is set the caller has already written the key to ``.env``,
-    so the entry references it instead of inlining the secret (#69449).
+    When *key_env* is set the caller has already written the key to Linux
+    Secret Service, so the entry references it instead of inlining the secret
+    (#69449). A literal key passed without a key_env is migrated here as a
+    compatibility guard; an existing ``${ENV_VAR}`` template remains a
+    non-secret legacy reference.
     """
-    from hermes_cli.config import load_config, save_config
+    from hermes_cli.config import custom_endpoint_key_env, load_config, save_config
+
+    api_key = str(api_key or "").strip()
+    key_env = str(key_env or "").strip()
+    if api_key and not key_env and not re.fullmatch(
+        r"\$\{[A-Za-z_][A-Za-z0-9_]*\}", api_key
+    ):
+        from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+        key_env = custom_endpoint_key_env(base_url)
+        save_provider_env_credential(key_env, api_key)
+        api_key = ""
 
     cfg = load_config()
     providers = cfg.get("custom_providers") or []
@@ -4835,6 +4849,9 @@ def _save_custom_provider(
             if key_env and (entry.get("key_env") != key_env or entry.get("api_key")):
                 entry["key_env"] = key_env
                 entry.pop("api_key", None)
+                changed = True
+            elif api_key and entry.get("api_key") != api_key:
+                entry["api_key"] = api_key
                 changed = True
             if changed:
                 cfg["custom_providers"] = providers
@@ -5232,7 +5249,10 @@ def _prompt_api_key(
     cleared the key and is now unconfigured.
     """
     from hermes_cli.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
-    from hermes_cli.config import save_env_value
+    from hermes_cli.credential_lifecycle import (
+        remove_provider_env_credential,
+        save_provider_env_credential,
+    )
     from hermes_cli.secret_prompt import masked_secret_prompt
 
     key_env = pconfig.api_key_env_vars[0] if pconfig.api_key_env_vars else ""
@@ -5260,7 +5280,7 @@ def _prompt_api_key(
         if not new_key:
             print("Cancelled.")
             return "", True
-        save_env_value(key_env, new_key)
+        save_provider_env_credential(key_env, new_key)
         print("API key saved.")
         print()
         return new_key, False
@@ -5292,13 +5312,13 @@ def _prompt_api_key(
             print("  No change.")
             print()
             return existing_key, False
-        save_env_value(key_env, new_key)
+        save_provider_env_credential(key_env, new_key)
         print("  API key updated.")
         print()
         return new_key, False
 
     if choice.startswith("c") and not pool_backed:
-        save_env_value(key_env, "")
+        remove_provider_env_credential(key_env)
         print(
             f"  API key cleared.  Re-run `hermes setup` to configure {pconfig.name} again."
         )

@@ -14,7 +14,6 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-
 from hermes_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
@@ -133,14 +132,16 @@ def test_update_rotates_config_yaml_model_mirror(hermes_home):
     )
     assert resp.status_code == 200
     assert "model.api_key" in resp.json().get("config_updates", [])
+    assert "model.key_env" in resp.json().get("config_updates", [])
 
     cfg_text = hermes_home.joinpath("config.yaml").read_text(encoding="utf-8")
     assert old not in cfg_text, "stale old key left in config.yaml (#62269)"
-    assert new in cfg_text, "config.yaml mirror not rotated to the new key"
+    assert new not in cfg_text, "provider key was serialized into config.yaml"
+    assert "keyring://hafiye/" in cfg_text
 
     from hermes_cli.config import load_env
 
-    assert load_env()["OPENAI_API_KEY"] == new
+    assert "OPENAI_API_KEY" not in load_env()
 
 
 
@@ -148,5 +149,3 @@ def test_update_rotates_config_yaml_model_mirror(hermes_home):
 # ---------------------------------------------------------------------------
 # Suppression round-trip: delete sticks, re-add lifts it
 # ---------------------------------------------------------------------------
-
-

@@ -6,6 +6,7 @@ when any value was present (even malformed junk), leaving users stuck.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -81,7 +82,20 @@ def test_clear_wipes_env_and_aborts(profile_env):
     save_env_value("DEEPSEEK_API_KEY", "sk-existing")
     save_env_value("OTHER_VAR", "keep-me")
 
-    key, abort = _run_prompt(existing_key="sk-existing", choice="c")
+    # The production clear path also removes the Secret Service entry. This
+    # focused menu test supplies the already-tested storage boundary with the
+    # minimal legacy-file side effect needed to assert prompt behavior.
+    def clear(key):
+        from hermes_cli.config import remove_env_value
+
+        remove_env_value(key)
+        return {"found": True}
+
+    with patch(
+        "hermes_cli.credential_lifecycle.remove_provider_env_credential",
+        side_effect=clear,
+    ):
+        key, abort = _run_prompt(existing_key="sk-existing", choice="c")
     assert key == ""
     assert abort is True
     # Cleared, but sibling entries untouched.
@@ -97,12 +111,14 @@ def test_lmstudio_first_time_empty_uses_placeholder(profile_env):
     from hermes_cli.auth import LMSTUDIO_NOAUTH_PLACEHOLDER
     from hermes_cli.config import get_env_value
 
-    key, abort = _run_prompt(
-        existing_key="", choice="", new_key="",
-        provider_id="lmstudio", pconfig_name="lmstudio",
-    )
+    with patch(
+        "hermes_cli.credential_lifecycle.save_provider_env_credential",
+        side_effect=lambda key, value: os.environ.__setitem__(key, value),
+    ):
+        key, abort = _run_prompt(
+            existing_key="", choice="", new_key="",
+            provider_id="lmstudio", pconfig_name="lmstudio",
+        )
     assert key == LMSTUDIO_NOAUTH_PLACEHOLDER
     assert abort is False
     assert get_env_value("LM_API_KEY") == LMSTUDIO_NOAUTH_PLACEHOLDER
-
-

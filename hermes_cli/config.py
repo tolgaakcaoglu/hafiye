@@ -1115,14 +1115,17 @@ def clear_model_endpoint_credentials(
     ``model.api_key`` is valid only for explicit custom endpoint assignments.
     Built-in providers resolve credentials from env vars, auth.json, or the
     credential pool. When switching away from a custom endpoint, leaving these
-    fields behind keeps secrets in config.yaml and can contaminate later custom
-    resolution paths.
+    fields behind keeps secrets or stale Secret Service references in
+    config.yaml and can contaminate later custom resolution paths.
     """
     if not isinstance(model_cfg, dict):
         return model_cfg
     if clear_api_key:
         model_cfg.pop("api_key", None)
         model_cfg.pop("api", None)
+        model_cfg.pop("key_env", None)
+        model_cfg.pop("api_key_env", None)
+        model_cfg.pop("api_key_ref", None)
     if clear_api_mode:
         model_cfg.pop("api_mode", None)
     if clear_base_url:

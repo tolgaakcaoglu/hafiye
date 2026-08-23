@@ -415,6 +415,7 @@ def _model_flow_nous(config, current_model="", args=None):
         save_config,
         save_env_value,
     )
+    from hermes_cli.credential_lifecycle import remove_provider_env_credential
     from hermes_cli.nous_subscription import prompt_enable_tool_gateway
 
     state = get_provider_auth_state("nous")
@@ -613,7 +614,7 @@ def _model_flow_nous(config, current_model="", args=None):
         # Clear any custom endpoint that might conflict
         if get_env_value("OPENAI_BASE_URL"):
             save_env_value("OPENAI_BASE_URL", "")
-            save_env_value("OPENAI_API_KEY", "")
+            remove_provider_env_credential("OPENAI_API_KEY")
         save_config(config)
         print(f"Default model set to: {selected} (via Nous Portal)")
         # Offer Tool Gateway enablement for paid subscribers
@@ -905,8 +906,8 @@ def _model_flow_custom(config):
         get_env_value,
         load_config,
         save_config,
-        save_env_value,
     )
+    from hermes_cli.credential_lifecycle import save_provider_env_credential
     from hermes_cli.secret_prompt import masked_secret_prompt
 
     current_url = get_env_value("OPENAI_BASE_URL") or ""
@@ -1061,8 +1062,9 @@ def _model_flow_custom(config):
             print(f"Invalid context length: {context_length_str} — will auto-detect.")
             context_length = None
 
-    # The key goes to .env and config.yaml only references it (#69449). Keyed
-    # on host:port so two servers on one machine keep separate credentials.
+    # The key goes to Linux Secret Service and config.yaml only references it
+    # (#69449). Keyed on host:port so two servers on one machine keep separate
+    # credentials.
     custom_key_env = ""
     if effective_key:
         _parsed = urllib.parse.urlparse(effective_url)
@@ -1070,8 +1072,8 @@ def _model_flow_custom(config):
         if _parsed.port:
             _identity = f"{_identity}_{_parsed.port}"
         custom_key_env = custom_endpoint_key_env(_identity)
-        save_env_value(custom_key_env, effective_key)
-        print(f"  API key saved to .env as {custom_key_env}")
+        save_provider_env_credential(custom_key_env, effective_key)
+        print(f"  API key saved to Linux Secret Service as {custom_key_env}")
 
     if model_name:
         _save_model_choice(model_name)
@@ -1142,7 +1144,8 @@ def _model_flow_azure_foundry(config, current_model=""):
     Anthropic-style (``/v1/messages``) endpoints, and two authentication
     modes:
 
-    * **API key** (default) — uses ``AZURE_FOUNDRY_API_KEY`` from .env.
+    * **API key** (default) — uses ``AZURE_FOUNDRY_API_KEY`` from Linux
+      Secret Service (with legacy ``.env`` migration support).
     * **Microsoft Entra ID** — keyless, RBAC-based auth via the
       ``azure-identity`` SDK (Managed Identity / Workload Identity / az
       login / VS Code / azd / service principal env vars). Works on both
@@ -1175,6 +1178,7 @@ def _model_flow_azure_foundry(config, current_model=""):
         load_config,
         save_config,
     )
+    from hermes_cli.credential_lifecycle import save_provider_env_credential
     from hermes_cli import azure_detect
 
     # ── Load current Azure Foundry configuration ─────────────────────
@@ -1243,7 +1247,7 @@ def _model_flow_azure_foundry(config, current_model=""):
     # ── Step 2: authentication mode ──────────────────────────────────
     print()
     print("Authentication:")
-    print("  1. API key                  (AZURE_FOUNDRY_API_KEY in .env)")
+    print("  1. API key                  (AZURE_FOUNDRY_API_KEY in Linux Secret Service)")
     print("  2. Microsoft Entra ID       (managed identity / workload identity / az login)")
     print("     Recommended by Microsoft. Works for both OpenAI-style and Anthropic-style endpoints.")
     print("     Requires the 'Azure AI User' role on the Foundry resource.")
@@ -1444,7 +1448,7 @@ def _model_flow_azure_foundry(config, current_model=""):
 
     # ── Step 7: persist ──────────────────────────────────────────────
     if not use_entra:
-        save_env_value("AZURE_FOUNDRY_API_KEY", effective_key)
+        save_provider_env_credential("AZURE_FOUNDRY_API_KEY", effective_key)
 
     cfg = load_config()
     model = cfg.get("model")
@@ -1485,7 +1489,9 @@ def _model_flow_azure_foundry(config, current_model=""):
     if get_env_value("OPENAI_BASE_URL"):
         save_env_value("OPENAI_BASE_URL", "")
     if get_env_value("OPENAI_API_KEY"):
-        save_env_value("OPENAI_API_KEY", "")
+        from hermes_cli.credential_lifecycle import remove_provider_env_credential
+
+        remove_provider_env_credential("OPENAI_API_KEY")
 
     mode_label = "OpenAI-style" if api_mode == "chat_completions" else "Anthropic-style"
     auth_label = (
@@ -1513,7 +1519,13 @@ def _model_flow_named_custom(config, provider_info):
     """
     from hermes_cli.main import _custom_provider_api_key_config_value, _custom_provider_base_url_config_value, _save_custom_provider
     from hermes_cli.auth import _save_model_choice, deactivate_provider
-    from hermes_cli.config import load_config, normalize_extra_headers, save_config
+    from hermes_cli.config import (
+        custom_endpoint_key_env,
+        load_config,
+        normalize_extra_headers,
+        save_config,
+    )
+    from hermes_cli.credential_lifecycle import save_provider_env_credential
     from hermes_cli.model_switch import (
         _entry_models_discovered,
         _models_config_is_allowlist,
@@ -1526,6 +1538,7 @@ def _model_flow_named_custom(config, provider_info):
         should_use_ollama_native_catalog,
     )
 
+    provider_info = dict(provider_info)
     name = provider_info["name"]
     base_url = provider_info["base_url"]
     api_mode = provider_info.get("api_mode", "")
@@ -1537,6 +1550,15 @@ def _model_flow_named_custom(config, provider_info):
     # Resolve key from env var if api_key not set directly
     if not api_key and key_env:
         api_key = os.environ.get(key_env, "")
+    api_key_ref = str(provider_info.get("api_key_ref", "") or "").strip()
+    if api_key and not key_env and not api_key_ref:
+        # Migrate legacy named custom providers that still carry a literal
+        # api_key. The value is used only in this process for the probe; the
+        # persisted provider graph gets the generated key_env reference.
+        key_env = custom_endpoint_key_env(provider_key or name or base_url)
+        save_provider_env_credential(key_env, api_key)
+        provider_info["key_env"] = key_env
+        provider_info.pop("api_key", None)
     config_api_key = _custom_provider_api_key_config_value(provider_info, api_key)
 
     # Honor ``discover_models: false`` (default True) — when discovery is
@@ -1748,7 +1770,10 @@ def _model_flow_named_custom(config, provider_info):
         model["base_url"] = _custom_provider_base_url_config_value(
             provider_info, base_url
         )
-        if config_api_key:
+        if key_env:
+            model["key_env"] = key_env
+            model.pop("api_key", None)
+        elif config_api_key:
             model["api_key"] = config_api_key
     # Apply api_mode from custom_providers entry, or clear stale value
     custom_api_mode = provider_info.get("api_mode", "")
@@ -1792,7 +1817,13 @@ def _model_flow_named_custom(config, provider_info):
                 save_config(cfg)
     else:
         # Save model name to the custom_providers entry for next time
-        _save_custom_provider(base_url, config_api_key, model_name, api_mode=api_mode)
+        _save_custom_provider(
+            base_url,
+            config_api_key,
+            model_name,
+            api_mode=api_mode,
+            key_env=key_env,
+        )
 
     print(f"\n✅ Model set to: {model_name}")
     print(f"   Provider: {name} ({base_url})")
@@ -1808,6 +1839,7 @@ def _model_flow_copilot(config, current_model=""):
         resolve_api_key_provider_credentials,
     )
     from hermes_cli.config import save_env_value, load_config, save_config
+    from hermes_cli.credential_lifecycle import save_provider_env_credential
     from hermes_cli.models import (
         _PROVIDER_MODELS,
         fetch_api_models,
@@ -1852,7 +1884,7 @@ def _model_flow_copilot(config, current_model=""):
 
                 token = copilot_device_code_login()
                 if token:
-                    save_env_value("COPILOT_GITHUB_TOKEN", token)
+                    save_provider_env_credential("COPILOT_GITHUB_TOKEN", token)
                     print("  Copilot token saved.")
                     print()
                 else:
@@ -1882,7 +1914,7 @@ def _model_flow_copilot(config, current_model=""):
                     return
             except ImportError:
                 pass
-            save_env_value("COPILOT_GITHUB_TOKEN", new_key)
+            save_provider_env_credential("COPILOT_GITHUB_TOKEN", new_key)
             print("  Token saved.")
             print()
         else:
@@ -2330,8 +2362,8 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
     from hermes_cli.config import (
         load_config,
         save_config,
-        save_env_value,
     )
+    from hermes_cli.credential_lifecycle import save_provider_env_credential
     from hermes_cli.models import _PROVIDER_MODELS
 
     mantle_base_url = f"https://bedrock-mantle.{region}.api.aws/v1"
@@ -2366,7 +2398,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
         if not api_key:
             print("  Cancelled.")
             return
-        save_env_value("AWS_BEARER_TOKEN_BEDROCK", api_key)
+        save_provider_env_credential("AWS_BEARER_TOKEN_BEDROCK", api_key)
         existing_key = api_key
         print("  ✓ API key saved.")
     print()
@@ -3138,11 +3170,11 @@ def _model_flow_anthropic(config, current_model=""):
         deactivate_provider,
     )
     from hermes_cli.config import (
-        save_env_value,
         load_config,
         save_config,
         save_anthropic_api_key,
     )
+    from hermes_cli.credential_lifecycle import save_provider_env_credential
     from hermes_cli.models import _PROVIDER_MODELS
 
     # Check ALL credential sources
@@ -3219,7 +3251,7 @@ def _model_flow_anthropic(config, current_model=""):
             return
 
         if choice == "1":
-            if not _run_anthropic_oauth_flow(save_env_value):
+            if not _run_anthropic_oauth_flow(save_provider_env_credential):
                 return
 
         elif choice == "2":
@@ -3236,7 +3268,7 @@ def _model_flow_anthropic(config, current_model=""):
             if not api_key:
                 print("  Cancelled.")
                 return
-            save_anthropic_api_key(api_key, save_fn=save_env_value)
+            save_anthropic_api_key(api_key, save_fn=save_provider_env_credential)
             print("  ✓ API key saved.")
 
         else:

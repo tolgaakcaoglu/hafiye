@@ -194,7 +194,8 @@ class TestCustomProviderModelSwitch:
             _model_flow_named_custom({}, provider_info)
 
         config = yaml.safe_load(config_path.read_text()) or {}
-        assert config["model"]["api_key"] == "${EXAMPLE_PROVIDER_API_KEY}"
+        assert config["model"]["key_env"] == "EXAMPLE_PROVIDER_API_KEY"
+        assert "api_key" not in config["model"]
         assert config["custom_providers"][0]["key_env"] == "EXAMPLE_PROVIDER_API_KEY"
         assert "sk-live-example-provider" not in config_path.read_text()
 

@@ -58,6 +58,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from hermes_cli import __version__, __release_date__
 from hermes_constants import get_hafiye_state_home
+from hermes_cli.hafiye_keyring import SecretStoreError
 from hermes_cli.config import (
     build_cron_model_impact,
     cfg_get,
@@ -7708,6 +7709,8 @@ async def set_model_assignment(body: ModelAssignment, profile: Optional[str] = N
         return await asyncio.to_thread(_apply_assignment)
     except HTTPException:
         raise
+    except SecretStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         _log.exception("POST /api/model/set failed")
         raise HTTPException(status_code=500, detail="Failed to save model assignment")
@@ -7732,11 +7735,69 @@ def _apply_model_assignment_sync(
         provider_entry = providers_cfg.get(provider) if isinstance(providers_cfg, dict) else None
         if not base_url and isinstance(provider_entry, dict) and provider_entry.get("base_url"):
             base_url = str(provider_entry.get("base_url") or "").strip()
-        model_cfg = _apply_main_model_assignment(
-            cfg.get("model", {}), provider, model, base_url, api_key
+
+        provider_lower = provider.strip().lower()
+        custom_key_env = ""
+        previous_model_cfg = cfg.get("model")
+        previous_base_url = (
+            str(previous_model_cfg.get("base_url") or "").strip()
+            if isinstance(previous_model_cfg, dict)
+            else ""
         )
-        if isinstance(provider_entry, dict) and provider_entry.get("api_key"):
-            model_cfg["api_key"] = provider_entry["api_key"]
+        endpoint_changed = bool(
+            provider_lower in {"custom", "local"}
+            and base_url
+            and previous_base_url
+            and previous_base_url.rstrip("/") != base_url.rstrip("/")
+        )
+        if api_key and provider_lower not in {"custom", "local"}:
+            raise HTTPException(
+                status_code=400,
+                detail="api_key is supported only for custom/local endpoints",
+            )
+        if provider_lower in {"custom", "local"}:
+            from hermes_cli.config import custom_endpoint_key_env
+            from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+            if api_key:
+                custom_key_env = custom_endpoint_key_env(base_url or provider)
+                save_provider_env_credential(custom_key_env, api_key)
+                api_key = ""
+            elif isinstance(provider_entry, dict):
+                custom_key_env = str(
+                    provider_entry.get("key_env")
+                    or provider_entry.get("api_key_env")
+                    or ""
+                ).strip()
+                legacy_key = str(provider_entry.get("api_key") or "").strip()
+                if legacy_key and not custom_key_env:
+                    custom_key_env = custom_endpoint_key_env(base_url or provider)
+                    save_provider_env_credential(custom_key_env, legacy_key)
+                    provider_entry["key_env"] = custom_key_env
+                    provider_entry.pop("api_key", None)
+            if not custom_key_env and not endpoint_changed and isinstance(previous_model_cfg, dict):
+                custom_key_env = str(
+                    previous_model_cfg.get("key_env")
+                    or previous_model_cfg.get("api_key_env")
+                    or ""
+                ).strip()
+                legacy_model_key = str(
+                    previous_model_cfg.get("api_key")
+                    or previous_model_cfg.get("api")
+                    or ""
+                ).strip()
+                if legacy_model_key and not custom_key_env:
+                    custom_key_env = custom_endpoint_key_env(base_url or provider)
+                    save_provider_env_credential(custom_key_env, legacy_model_key)
+        model_cfg = _apply_main_model_assignment(
+            cfg.get("model", {}), provider, model, base_url
+        )
+        if endpoint_changed and not custom_key_env:
+            clear_model_endpoint_credentials(model_cfg, clear_api_mode=False)
+        if custom_key_env:
+            model_cfg["key_env"] = custom_key_env
+            model_cfg.pop("api_key", None)
+            model_cfg.pop("api", None)
         cfg["model"] = model_cfg
 
         # When switching the main provider to Nous, mirror the CLI's
@@ -7782,9 +7843,10 @@ def _apply_model_assignment_sync(
 
                 _save_custom_provider(
                     base_url,
-                    api_key,
+                    f"${{{custom_key_env}}}" if custom_key_env else "",
                     model,
                     name=_auto_provider_name(base_url),
+                    key_env=custom_key_env,
                 )
             except Exception:
                 # Never block the assignment on the bookkeeping write —
@@ -7846,6 +7908,20 @@ def _apply_model_assignment_sync(
         }
 
     # scope == "auxiliary"
+    provider_lower = provider.strip().lower()
+    custom_key_env = ""
+    if api_key and provider_lower not in {"custom", "local"}:
+        raise HTTPException(
+            status_code=400,
+            detail="api_key is supported only for custom/local endpoints",
+        )
+    if api_key:
+        from hermes_cli.config import custom_endpoint_key_env
+        from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+        custom_key_env = custom_endpoint_key_env(base_url or provider)
+        save_provider_env_credential(custom_key_env, api_key)
+        api_key = ""
     aux = cfg.get("auxiliary")
     if not isinstance(aux, dict):
         aux = {}
@@ -7889,8 +7965,10 @@ def _apply_model_assignment_sync(
             # (_resolve_task_provider_model), so persisting them here is
             # what actually wires the endpoint in.
             slot_cfg["base_url"] = base_url
-            if api_key:
-                slot_cfg["api_key"] = api_key
+            if custom_key_env:
+                slot_cfg["key_env"] = custom_key_env
+                slot_cfg.pop("api_key", None)
+                slot_cfg.pop("api", None)
         elif new_provider != prev_provider and new_provider != "custom":
             slot_cfg.pop("base_url", None)
             clear_model_endpoint_credentials(slot_cfg)
@@ -8240,11 +8318,28 @@ async def get_env_vars(profile: Optional[str] = None):
 def _get_env_vars_sync(profile: Optional[str] = None):
     with _profile_scope(profile):
         env_on_disk = load_env()
+        try:
+            from hermes_cli.hafiye_keyring import get_secret, keyring_references
+
+            keyring_refs = keyring_references()
+            keyring_values: Dict[str, Optional[str]] = {}
+            for var_name, ref in keyring_refs.items():
+                try:
+                    keyring_values[var_name] = get_secret(ref)
+                except SecretStoreError:
+                    # The settings page must remain readable while the user
+                    # repairs an unavailable/unlocked keyring. The provider
+                    # save path still reports the actionable 503 error.
+                    keyring_values[var_name] = None
+        except (SecretStoreError, ValueError):
+            keyring_refs = {}
+            keyring_values = {}
     channel_keys = _channel_managed_env_keys()
     catalog_meta = _catalog_provider_env_metadata()
 
     def _row(var_name: str, info: dict, *, custom: bool = False) -> dict:
-        value = env_on_disk.get(var_name)
+        keyring_value = keyring_values.get(var_name)
+        value = keyring_value if keyring_value is not None else env_on_disk.get(var_name)
         cat_meta = catalog_meta.get(var_name) or {}
         # Hand OPTIONAL_ENV_VARS prose wins where present; the catalog fills any
         # gaps (description/url) and always supplies provider grouping hints.
@@ -8266,6 +8361,9 @@ def _get_env_vars_sync(profile: Optional[str] = None):
             # CLI `hermes model` picker uses (not desktop-only prefix guesses).
             "provider": cat_meta.get("provider", ""),
             "provider_label": cat_meta.get("provider_label", ""),
+            "secret_store": (
+                "linux-secret-service" if keyring_value is not None else None
+            ),
             # True when this key exists in the user's .env but is NOT in any
             # catalog (OPTIONAL_ENV_VARS or the provider catalog) — an
             # arbitrary/custom env var the user added directly. Surfaced so the
@@ -8296,6 +8394,16 @@ def _get_env_vars_sync(profile: Optional[str] = None):
         row["category"] = "custom"
         row["is_password"] = True
         result[var_name] = row
+    # A migrated provider key no longer appears in .env. Surface its row from
+    # the reference map so the Desktop can still show and manage it without
+    # ever serializing the key itself.
+    for var_name in keyring_refs:
+        if var_name in result or var_name in channel_keys:
+            continue
+        row = _row(var_name, {}, custom=True)
+        row["category"] = "provider"
+        row["is_password"] = True
+        result[var_name] = row
     return result
 
 
@@ -8303,8 +8411,10 @@ def _get_env_vars_sync(profile: Optional[str] = None):
 async def set_env_var(body: EnvVarUpdate, profile: Optional[str] = None):
     def _run():
         with _profile_scope(body.profile or profile):
-            # Unified credential lifecycle: writes .env AND reconciles any
-            # config.yaml mirror still holding the previous value of this var
+            # Unified credential lifecycle: provider keys go to Secret
+            # Service; legacy channel/tool values retain the upstream .env
+            # path. Both reconcile any config.yaml mirror still holding the
+            # previous value of this var
             # (model.api_key / auxiliary.*.api_key / custom_providers[*]),
             # so a rotation can't leave a stale higher-precedence copy that
             # keeps authenticating with the old key (#62269).
@@ -8320,6 +8430,8 @@ async def set_env_var(body: EnvVarUpdate, profile: Optional[str] = None):
         # message to the SPA so the user understands why the write was
         # refused instead of seeing an opaque 500.
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except SecretStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         _log.exception("PUT /api/env failed")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -8389,10 +8501,9 @@ def _models_from_custom_endpoint_entry(entry: Dict[str, Any]) -> List[str]:
 def _api_key_display(entry: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """Return ``(has_api_key, preview)`` for a provider or model config block.
 
-    Keys live in ``.env`` behind ``key_env``; only entries written before
-    #69449 still carry a plaintext ``api_key``. Checking both keeps the panel
-    honest either way — reading only ``api_key`` reported "no API key" for
-    every endpoint whose key had been moved to ``.env``.
+    Keys live in Linux Secret Service behind ``key_env``; only entries written
+    before #69449 still carry a plaintext ``api_key``. Checking both keeps the
+    panel honest during migration without exposing the value in the response.
     """
     plaintext = str(entry.get("api_key") or "").strip()
     if plaintext:
@@ -8495,7 +8606,15 @@ def _detach_main_model_from_provider(cfg: Dict[str, Any], provider_key: str) -> 
         return
     if str(model_cfg.get("provider") or "").strip().lower() != provider_key:
         return
-    for field in ("provider", "base_url", "api_key", "key_env"):
+    for field in (
+        "provider",
+        "base_url",
+        "api_key",
+        "api",
+        "key_env",
+        "api_key_env",
+        "api_key_ref",
+    ):
         model_cfg.pop(field, None)
     cfg["model"] = model_cfg
 
@@ -8556,18 +8675,22 @@ def _write_custom_endpoint(cfg: Dict[str, Any], body: CustomEndpointUpdate) -> T
         entry["context_length"] = int(body.context_length)
         entry["models"][model]["context_length"] = int(body.context_length)
 
-    # API keys never belong in config.yaml (#69449). Write to .env and
-    # reference it via ``key_env`` — the same indirection built-in providers
-    # use and that runtime_provider.py already resolves at load time.
+    # API keys never belong in config.yaml (#69449). Hafiye's provider
+    # lifecycle stores the value in Linux Secret Service and keeps only the
+    # runtime ``key_env`` indirection here.
     env_var = custom_endpoint_key_env(endpoint_id)
     submitted_key = body.api_key.strip() if body.api_key is not None else None
     if submitted_key:
-        save_env_value(env_var, submitted_key)
+        from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+        save_provider_env_credential(env_var, submitted_key)
         entry["key_env"] = env_var
         entry.pop("api_key", None)
     elif submitted_key is not None:
         # Blank field means "clear the key", not "leave it alone".
-        remove_env_value(env_var)
+        from hermes_cli.credential_lifecycle import remove_provider_env_credential
+
+        remove_provider_env_credential(env_var)
         entry.pop("key_env", None)
         entry.pop("api_key", None)
     elif str(entry.get("api_key") or "").strip() and not _config_api_key_is_env_ref(endpoint_id):
@@ -8575,7 +8698,9 @@ def _write_custom_endpoint(cfg: Dict[str, Any], body: CustomEndpointUpdate) -> T
         # release wrote in plaintext. Migrate it on the next save so endpoints
         # configured before the fix get cleaned up too, without the user
         # having to re-enter the key.
-        save_env_value(env_var, entry["api_key"].strip())
+        from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+        save_provider_env_credential(env_var, entry["api_key"].strip())
         entry["key_env"] = env_var
         entry.pop("api_key", None)
 
@@ -8620,12 +8745,21 @@ def upsert_custom_endpoint(body: CustomEndpointUpdate, profile: Optional[str] = 
             cfg = load_config()
             endpoint_id, _entry = _write_custom_endpoint(cfg, body)
             save_config(cfg)
+            # ``save_config`` writes the provider graph after the credential
+            # lifecycle. Re-assert the reference on the final raw document so
+            # a merged config save can never drop the Secret Service binding.
+            if _entry.get("key_env") == custom_endpoint_key_env(endpoint_id):
+                from hermes_cli.hafiye_keyring import ensure_secret_reference
+
+                ensure_secret_reference(custom_endpoint_key_env(endpoint_id))
             response = _custom_endpoint_response(cfg)
         response["ok"] = True
         response["id"] = endpoint_id
         return response
     except HTTPException:
         raise
+    except SecretStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         _log.exception("POST /api/providers/custom-endpoints failed")
         raise HTTPException(status_code=500, detail="Failed to save custom endpoint")
@@ -8653,13 +8787,30 @@ def activate_custom_endpoint(endpoint_id: str, profile: Optional[str] = None):
             if entry.get("key_env"):
                 model_cfg["key_env"] = entry["key_env"]
                 model_cfg.pop("api_key", None)
-            elif entry.get("api_key"):
-                model_cfg["api_key"] = entry["api_key"]
+                model_cfg.pop("api", None)
+            elif entry.get("api_key") or entry.get("api"):
+                from hermes_cli.config import custom_endpoint_key_env
+                from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+                key_env = custom_endpoint_key_env(provider_key)
+                save_provider_env_credential(
+                    key_env,
+                    str(entry.get("api_key") or entry.get("api") or "").strip(),
+                )
+                entry["key_env"] = key_env
+                entry.pop("api_key", None)
+                entry.pop("api", None)
+                providers[provider_key] = entry
+                model_cfg["key_env"] = key_env
+                model_cfg.pop("api_key", None)
+                model_cfg.pop("api", None)
             cfg["model"] = model_cfg
             save_config(cfg)
         return {"ok": True, "provider": provider_key, "model": model}
     except HTTPException:
         raise
+    except SecretStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         _log.exception("POST /api/providers/custom-endpoints/%s/activate failed", endpoint_id)
         raise HTTPException(status_code=500, detail="Failed to activate custom endpoint")
@@ -8678,13 +8829,20 @@ def delete_custom_endpoint(endpoint_id: str, profile: Optional[str] = None):
             providers.pop(provider_key, None)
             cfg["providers"] = providers
             _detach_main_model_from_provider(cfg, provider_key)
-            remove_env_value(custom_endpoint_key_env(provider_key))
+            from hermes_cli.credential_lifecycle import remove_provider_env_credential
+
+            remove_provider_env_credential(custom_endpoint_key_env(provider_key))
             save_config(cfg)
+            from hermes_cli.hafiye_keyring import remove_secret_reference
+
+            remove_secret_reference(custom_endpoint_key_env(provider_key))
             response = _custom_endpoint_response(cfg)
         response["ok"] = True
         return response
     except HTTPException:
         raise
+    except SecretStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         _log.exception("DELETE /api/providers/custom-endpoints/%s failed", endpoint_id)
         raise HTTPException(status_code=500, detail="Failed to delete custom endpoint")
@@ -8784,7 +8942,9 @@ async def validate_provider_credential(body: EnvVarUpdate, request: Request):
 async def remove_env_var(body: EnvVarDelete, profile: Optional[str] = None):
     def _run():
         with _profile_scope(body.profile or profile):
-            # Unified credential lifecycle: clears the .env entry AND every
+            # Unified credential lifecycle: clears a provider from Secret
+            # Service (and legacy .env migration state) or clears a legacy
+            # .env entry, AND every
             # mirror of the credential — env-seeded credential_pool entries in
             # auth.json (stale ones kept providers alive in the model picker,
             # #51071/#59761), the affected providers' model-cache rows, and
@@ -8797,7 +8957,7 @@ async def remove_env_var(body: EnvVarDelete, profile: Optional[str] = None):
     try:
         result = await asyncio.to_thread(_run)
         if not result.get("found"):
-            raise HTTPException(status_code=404, detail=f"{body.key} not found in .env")
+            raise HTTPException(status_code=404, detail=f"{body.key} is not configured")
         return result
     except HTTPException:
         raise
@@ -8806,6 +8966,8 @@ async def remove_env_var(body: EnvVarDelete, profile: Optional[str] = None):
         # the message to the SPA so the user understands why the delete was
         # refused instead of seeing an opaque 500. Mirrors PUT /api/env.
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except SecretStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         _log.exception("DELETE /api/env failed")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -8836,12 +8998,20 @@ async def reveal_env_var(
     # --- Reveal ---
     def _run():
         with _profile_scope(body.profile or profile):
-            return load_env()
+            from hermes_cli.hafiye_keyring import get_secret, keyring_references
 
-    env_on_disk = await asyncio.to_thread(_run)
-    value = env_on_disk.get(body.key)
+            refs = keyring_references()
+            ref = refs.get(body.key)
+            if ref is not None:
+                return get_secret(ref)
+            return load_env().get(body.key)
+
+    try:
+        value = await asyncio.to_thread(_run)
+    except SecretStoreError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     if value is None:
-        raise HTTPException(status_code=404, detail=f"{body.key} not found in .env")
+        raise HTTPException(status_code=404, detail=f"{body.key} is not configured")
 
     _log.info("env/reveal: %s", body.key)
     return {"key": body.key, "value": value}

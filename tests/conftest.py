@@ -36,6 +36,51 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
+@pytest.fixture(autouse=True)
+def _fake_hafiye_secret_service(monkeypatch):
+    """Keep provider tests independent of a developer D-Bus session."""
+    from hermes_cli import hafiye_keyring
+
+    class _MissingPasswordError(Exception):
+        pass
+
+    class _Backend:
+        __module__ = "keyring.backends.SecretService"
+
+        def __init__(self):
+            self.values = {}
+
+        def get_password(self, service, username):
+            return self.values.get((service, username))
+
+        def set_password(self, service, username, password):
+            self.values[(service, username)] = password
+
+        def delete_password(self, service, username):
+            if (service, username) not in self.values:
+                raise _MissingPasswordError()
+            del self.values[(service, username)]
+
+    backend = _Backend()
+
+    class _Keyring:
+        errors = type("errors", (), {"PasswordDeleteError": _MissingPasswordError})
+
+        def get_keyring(self):
+            return backend
+
+        def get_password(self, service, username):
+            return backend.get_password(service, username)
+
+        def set_password(self, service, username, password):
+            backend.set_password(service, username, password)
+
+        def delete_password(self, service, username):
+            backend.delete_password(service, username)
+
+    monkeypatch.setattr(hafiye_keyring, "_keyring_module", lambda: _Keyring())
+
+
 # ── Sandbox HERMES_HOME before ANY test module is imported ──────────────────
 # `hermes_cli/main.py` calls `setup_logging()` at MODULE level, which resolves
 # `get_hermes_home()` and attaches rotating file handlers to the ROOT logger.

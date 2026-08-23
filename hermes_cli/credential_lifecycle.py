@@ -1,12 +1,17 @@
 """Unified provider-credential lifecycle across every store Hermes reads.
 
-A provider API key can live in up to THREE stores at once:
+A Hafiye provider API key can live in up to THREE related stores at once:
 
-    1. ``~/.hermes/.env``                     — the canonical secret store
-    2. ``~/.hermes/auth.json`` →
+    1. Linux Secret Service                    — the canonical secret store
+    2. ``~/.hermes/config.yaml``               — a non-secret ``keyring://`` ref
+    3. ``~/.hermes/.env`` / ``auth.json``       — legacy migration and runtime
+
+The auth store may also contain:
+
+    ``~/.hermes/auth.json`` →
        ``credential_pool.<provider>[*]``      — env-seeded pool entries
        (``source == "env:<VAR>"``) persisted by the pool loader
-    3. ``~/.hermes/config.yaml``              — inline mirrors written by the
+    ``~/.hermes/config.yaml``                  — inline mirrors written by the
        custom-endpoint flows (``model.api_key``, ``auxiliary.<task>.api_key``,
        ``custom_providers[*].api_key``)
 
@@ -25,7 +30,8 @@ whole bug family:
 
 This module is the single choke point: every surface that saves or removes a
 provider credential should route through :func:`save_provider_env_credential`
-/ :func:`remove_provider_env_credential` so all three stores stay consistent.
+/ :func:`remove_provider_env_credential` so Secret Service, references,
+legacy files, and runtime caches stay consistent.
 
 OAuth preservation contract: removal only prunes credential-pool entries whose
 ``source`` is exactly ``env:<VAR>``. OAuth/device-code/manual/borrowed entries
@@ -39,6 +45,7 @@ credential value. Results carry key NAMES and config PATHS only.
 
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List
 
 __all__ = [
@@ -62,6 +69,15 @@ def _providers_for_env_var(env_var: str) -> List[str]:
         except Exception:
             continue
     return hits
+
+
+def _is_hafiye_provider_secret(env_var: str) -> bool:
+    """Return True for provider credentials owned by Hafiye's keyring path."""
+    if env_var == "AWS_BEARER_TOKEN_BEDROCK":
+        return True
+    if env_var.startswith("HERMES_CUSTOM_") and env_var.endswith("_API_KEY"):
+        return True
+    return bool(_providers_for_env_var(env_var))
 
 
 def _prune_env_pool_entries(env_var: str) -> List[str]:
@@ -175,6 +191,256 @@ def _scrub_config_yaml_mirrors(old_value: str, new_value: str | None) -> List[st
     return touched
 
 
+def _provider_config_sections(user_config: Dict[str, Any]):
+    """Yield config mappings that may contain provider credential mirrors."""
+    model = user_config.get("model")
+    if isinstance(model, dict):
+        yield model, "model"
+
+    auxiliary = user_config.get("auxiliary")
+    if isinstance(auxiliary, dict):
+        for task, section in auxiliary.items():
+            if isinstance(section, dict):
+                yield section, f"auxiliary.{task}"
+
+    for key in ("custom_providers", "providers"):
+        collection = user_config.get(key)
+        if isinstance(collection, list):
+            for index, section in enumerate(collection):
+                if isinstance(section, dict):
+                    yield section, f"{key}.{index}"
+        elif isinstance(collection, dict):
+            for name, section in collection.items():
+                if isinstance(section, dict):
+                    yield section, f"{key}.{name}"
+
+
+def _scrub_provider_config_mirrors(
+    old_value: str | None, env_var: str, new_value: str | None = None
+) -> List[str]:
+    """Replace an inline provider secret with its env/keyring indirection."""
+    from utils import atomic_yaml_write, fast_safe_load
+
+    from hermes_cli.config import (
+        get_config_path,
+        require_readable_config_before_write,
+    )
+
+    config_path = get_config_path()
+    if not config_path.exists():
+        return []
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            user_config = fast_safe_load(f) or {}
+    except Exception:
+        return []
+    if not isinstance(user_config, dict):
+        return []
+
+    touched: List[str] = []
+    for section, key_path in _provider_config_sections(user_config):
+        matched = False
+        for field in ("api_key", "api"):
+            current = section.get(field)
+            if (
+                isinstance(current, str)
+                and current
+                and current in {old_value, new_value}
+            ):
+                section.pop(field, None)
+                touched.append(f"{key_path}.{field}")
+                matched = True
+        if matched or section.get("key_env") == env_var:
+            if section.get("key_env") != env_var:
+                section["key_env"] = env_var
+                touched.append(f"{key_path}.key_env")
+
+    if touched:
+        require_readable_config_before_write(config_path)
+        atomic_yaml_write(config_path, user_config, sort_keys=False)
+    return touched
+
+
+def _remove_provider_config_refs(
+    env_var: str, old_value: str | None
+) -> List[str]:
+    """Remove provider config pointers/raw mirrors for a deleted credential."""
+    from utils import atomic_yaml_write, fast_safe_load
+
+    from hermes_cli.config import (
+        get_config_path,
+        require_readable_config_before_write,
+    )
+
+    config_path = get_config_path()
+    if not config_path.exists():
+        return []
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            user_config = fast_safe_load(f) or {}
+    except Exception:
+        return []
+    if not isinstance(user_config, dict):
+        return []
+
+    touched: List[str] = []
+    for section, key_path in _provider_config_sections(user_config):
+        for field in ("key_env", "api_key_env"):
+            if section.get(field) == env_var:
+                section.pop(field, None)
+                touched.append(f"{key_path}.{field}")
+        for field in ("api_key", "api"):
+            current = section.get(field)
+            if old_value and isinstance(current, str) and current == old_value:
+                section.pop(field, None)
+                touched.append(f"{key_path}.{field}")
+
+    if touched:
+        require_readable_config_before_write(config_path)
+        atomic_yaml_write(config_path, user_config, sort_keys=False)
+    return touched
+
+
+def _refresh_runtime_provider_secret(env_var: str, value: str | None) -> None:
+    """Refresh the current process without leaking a profile into a sibling."""
+    try:
+        from agent.secret_scope import is_multiplex_active
+
+        if is_multiplex_active():
+            from hermes_cli.env_loader import (
+                hydrate_profile_secret_sources,
+                reset_secret_source_cache,
+            )
+            from hermes_constants import get_hermes_home
+
+            reset_secret_source_cache()
+            hydrate_profile_secret_sources(get_hermes_home())
+            return
+    except Exception:
+        # The next process/startup hydration remains authoritative. The
+        # existing Hermes lifecycle also treats in-process env refresh as
+        # best-effort around profile switching.
+        return
+
+    if value is None:
+        os.environ.pop(env_var, None)
+    else:
+        os.environ[env_var] = value
+
+
+def _save_hafiye_provider_secret(env_var: str, value: str) -> Dict[str, Any]:
+    """Store a provider credential in Secret Service and remove legacy .env."""
+    from hermes_cli.config import load_env, remove_env_value
+    from hermes_cli.hafiye_keyring import (
+        SecretStoreError,
+        ensure_secret_reference,
+        get_secret,
+        keyring_references,
+        put_secret,
+        secret_ref_for_env,
+    )
+    from hermes_constants import get_hermes_home
+
+    home = get_hermes_home()
+    value = value.strip()
+    if not value:
+        raise ValueError("Credential value must not be empty")
+
+    old_dotenv = load_env().get(env_var)
+    ref = secret_ref_for_env(env_var, home)
+    old_keyring: str | None = None
+    if env_var in keyring_references(home):
+        old_keyring = get_secret(ref)
+    old_value = old_keyring or old_dotenv
+
+    put_secret(ref, value)
+    try:
+        ensure_secret_reference(env_var, home)
+        if old_dotenv is not None:
+            removed = remove_env_value(env_var)
+            if not removed and load_env().get(env_var) == old_dotenv:
+                raise SecretStoreError("Could not remove the legacy .env credential.")
+    except Exception:
+        # Keep a previously working keyring value if the config migration
+        # cannot be completed. Never leave a new value half-configured.
+        try:
+            if old_keyring:
+                put_secret(ref, old_keyring)
+            else:
+                from hermes_cli.hafiye_keyring import delete_secret
+
+                delete_secret(ref)
+        except Exception:
+            pass
+        raise
+
+    config_updates = _scrub_provider_config_mirrors(old_value, env_var, value)
+    _refresh_runtime_provider_secret(env_var, value)
+
+    try:
+        from hermes_cli.auth import unsuppress_credential_source
+
+        for provider in _providers_for_env_var(env_var):
+            unsuppress_credential_source(provider, f"env:{env_var}")
+    except Exception:
+        pass
+
+    return {
+        "ok": True,
+        "key": env_var,
+        "config_updates": config_updates,
+        "secret_store": "linux-secret-service",
+    }
+
+
+def _remove_hafiye_provider_secret(env_var: str) -> Dict[str, Any]:
+    """Remove a provider credential from Secret Service, config and legacy .env."""
+    from hermes_cli.config import load_env, remove_env_value
+    from hermes_cli.hafiye_keyring import (
+        delete_secret,
+        get_secret,
+        remove_secret_reference,
+        secret_ref_for_env,
+    )
+    from hermes_constants import get_hermes_home
+
+    home = get_hermes_home()
+    old_dotenv = load_env().get(env_var)
+    ref = secret_ref_for_env(env_var, home)
+    old_keyring = get_secret(ref)
+    removed_from_keyring = delete_secret(ref)
+    removed_reference = remove_secret_reference(env_var, home)
+    removed_from_env = remove_env_value(env_var)
+    old_value = old_keyring or old_dotenv
+    config_scrubbed = _remove_provider_config_refs(env_var, old_value)
+    try:
+        refs = purge_env_credential_references(env_var)
+    except Exception:
+        # Secret storage removal is already complete. A read-only auth-pool
+        # cleanup failure must not make the Desktop report that the provider
+        # credential could not be deleted.
+        refs = {"pool_pruned": [], "providers": []}
+    _refresh_runtime_provider_secret(env_var, None)
+
+    return {
+        "ok": True,
+        "key": env_var,
+        "removed": bool(removed_from_env or removed_from_keyring),
+        "secret_reference_removed": removed_reference,
+        "pool_pruned": refs["pool_pruned"],
+        "providers": refs["providers"],
+        "config_scrubbed": config_scrubbed,
+        "secret_store": "linux-secret-service",
+        "found": bool(
+            removed_from_env
+            or removed_from_keyring
+            or removed_reference
+            or refs["pool_pruned"]
+            or config_scrubbed
+        ),
+    }
+
+
 def purge_env_credential_references(
     env_var: str, *, clear_models_cache: bool = True
 ) -> Dict[str, Any]:
@@ -211,14 +477,16 @@ def purge_env_credential_references(
 
 
 def save_provider_env_credential(env_var: str, value: str) -> Dict[str, Any]:
-    """Save/update a credential in ``.env`` and reconcile every mirror.
+    """Save/update a provider credential or legacy env value.
 
-    After the ``.env`` write, any config.yaml mirror that held the PREVIOUS
-    value of this var (``model.api_key`` etc.) is updated to the new value so
-    a stale higher-precedence copy cannot shadow the rotation (#62269).
-    Suppressed ``env:<VAR>`` pool sources are re-enabled so a deliberate
-    re-add through the UI behaves like ``hermes auth add``.
+    Hafiye provider credentials use Linux Secret Service and leave only a
+    ``keyring://`` reference in config.yaml. Non-provider Hermes environment
+    values retain the upstream .env lifecycle for compatibility with channel
+    and tool setup flows.
     """
+    if _is_hafiye_provider_secret(env_var):
+        return _save_hafiye_provider_secret(env_var, value)
+
     from hermes_cli.config import load_env, save_env_value
 
     old_value = load_env().get(env_var)
@@ -245,7 +513,9 @@ def save_provider_env_credential(env_var: str, value: str) -> Dict[str, Any]:
 def remove_provider_env_credential(env_var: str) -> Dict[str, Any]:
     """Remove a credential from EVERY store it lives in.
 
-    Clears the ``.env`` entry (and process env), prunes env-seeded
+    Hafiye provider credentials are removed from Secret Service and their
+    config references; legacy/non-provider values use the upstream .env path.
+    Every path also prunes env-seeded
     ``credential_pool`` entries, drops the affected providers' model-cache
     rows, and removes any config.yaml mirror holding the same value.
     OAuth/device-code/manual credentials are preserved (see module docstring).
@@ -254,6 +524,9 @@ def remove_provider_env_credential(env_var: str) -> Dict[str, Any]:
     previously 404'd on ".env miss" should key off this instead so a stale
     pool-only entry can still be cleaned up through the same button.
     """
+    if _is_hafiye_provider_secret(env_var):
+        return _remove_hafiye_provider_secret(env_var)
+
     from hermes_cli.config import load_env, remove_env_value
 
     old_value = load_env().get(env_var)

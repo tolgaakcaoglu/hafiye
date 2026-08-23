@@ -18,10 +18,10 @@ The single entry point for startup is :func:`apply_all`, called from
 
 Plugins register additional sources via
 ``PluginContext.register_secret_source()`` which lands in
-:func:`register_source`.  In-tree sources are registered lazily by
-:func:`_ensure_builtin_sources` — the set of bundled sources is
-deliberately closed (Bitwarden, and 1Password once it lands); new
-third-party backends ship as standalone plugin repos implementing
+:func:`register_source`. In-tree sources are registered lazily by
+:func:`_ensure_builtin_sources`. The bundled set includes Hermes' command
+source and Hafiye's Linux Secret Service source; new third-party backends
+ship as standalone plugin repos implementing
 :class:`agent.secret_sources.base.SecretSource`.
 """
 
@@ -269,6 +269,15 @@ def _ensure_builtin_sources() -> None:
         except Exception:  # noqa: BLE001 — never block startup
             logger.warning(
                 "Failed to register bundled command secret source",
+                exc_info=True,
+            )
+        try:
+            from agent.secret_sources.keyring import KeyringSource
+
+            register_source(KeyringSource(), builtin=True)
+        except Exception:  # noqa: BLE001 — never block startup
+            logger.warning(
+                "Failed to register bundled Linux Secret Service source",
                 exc_info=True,
             )
 

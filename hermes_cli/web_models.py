@@ -138,11 +138,10 @@ class ModelAssignment(BaseModel):
     # from config (they ignore OPENAI_BASE_URL), so this is the path that
     # actually wires a local endpoint into resolution.
     base_url: str = ""
-    # Optional API key for a custom/local endpoint. Persisted to
-    # ``model.api_key`` (main slot) or ``auxiliary.<task>.api_key`` (aux
-    # slots) — where the runtime resolvers read it — so a self-hosted
-    # endpoint that requires auth works from the GUI. Mirrors the key the
-    # ``hermes model`` custom flow collects.
+    # Optional API key for a custom/local endpoint. Stored in Linux Secret
+    # Service; config.yaml receives only a key_env reference on the main or
+    # auxiliary slot. Mirrors the key the ``hermes model`` custom flow
+    # collects without serializing the credential.
     api_key: str = ""
     confirm_expensive_model: bool = False
     profile: Optional[str] = None
@@ -738,4 +737,3 @@ class _PluginProvidersPutBody(BaseModel):
 
 class _PluginVisibilityBody(BaseModel):
     hidden: bool
-

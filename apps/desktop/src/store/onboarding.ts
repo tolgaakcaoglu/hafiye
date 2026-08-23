@@ -827,7 +827,8 @@ export async function saveOnboardingApiKey(
 // The model is auto-discovered from the endpoint's /v1/models (surfaced by the
 // validate probe). The optional API key is forwarded to the probe (so hosted
 // endpoints that gate /v1/models behind auth still enumerate models) and
-// persisted to model.api_key so the runtime can authenticate.
+// persisted to Linux Secret Service with a config key_env reference so the
+// runtime can authenticate without putting the key in config.yaml.
 //
 // We deliberately don't route through completeWithModelConfirm: that path
 // re-assigns the model from /api/model/options WITHOUT a base_url, which would
