@@ -7,7 +7,7 @@ records execution status only.
 - [x] P1 Hafiye external identity and data root
 - [x] P2 Persistent gateway + Desktop connection
 - [x] P3 Hafiye Composer + tray + autostart
-- [ ] P4 llama.cpp managed local runtime
+- [x] P4 llama.cpp managed local runtime
 - [ ] P5 Providers + Gemini + remote OpenAI-compatible
 - [ ] P6 Model router + privacy modes
 - [ ] P7 Full host tools + execution policy
@@ -117,3 +117,31 @@ shortcut remains configurable, and the issue is recorded as KI-012. A full
 reboot was not performed during this session; the exact XDG autostart command
 was launched directly with `--hidden` and recorded as the non-disruptive login
 equivalent. See KI-013 for that operational follow-up.
+
+## P4 execution status
+
+- [x] Add the Hafiye-managed llama.cpp source/build/runtime manifest under the
+      Hafiye XDG data root.
+- [x] Implement the fixed `AUTO` compute policy with CUDA primary, Vulkan
+      fallback, and CPU fallback, plus explicit backend selection.
+- [x] Implement GGUF import, checksum/size registry, resumable Hugging Face
+      download, list, delete, load, unload, and model switching.
+- [x] Implement loopback llama-server start/stop/restart/health/version and
+      the authenticated gateway REST boundary.
+- [x] Add real Desktop model settings for backend selection, runtime install,
+      GGUF import, model selection, context/GPU layers, load, and unload.
+- [x] Build the managed runtime on the real host with CPU and CUDA support;
+      AUTO selects CUDA on the RTX 3080.
+- [x] Verify real GGUF chat, Hermes provider connectivity, model switching,
+      loopback health, GPU use, and persistent gateway API exposure.
+- [x] Complete the corrected full backend regression comparison and record its
+      exact result before phase closure.
+
+P4 source implementation is recorded in `87cbfb34337f043363ba8851c485fea5ea66de0b`;
+the follow-up shared subprocess-environment correction is
+`d912a85ee5fa21afb1c5304e28c6e3651fb16433`, and the final cross-platform
+process correction is `ae24562fb9dfeeb4dd58752849b4778b2c8606e8`. The managed
+llama.cpp checkout is separately pinned to source commit
+`c060ca974c773c7c3d17fd1b66dc9d312bc292c0`. The real runtime, Desktop API,
+and corrected full backend regression checks pass under the documented
+baseline rule. P5 is now the next incomplete phase.

@@ -56,6 +56,21 @@ its result says so.
 | P3-REAL-04 | Exact autostart command | Generated `~/.config/autostart/hafiye.desktop` `Exec=` command with `--hidden` | Launched successfully in current Wayland session | PASS WITH KI-013 |
 | P3-REAL-05 | Mandated default global shortcut | Real Desktop launch and GNOME keybinding inspection | `Super+Shift+Space` reported taken by GNOME input-source-backward binding | WARNING; KI-012 |
 
+| P4-PY-01 | Managed local runtime unit tests | `./scripts/run_tests.sh tests/hermes_cli/test_local_runtime.py -q` | 6 passed; backend priority, private registry/checksums, resumable download, and safe health covered | PASS |
+| P4-PY-02 | Persistent gateway subprocess environment guard | `./scripts/run_tests.sh tests/agent/test_subprocess_env_guard.py tests/hermes_cli/test_persistent_gateway.py -q` | 6 passed after the shared environment factory correction | PASS |
+| P4-D-01 | Local runtime settings boundary | `cd apps/desktop && ../../node_modules/.bin/vitest run src/app/settings/model-settings.test.tsx --project ui` | 1 file; 22 passed | PASS |
+| P4-D-02 | Desktop typecheck after runtime API/settings | `cd apps/desktop && npm run typecheck` | Renderer, Electron, and E2E TypeScript checks passed | PASS |
+| P4-D-03 | Desktop production build after runtime API/settings | `cd apps/desktop && npm run build` | Vite, Electron bundles, native staging, and assert-dist-built passed; clean stamp to be refreshed after documentation closure | PASS |
+| P4-REAL-01 | Real CUDA toolchain and host detection | `nvcc --version`; `nvidia-smi`; `pkg-config --exists vulkan` | CUDA 12.4.131; NVIDIA RTX 3080/driver 595.84; Vulkan development metadata available | PASS |
+| P4-REAL-02 | Managed llama.cpp build | `.venv/bin/hafiye runtime install --backend AUTO` | Source commit `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`; compiled `CPU,CUDA`; selected `CUDA` | PASS |
+| P4-REAL-03 | GGUF model lifecycle | `.venv/bin/hafiye runtime model download ...`; `runtime model list`; import/delete checks | Gemma and Qwen GGUFs downloaded/imported with recorded sizes and SHA-256; private registry and model root | PASS |
+| P4-REAL-04 | CUDA server readiness and device use | `.venv/bin/hafiye runtime server start/restart`; `runtime doctor`; `curl /health`; `nvidia-smi --query-compute-apps` | `/health` and `/v1/models` HTTP 200; doctor blockers/warnings empty; `CUDA0: NVIDIA GeForce RTX 3080`; managed PID used GPU memory | PASS |
+| P4-REAL-05 | OpenAI-compatible local chat | `curl http://127.0.0.1:11435/v1/chat/completions` | Real CUDA response contained `CUDA LOCAL OK` | PASS |
+| P4-REAL-06 | Hermes provider connection | Temporary `HERMES_HOME` plus local OpenAI-compatible base URL; `.venv/bin/hermes` one-shot | Real Gemma CPU smoke returned `HERMES LOCAL OK`; CUDA Qwen one-shot returned a non-empty agent response | PASS |
+| P4-REAL-07 | Model switch without reinstall | `runtime server restart` with Gemma then Qwen; health/chat probes | Second model became healthy and returned `SECOND MODEL OK` without rebuilding Hafiye | PASS |
+| P4-REST-01 | Authenticated persistent gateway runtime API | `systemctl --user restart hafiye-gateway.service`; authenticated `GET /api/local-runtime` | `ok=true`, blockers empty, expected/selected backend `CUDA` | PASS |
+| P4-BE-01 | Corrected backend full regression comparison | `./scripts/run_tests.sh` with persistent Hafiye gateway and managed local model server stopped temporarily | 3,213 files; 37,009 passed, 6 failed, 291 skipped in 515.9s; exact four accepted upstream failures plus the two isolated-passing async diagnostics; one retry-only flake recorded separately | PASS WITH DOCUMENTED BASELINE/DIAGNOSTICS |
+
 ## Current ACCEPTED_UPSTREAM_BASELINE
 
 The post-source run has this exact four-failure comparison set:

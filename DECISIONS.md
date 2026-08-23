@@ -91,3 +91,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   visibly disabled and labeled rather than exposing fake state. The generated
   autostart entry is conservative and only removes an existing file when it is
   recognizably Hafiye-owned.
+
+## ADR-0009 — Manage llama.cpp as a private Hafiye runtime boundary
+
+- Date: 2026-08-23
+- Decision: Keep the managed llama.cpp source/build and GGUF model registry under
+  Hafiye's XDG data/state roots. Run `llama-server` as the non-root Hafiye user
+  on loopback `127.0.0.1:11435`; expose lifecycle operations to CLI and Desktop
+  through the shared runtime manager and authenticated gateway API.
+- Reason: P4 requires install/version/model import/download/list/load/unload and
+  server lifecycle behavior without hard-coded models or a second business-logic
+  implementation. The runtime manifest records the exact managed source commit,
+  compiled backends, and selected AUTO backend.
+- Consequence: AUTO follows the binding CUDA → Vulkan → CPU policy, with CUDA
+  primary on the current RTX 3080. A runtime rebuild stops the managed server
+  before replacing its executable, then leaves model restart explicit so Linux
+  does not hit `ETXTBSY` and no hidden model reload occurs. The managed source
+  pin `c060ca974c773c7c3d17fd1b66dc9d312bc292c0` is separate from the pinned
+  Hermes commit.

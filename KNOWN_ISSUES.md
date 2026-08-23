@@ -16,8 +16,9 @@ silently treated as passing.
   3. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
   4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
   5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
-- The current post-source run completed 3,211 files with 36,905 passed, 6
-  failed, and 320 skipped. The browser-control failure now passes.
+- The corrected current post-source run completed 3,213 files with 37,009
+  passed, 6 failed, and 291 skipped in 515.9 seconds. The browser-control
+  failure now passes.
 - Therefore the current exact regression comparison set is:
   1. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
   2. tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]
@@ -44,8 +45,9 @@ silently treated as passing.
 - The binding policy is AUTO: NVIDIA plus CUDA when available, otherwise
   Vulkan, otherwise CPU. Managed llama.cpp and whisper.cpp use CUDA primary
   with Vulkan/CPU fallback. This host is expected to select CUDA.
-- nvidia-smi and NVIDIA OpenGL work. Managed CUDA inference remains a later
-  runtime verification task.
+- nvidia-smi and NVIDIA OpenGL work. P4's real managed llama.cpp build and
+  CUDA chat verification now pass; the later whisper.cpp CUDA runtime remains
+  a separate voice-stack task.
 
 ## KI-004 — computer-use-linux readiness was incomplete before relogin
 
@@ -105,6 +107,27 @@ silently treated as passing.
   tests require investigation if they reproduce outside the full-suite
   scheduling context or appear after later Hafiye changes.
 
+## KI-015 — One full-suite timing flake passed on retry
+
+- Status: DIAGNOSTIC; no confirmed Hafiye regression.
+- `tests/tools/test_zombie_process_cleanup.py` failed once during the corrected
+  full run, then passed on the runner's retry. The final suite summary counts
+  it as passed; it is retained here because the runner reported it as flaky.
+- Re-run this file in isolation if it fails again or if the failure persists
+  after later Hafiye changes.
+
+## KI-016 — Persistent Hafiye service interferes with one upstream lifecycle test
+
+- Status: TEST-TOPOLOGY DIAGNOSTIC; not a Hafiye product blocker.
+- When the active `hafiye-gateway.service` is present, upstream
+  `tests/hermes_cli/test_update_cold_start_gateway_liveness.py` detects a
+  Desktop-owned gateway and its two cold-start tests fail. Stopping the
+  Hafiye service makes both tests pass in isolation.
+- The corrected full regression comparison stopped the Hafiye service and the
+  managed local model server temporarily, then restored both after completion.
+  This isolates the upstream lifecycle test from the intentionally persistent
+  Hafiye topology.
+
 ## KI-009 — Hafiye P1 source regression
 
 - Status: NONE OBSERVED.
@@ -158,3 +181,15 @@ silently treated as passing.
   session. The direct autostart invocation is recorded as the non-disruptive
   login-equivalent check; a later reboot/login should confirm the desktop
   session manager consumes the entry automatically.
+
+## KI-014 — Small validation GGUFs have a lower trained context window
+
+- Status: TEST-FIXTURE LIMITATION; not a runtime or P4 blocker.
+- The real Gemma and Qwen validation files report a trained context limit of
+  32,768 tokens, while Hermes' default local-agent configuration can request a
+  larger context. The CUDA endpoint and Hermes one-shot were verified by using
+  an explicit compatible server context and disabling auxiliary compression for
+  the small Qwen smoke model.
+- Production model entries must advertise a context window compatible with the
+  requested Hafiye agent configuration. This is a model-selection/configuration
+  concern, not a reason to weaken the managed runtime contract.

@@ -12,7 +12,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
 - Current Hafiye HEAD (latest product/source commit):
-  34f1d8c2472e6b70b71bbdbfc9d3292761dbb67b
+  ae24562fb9dfeeb4dd58752849b4778b2c8606e8
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -47,13 +47,19 @@ reachable; Hermes history is not rewritten.
 
 ## Hafiye patch groups
 
-The current Hafiye source commit contains these separable logical groups:
+The Hafiye source history contains these separable logical groups:
 
 - branding: normal user-facing CLI and Desktop identity boundary.
 - xdg-paths: shared Hafiye config, data, state, and cache roots.
 - legacy-migration: conservative non-destructive import from ~/.hermes.
 - desktop-assets: neutral H monogram assets and package identity.
 - desktop-remote-roots: Desktop and remote lifecycle root alignment.
+- persistent-gateway: user-scoped authenticated Hafiye backend service.
+- composer-tray-autostart: Composer lifecycle, tray, and XDG autostart.
+- local-model-runtime: managed llama.cpp/GGUF runtime, registry, server, and
+  Desktop controls.
+- gateway-environment-guard: shared subprocess environment construction for the
+  persistent gateway child process.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -82,12 +88,14 @@ exact five test IDs were:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-After Hafiye source changes, the same five are not regressions. The current
-full run measured 36,905 passed, 6 failed, and 320 skipped. The browser-control
-failure now passes, so the current exact ACCEPTED_UPSTREAM_BASELINE is the
-remaining four IDs listed in KNOWN_ISSUES.md and STATE.md. The two additional
-full-run async timeouts pass in isolation and are tracked as diagnostics, not
-as accepted baseline. Hafiye does not fix the upstream bugs.
+After Hafiye source changes, the same five are not regressions. The corrected
+full run covered 3,213 files and measured 37,009 passed, 6 failed, and 291
+skipped in 515.9 seconds. The browser-control failure now passes, so the
+current exact ACCEPTED_UPSTREAM_BASELINE is the remaining four IDs listed in
+KNOWN_ISSUES.md and STATE.md. The two additional full-run async timeouts pass
+in isolation and are tracked as diagnostics, not as accepted baseline. One
+timing-sensitive file passed on runner retry. Hafiye does not fix the
+upstream bugs.
 
 ## Computer-use-linux pinned source
 
@@ -171,6 +179,27 @@ P0 computer-use acceptance requires:
   mandated default `Super+Shift+Space`; Hafiye reports the conflict and leaves
   the user binding unchanged. This is an environment warning, not an upstream
   source change.
+
+## P4 source validation
+
+- Local runtime source commit: `87cbfb34337f043363ba8851c485fea5ea66de0b`.
+- Follow-up gateway environment guard commit:
+  `d912a85ee5fa21afb1c5304e28c6e3651fb16433`.
+- Final cross-platform local-runtime process fix:
+  `ae24562fb9dfeeb4dd58752849b4778b2c8606e8`.
+- Managed llama.cpp repository: `https://github.com/ggml-org/llama.cpp.git`.
+- Managed llama.cpp source commit:
+  `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`.
+- The runtime manifest records the source repository/commit, requested backend,
+  selected backend, compiled backends, binary path, and environment evidence.
+  This managed runtime pin is separate from the Hermes upstream pin above.
+- The real host build compiled CPU and CUDA; Hafiye AUTO selected CUDA on the
+  NVIDIA RTX 3080. The loopback server, GGUF registry, model lifecycle,
+  authenticated gateway API, and Desktop settings boundary were verified.
+- The corrected full backend regression command completed with the exact four
+  accepted baseline IDs plus the two previously isolated-passing async
+  diagnostics; no new or different failure was found, and no upstream Hermes
+  bug is being fixed as part of P4.
 
 ## Baseline divergence
 

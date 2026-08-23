@@ -1,13 +1,13 @@
 # Hafiye Development Environment
 
-Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
+Captured on `2026-08-23T23:28:36+03:00` in `/home/tolga/projects/hafiye`.
 
 ## Operating system and session
 
 | Item | Observed value |
 |---|---|
 | OS | Ubuntu 26.04 LTS (Resolute Raccoon) |
-| Kernel | `7.0.0-29-generic`, x86_64, PREEMPT_DYNAMIC |
+| Kernel | `7.0.0-30-generic`, x86_64, PREEMPT_DYNAMIC |
 | Desktop | Ubuntu GNOME |
 | GNOME Shell / session | GNOME Shell `50.1`, gnome-session `50.1` |
 | Display protocol | Wayland (`XDG_SESSION_TYPE=wayland`, `WAYLAND_DISPLAY=wayland-0`) |
@@ -23,7 +23,9 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 - GPU 2: NVIDIA GA102 GeForce RTX 3080, proprietary NVIDIA driver `595.84`, 10,240 MiB dedicated VRAM, `nvidia` kernel driver.
 - No AMD GPU is present.
 - `nvidia-smi` succeeds and NVIDIA OpenGL direct rendering succeeds with renderer `NVIDIA GeForce RTX 3080/PCIe/SSE2`, OpenGL 4.6.0.
-- NVIDIA/CUDA is the expected primary backend for this host. A managed llama.cpp/whisper.cpp CUDA runtime has not yet been built in Hafiye.
+- NVIDIA/CUDA is the expected primary backend for this host. The managed
+  Hafiye llama.cpp runtime is now built with CUDA and AUTO selects CUDA on the
+  RTX 3080. The whisper.cpp runtime remains a later phase.
 - Vulkan loader: `libvulkan.so.1` package `1.4.341.0`; Mesa packages include `26.0.3-1ubuntu1` and Vulkan ICD files.
 - `vulkaninfo` is not installed. This is a diagnostic warning, not a P0 blocker, because Vulkan is the fallback backend on this machine.
 
@@ -62,6 +64,8 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 | cmake | `4.2.3` |
 | ninja | `1.13.2` |
 | pkg-config | `2.5.1` |
+| NVIDIA CUDA toolkit | `nvcc 12.4.131`; CUDA development build available at `/usr/bin/nvcc` |
+| Vulkan development | `libvulkan-dev` installed; `pkg-config --exists vulkan` succeeds |
 | ripgrep | `15.2.0` |
 | ffmpeg | `8.0.1` |
 | jq | `1.8.1` |
@@ -96,6 +100,9 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 - Verified `systemctl --user status ydotool.service` as active/enabled; removed the duplicate generated unit and disabled the root user-manager daemon so only the non-root user service remains.
 - No passwordless sudo or `NOPASSWD` sudoers rule was created.
 - `pactl` and `vulkaninfo` remain absent as diagnostic warnings; `wpctl` and the Vulkan loader/ICDs are present.
+- After P0, the user installed `nvidia-cuda-toolkit`, `libvulkan-dev`, and
+  `pkg-config` through a normal visible terminal. No sudoers policy was
+  changed. `nvcc --version` reports CUDA 12.4.131.
 
 ## P1 path and build validation
 
@@ -114,3 +121,21 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 - No new privileged environment change was required for P1. The P0
   systemd-user, AT-SPI, GNOME Wayland, ydotool, uinput, CUDA, and audio
   observations above remain the active host evidence.
+
+## P4 managed llama.cpp validation
+
+- Managed runtime data root: `~/.local/share/hafiye/runtimes/llama.cpp/`.
+- Managed model root: `~/.local/share/hafiye/models/`.
+- Runtime state/log root: `~/.local/state/hafiye/local-runtime/`.
+- Source repository: `https://github.com/ggml-org/llama.cpp.git`.
+- Pinned managed source commit: `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`.
+- The real `AUTO` build compiled `CPU` and `CUDA`; the runtime manifest records
+  `expected_auto_backend=CUDA` and `selected_backend=CUDA`.
+- `llama-server` is managed as a non-root user process, binds only to
+  `127.0.0.1:11435`, and is exposed to Desktop through the authenticated
+  persistent Hafiye gateway at `127.0.0.1:9120`.
+- Real `--list-devices` output identified `CUDA0: NVIDIA GeForce RTX 3080`;
+  `nvidia-smi` observed the managed server using GPU memory during chat.
+- `pactl` and `vulkaninfo` are still absent. PipeWire/WirePlumber plus `wpctl`
+  remains the accepted audio path, and Vulkan remains a fallback/diagnostic
+  path rather than this host's primary compute backend.
