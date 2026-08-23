@@ -253,28 +253,34 @@ The local server binds only to loopback by default.
 
 ---
 
-## 2.6 AMD acceleration: Vulkan
+## 2.6 Compute backend policy
 
-The user's current primary GPU is AMD.
-
-Hafiye's managed llama.cpp build SHALL use:
+The default compute backend is:
 
 ```text
-Vulkan
+AUTO
 ```
 
-as the default GPU backend.
+`AUTO` selects the first available backend in this order:
 
-Reason:
+1. NVIDIA is present and CUDA is available → CUDA;
+2. otherwise Vulkan is available → Vulkan;
+3. otherwise → CPU.
 
-- broad Linux/Mesa AMD compatibility;
-- no CUDA dependency;
-- llama.cpp supports Vulkan;
-- CPU/GPU hybrid inference remains available.
+The managed local runtime backends are fixed as follows:
 
-Do not make ROCm/HIP the required path.
+- llama.cpp: primary CUDA, fallback Vulkan, then CPU;
+- whisper.cpp: primary CUDA, fallback Vulkan, then CPU.
 
-HIP may later be exposed as an advanced alternative, but the shipping/default runtime is Vulkan.
+The current Hafiye development machine has an NVIDIA RTX 3080, so its expected primary backend is CUDA. This does not remove Vulkan and CPU fallback support.
+
+Future Hafiye Desktop settings shall expose:
+
+```text
+Auto / CUDA / Vulkan / CPU
+```
+
+The local LLM engine remains llama.cpp and the local model format remains GGUF. The local STT engine remains whisper.cpp.
 
 ---
 
@@ -690,7 +696,7 @@ The local STT runtime is:
 Backend:
 
 ```text
-Vulkan
+CUDA primary; Vulkan, then CPU fallback
 ```
 
 Language default:
@@ -707,7 +713,7 @@ Managed path:
 ~/.local/share/hafiye/runtimes/whisper.cpp/
 ```
 
-Provide CPU fallback if Vulkan initialization fails.
+Provide Vulkan and CPU fallback if CUDA initialization fails.
 
 Cloud STT providers may remain optional, but default Hafiye voice transcription is local whisper.cpp.
 
@@ -1065,7 +1071,7 @@ Wake phrase = Hafiye
 Microphone device
 STT enabled
 STT model
-STT backend = Vulkan/CPU fallback
+STT backend = Auto/CUDA/Vulkan/CPU
 TTS enabled
 TTS voice
 TTS speed
@@ -1562,8 +1568,7 @@ Do not transform phases into technology-selection exercises.
    - Wayland/X11;
    - GNOME version;
    - CPU;
-   - AMD GPU;
-   - Mesa/Vulkan;
+   - GPU devices and CUDA/Vulkan capabilities;
    - RAM;
    - audio stack;
    - microphone devices;
@@ -1697,7 +1702,7 @@ Composer appears according to configured mode.
 
 ## Implement managed runtime
 
-Install/build llama.cpp with Vulkan.
+Install/build llama.cpp with CUDA primary and Vulkan/CPU fallback.
 
 Create Hafiye runtime manager.
 
@@ -1886,7 +1891,7 @@ Test:
 
 ## whisper.cpp
 
-Build/install with Vulkan.
+Build/install with CUDA primary and Vulkan/CPU fallback.
 
 Configure Hermes local STT command hook.
 
@@ -2129,7 +2134,7 @@ Sequence:
 1. Welcome to Hafiye.
 2. Verify Linux environment.
 3. Verify computer-use-linux readiness.
-4. Verify Vulkan.
+4. Verify compute backend availability (Auto/CUDA/Vulkan/CPU).
 5. Install managed llama.cpp runtime.
 6. Import/download a local GGUF.
 7. Start local model.
@@ -2332,7 +2337,7 @@ The project is complete only when all are true:
 - autostart exists;
 - persistent gateway exists;
 - CLI exists;
-- local llama.cpp Vulkan inference works;
+- local llama.cpp inference works with the selected compute backend (CUDA primary, Vulkan/CPU fallback);
 - GGUF management works;
 - remote OpenAI-compatible provider works;
 - Gemini works;
@@ -2529,8 +2534,8 @@ Important validated capabilities at architecture freeze:
 - Hermes provides model/provider support, routing/fallback infrastructure, memory, skills, MCP, scheduling, subagents, voice and wake-word infrastructure.
 - Hermes Desktop is an Electron/React Linux desktop application and already includes Quick Entry, settings and voice surfaces.
 - computer-use-linux is Linux-specific, Wayland-first desktop control over MCP using accessibility and compositor/input integrations.
-- llama.cpp exposes an OpenAI-compatible server and supports Vulkan plus CPU/GPU hybrid inference.
-- whisper.cpp supports Vulkan and AMD/CPU execution.
+- llama.cpp exposes an OpenAI-compatible server with CUDA primary and Vulkan/CPU fallback support.
+- whisper.cpp supports CUDA primary with Vulkan/CPU fallback execution.
 - Hermes supports custom local STT commands.
 - Hermes wake word supports local openWakeWord custom models.
 - Piper provides local Turkish TTS voices and is kept outside the Hafiye process boundary.

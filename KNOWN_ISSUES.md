@@ -1,52 +1,65 @@
 # Known Issues
 
-These are measured issues in the P0 baseline. They are not silently treated as passing.
+These are measured issues and accepted baseline findings. They are not silently treated as passing.
 
-## KI-001 — Upstream backend baseline is not fully green
+## KI-001 — ACCEPTED_UPSTREAM_BASELINE: five Hermes backend failures
 
-- Status: BLOCKER for a clean P0 baseline.
-- Initial evidence with the lean `[all,dev]` environment: `./scripts/run_tests.sh` completed 3,210 files with 36,814 passed, 80 failed, and 324 skipped. Most of those failures were optional SDK import gates.
-- After installing the relevant optional SDKs into `.venv` and rerunning the same canonical command, the final baseline completed 3,210 files with 36,903 passed, 5 failed, and 320 skipped; exit non-zero.
-- The five remaining failures are: `tests/gateway/test_browser_control_api.py` (remote API controller round-trip timeout), `tests/test_hermes_state.py` (SQLite trace-query expectation), `tests/tools/test_execution_flag_detection.py` (`sort` host behavior), `tests/tools/test_termux_api_detection.py` (container warning changes availability), and `tests/hermes_cli/test_doctor.py` (Vercel diagnostic expectation).
-- The failures occurred before any Hafiye source change. They need upstream fixes, host-specific classification, or an explicit acceptance decision before P0 can close.
+- Status: `ACCEPTED_UPSTREAM_BASELINE`; not a Hafiye P0 blocker.
+- The lean pre-change run of `./scripts/run_tests.sh` completed 3,210 files with 36,814 passed, 80 failed, and 324 skipped.
+- After the relevant optional SDKs were installed into `.venv`, the canonical pre-change run completed 3,210 files with 36,903 passed, 5 failed, and 320 skipped; exit 1.
+- The exact accepted failure set is:
+  1. `tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip`
+  2. `tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries`
+  3. `tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]`
+  4. `tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning`
+  5. `tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics`
+- These failures existed before Hafiye source changes. Hafiye P0 does not fix them.
+- Future comparison rule: the same five failures are not new regressions; fewer failures updates this baseline; a new or different failure is a regression to investigate.
 
 ## KI-002 — System Python is outside the Hermes constraint
 
-- Status: WORKAROUND ACTIVE.
+- Status: `WORKAROUND ACTIVE`.
 - Evidence: system Python is `3.14.4`; upstream `pyproject.toml` declares `requires-python = ">=3.11,<3.14"`.
 - Workaround: uv-managed CPython `3.13.15` in repository `.venv`.
 
-## KI-003 — Host GPU does not match the roadmap hardware assumption
+## KI-003 — Compute hardware differs from the superseded AMD assumption
 
-- Status: ENVIRONMENT BLOCKER for AMD-specific verification.
-- Evidence: PCI has Intel UHD 770 and NVIDIA GeForce RTX 3080; no AMD display controller is present. OpenGL uses NVIDIA driver `595.84`.
-- Consequence: the roadmap's default AMD/Vulkan path cannot be validated on this machine in P0.
+- Status: `ARCHITECTURE AMENDMENT APPLIED`; not a P0 blocker.
+- Evidence: the host has Intel UHD 770 and NVIDIA GeForce RTX 3080 with driver `595.84`; no AMD GPU is present.
+- The binding policy is now `AUTO`: NVIDIA + CUDA when available, otherwise Vulkan, otherwise CPU. Managed llama.cpp and whisper.cpp use CUDA primary with Vulkan/CPU fallback. This host is expected to select CUDA.
+- `nvidia-smi` and NVIDIA OpenGL are working. Managed CUDA inference itself remains a later runtime verification task.
 
 ## KI-004 — computer-use-linux readiness is incomplete on the real desktop
 
-- Status: BLOCKER for real desktop-control readiness.
-- Evidence from the saved doctor report: AT-SPI is disabled; GNOME Shell `GetWindows` is denied; the optional GNOME window-control extension is absent; `ydotool`, `ydotoold`, and `xdotool` are unavailable; `/dev/uinput` is root-only.
-- Available paths: session DBus, desktop/RemoteDesktop/Screencast/Screenshot portals, GNOME Shell screenshot, AT-SPI bus presence, and portal input capability.
-- `setup` and `setup-window-targeting` were not run in P0 because they mutate the user's desktop configuration; the diagnostic result is recorded for the next prerequisite step.
+- Status: `BLOCKER — P0 OPEN`.
+- Pinned source: `agent-sh/computer-use-linux` commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
+- The pre-setup doctor report has `can_register_mcp_tools=true` and `can_send_development_input=true`, but `can_build_accessibility_tree=false`, `can_query_windows=false`, and a non-empty `blockers` array.
+- The official pinned-source setup still needs to provision/enable AT-SPI, ydotool/ydotoold, GNOME Wayland window targeting, `/dev/uinput` access, and required user services.
+- P0 acceptance requires all four mandated readiness booleans to be true and `blockers=[]`.
 
-## KI-005 — computer-use-linux source/release version mismatch
+## KI-005 — computer-use-linux release asset mismatch
 
-- Status: UPSTREAM PACKAGING BLOCKER.
-- Evidence: current `agent-sh/computer-use-linux` source advertises `0.4.10`, but its expected GitHub release binary URL returns HTTP 404. The doctor run used released npm `0.4.9`.
+- Status: `UPSTREAM PACKAGING WARNING`; not the final setup path.
+- The pinned source is version `0.4.10`, but its expected GitHub release asset returned HTTP 404.
+- The released npm `@agent-sh/computer-use-linux@0.4.9` was used only for historical diagnostic evidence. It must not be used as the final P0 setup path.
+- The final P0 setup path is the pinned source checkout's official `./install.sh` flow and any official setup commands it invokes.
 
-## KI-006 — Non-root development prerequisites are incomplete
+## KI-006 — Optional diagnostic tools and source-build prerequisites
 
-- Status: ENVIRONMENT BLOCKER.
-- Evidence: `sudo -n -v` requires interactive authentication; `cargo`/`rustc`, `vulkaninfo`, and `pactl` are unavailable.
-- Consequence: system package installation and source builds requiring Rust cannot be completed unattended from this session.
+- Status: `SETUP IN PROGRESS`; only the CUA source prerequisites are relevant to the active P0 blocker.
+- `pactl` is absent, but PipeWire `1.6.2`, WirePlumber `0.5.13`, and `wpctl` are present and enumerate microphones. This is an audio diagnostic warning, not a P0 blocker.
+- `vulkaninfo` is absent. The Vulkan loader/ICD packages are present, but Vulkan is now a fallback on this host rather than the primary backend. This is a compute diagnostic warning, not a P0 blocker.
+- Rust/Cargo was absent before the official source setup; the pinned install flow is responsible for provisioning the user-space Rust toolchain needed for the source build.
+- `sudo` requires normal interactive authentication (`sudo -n -v` fails). No passwordless sudo or `NOPASSWD` sudoers change is permitted; an interactive prompt is expected.
 
 ## KI-007 — Baseline npm audit reports vulnerabilities
 
-- Status: UPSTREAM BASELINE WARNING.
-- Evidence: root `npm install` completed but reported 3 high-severity vulnerabilities and several deprecated packages.
+- Status: `UPSTREAM BASELINE WARNING`.
+- Root `npm install` completed but reported 3 high-severity vulnerabilities and several deprecated packages.
 - No `npm audit fix` was run because it could rewrite the upstream lockfile and dependencies during P0.
 
-## KI-008 — No Hafiye regression evidence yet
+## KI-008 — No Hafiye source regression evidence yet
 
-- Status: INFORMATIONAL.
-- P0 has not modified runtime or Desktop source. Any failures above are baseline/environment findings until a later change proves otherwise.
+- Status: `INFORMATIONAL`.
+- P0 has changed repository instructions and evidence documents only; no Hafiye runtime/Desktop source change has been made.
+- The accepted upstream baseline is not attributed to Hafiye.

@@ -37,7 +37,8 @@ The authoritative phase definitions are in `HAFIYE_MASTER_ROADMAP.md`. This file
 - [x] Run the unmodified upstream backend test suite.
 - [x] Re-run the unmodified backend suite after installing relevant optional test SDKs.
 - [x] Build and test the unmodified Hermes Desktop baseline.
-- [x] Run and record the real `computer-use-linux doctor` diagnostic.
-- [ ] P0 acceptance: baseline and readiness blockers resolved or accepted with no remaining blocker.
+- [x] Run and record the historical real `computer-use-linux doctor` diagnostic.
+- [ ] Complete the pinned-source official setup and pass the final doctor readiness acceptance.
+- [ ] P0 acceptance: the five Hermes failures are recorded as `ACCEPTED_UPSTREAM_BASELINE`, no new/different Hafiye regression exists, and the pinned-source computer-use-linux doctor reports all required capabilities true with `blockers=[]`.
 
-P0 remains open. No P1 work has started.
+P0 remains open only for computer-use-linux readiness. The accepted Hermes baseline failures, missing `pactl`, and missing `vulkaninfo` are not P0 blockers. No P1 work has started.

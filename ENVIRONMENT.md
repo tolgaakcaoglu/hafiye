@@ -21,15 +21,25 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 - Memory: `free -h` reports 14 GiB total physical memory, 7.5 GiB available at capture time, and 49 GiB swap.
 - GPU 1: Intel Alder Lake-S UHD Graphics 770, `i915`.
 - GPU 2: NVIDIA GA102 GeForce RTX 3080, proprietary NVIDIA driver `595.84`, 10,240 MiB dedicated VRAM, `nvidia` kernel driver.
-- AMD GPU: not present in `lspci` output.
-- OpenGL: direct rendering enabled; renderer `NVIDIA GeForce RTX 3080/PCIe/SSE2`, OpenGL 4.6.0.
-- Vulkan loader: `libvulkan.so.1` version package `1.4.341.0`; Mesa packages include `26.0.3-1ubuntu1` and Vulkan ICD files are installed.
-- `vulkaninfo`: not installed, so a Vulkan device/feature report was not available.
+- No AMD GPU is present.
+- `nvidia-smi` succeeds and NVIDIA OpenGL direct rendering succeeds with renderer `NVIDIA GeForce RTX 3080/PCIe/SSE2`, OpenGL 4.6.0.
+- NVIDIA/CUDA is the expected primary backend for this host. A managed llama.cpp/whisper.cpp CUDA runtime has not yet been built in Hafiye.
+- Vulkan loader: `libvulkan.so.1` package `1.4.341.0`; Mesa packages include `26.0.3-1ubuntu1` and Vulkan ICD files.
+- `vulkaninfo` is not installed. This is a diagnostic warning, not a P0 blocker, because Vulkan is the fallback backend on this machine.
+
+## Compute backend policy
+
+- Default: `AUTO`.
+- Selection order: NVIDIA present + CUDA available → CUDA; otherwise Vulkan available → Vulkan; otherwise CPU.
+- Managed llama.cpp: CUDA primary, Vulkan fallback, CPU fallback.
+- Managed whisper.cpp: CUDA primary, Vulkan fallback, CPU fallback.
+- Future Desktop selector: Auto / CUDA / Vulkan / CPU.
+- The expected primary backend on this machine is CUDA.
 
 ## Audio and microphones
 
 - Audio server: PipeWire `1.6.2` with WirePlumber `0.5.13` and `pipewire-pulse`.
-- `wpctl` sees the active PipeWire graph; `pactl` is not installed.
+- `wpctl` sees the active PipeWire graph; `pactl` is not installed. PipeWire/WirePlumber plus `wpctl` is the accepted audio enumeration path for P0.
 - Capture devices observed:
   - `Trust GXT 232 Microphone Mono` — current default source.
   - `V-Z632 Analog Stereo` — USB audio capture device.
@@ -55,33 +65,30 @@ Captured on `2026-08-23T17:29:15+03:00` in `/home/tolga/projects/hafiye`.
 | ripgrep | `15.2.0` |
 | ffmpeg | `8.0.1` |
 | jq | `1.8.1` |
-| Rust / Cargo | unavailable |
+| Rust / Cargo | absent before pinned computer-use source setup; official installer is expected to provision it |
 
 ## systemd user session
 
 - `systemctl --user is-system-running`: `running`.
-- User D-Bus and user service manager are available in the active GNOME session.
-- `loginctl show-user`: `Linger=no`; the session is currently active. Persistent service work in P2 must explicitly handle the no-linger state.
+- User D-Bus and the user service manager are available in the active GNOME session.
+- `loginctl show-user`: `Linger=no`; the session is active. Persistent service work in P2 must explicitly handle the no-linger state.
 - The main Hafiye process has not been installed or run as root.
 
-## Computer-use-linux doctor
+## Computer-use-linux pinned source readiness
 
-The real doctor command was run under the active Wayland session. See `docs/p0/computer-use-linux-doctor-report.json` for the normalized structured result.
-
-- MCP registration: true.
-- Portal input: available.
-- Screenshots: GNOME Shell and portal paths available.
-- AT-SPI bus exists, but accessibility is disabled (`org.a11y.Status IsEnabled=false`; toolkit accessibility is false).
-- GNOME Shell window introspection: denied by D-Bus policy.
-- GNOME window-control extension: not installed/registered.
-- ydotool/ydotoold/xdotool: unavailable; `/dev/uinput` is not readable by the user.
-- Doctor result: `can_build_accessibility_tree=false`, `can_query_windows=false`, `can_send_development_input=true`, with blockers.
+- Source repository: `agent-sh/computer-use-linux`.
+- Pinned source commit: `94736dc3e0dca56acfc89752c26869fb9ed01202`.
+- Checkout: `/tmp/hafiye-computer-use-linux.djXfCX/repo`.
+- The released npm `0.4.9` doctor result is historical evidence only. The current P0 setup must use the pinned source checkout's official `./install.sh` flow.
+- Pre-setup doctor: MCP registration true; portal input true; screenshots available; AT-SPI accessibility disabled; GNOME window introspection denied; window-targeting extension absent; ydotool/ydotoold/xdotool absent; `/dev/uinput` root-only.
+- Pre-setup readiness: `can_register_mcp_tools=true`, `can_build_accessibility_tree=false`, `can_send_development_input=true`, `can_query_windows=false`; `blockers` non-empty.
+- Final acceptance requires all four booleans true and `blockers=[]` after source setup.
 
 ## Environment changes made during P0
 
 - Installed uv and CPython 3.13 in user-owned paths.
-- Created `.venv` and installed upstream Python development dependencies.
-- Installed root Node dependencies for the upstream Desktop build.
-- Used temporary, checksum-verified computer-use-linux release binaries under `/tmp` only.
-- No system packages were installed because non-interactive sudo is unavailable.
-- No product source files were changed.
+- Created `.venv` and installed upstream Python development dependencies plus optional SDKs.
+- Installed root Node dependencies for the upstream Desktop build; no product lockfile change was retained.
+- Inspected the pinned CUA source checkout. The source build/setup is in progress.
+- No passwordless sudo or `NOPASSWD` sudoers rule was created.
+- `pactl` and `vulkaninfo` remain absent as diagnostic warnings; `wpctl` and the Vulkan loader/ICDs are present.

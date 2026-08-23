@@ -1,83 +1,102 @@
-# Hafiye Current State
+# Hafiye State
 
-## Upstream base
+Last updated: 2026-08-23
 
-- Repository: `https://github.com/tolgaakcaoglu/hafiye.git`
-- Upstream: `https://github.com/NousResearch/hermes-agent.git`
-- Pinned upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`
-- Hafiye branch: `hafiye/p0`
-- Hafiye baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`
-- The baseline merge commit preserves the Hafiye documentation history and the upstream Hermes history; subsequent commits contain only P0 evidence documentation.
+## Repository and commit state
+
+- Branch: `hafiye/p0`
+- `origin`: `https://github.com/tolgaakcaoglu/hafiye.git`
+- `upstream`: `https://github.com/NousResearch/hermes-agent.git`
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`
+- Current Hafiye HEAD at this state capture: `0b2febafcead545b208f1e91c237c9f40bab40f9`
+
+The baseline merge preserves both the original Hafiye documentation history and the Hermes upstream history. The current repository instructions combine the Hafiye binding instructions with the preserved upstream Hermes development guide.
 
 ## Current phase
 
-P0 — Fork, pin, verify environment. P0 is still open because the unmodified upstream baseline is not fully green and the real computer-use readiness report contains blockers.
+P0 — Fork, pin, verify environment. P0 remains open only for the real `computer-use-linux` readiness acceptance. The upstream Hermes five-failure set is an accepted baseline and is not a P0 blocker.
 
 ## Verified working
 
-- Git history was established from `upstream/main`; `origin` and `upstream` are configured as required.
-- `uv 0.12.5` and a user-space Python `3.13.15` environment were installed because system Python `3.14.4` is outside Hermes' declared `>=3.11,<3.14` range.
-- Upstream development dependencies installed into `.venv` with `uv pip install -e '.[all,dev]'`; provider test extras were then added in user space for a fuller baseline run.
-- Initial upstream backend test runner completed with the lean `[all,dev]` environment: 3,210 files; 36,814 tests passed, 80 failed, 324 skipped.
-- Full upstream backend rerun with the relevant optional provider SDKs completed: 3,210 files; 36,903 tests passed, 5 failed, 320 skipped; exit non-zero.
-- Upstream Hermes Desktop baseline built successfully with `npm run build`.
-- Desktop TypeScript typecheck passed.
-- Desktop UI tests passed: 578 files, 5,545 tests.
-- Desktop Electron/platform tests passed: 112 files, 1,598 tests, 3 skipped.
-- Hermes CLI and `run_agent.py --help` start successfully from `.venv`.
-- `@agent-sh/computer-use-linux` doctor command ran in the real Ubuntu GNOME Wayland session and produced a structured report at `docs/p0/computer-use-linux-doctor-report.json`.
+- Remotes and the pinned Hermes commit are configured and recorded.
+- Upstream backend baseline before Hafiye source changes:
+  `./scripts/run_tests.sh` — 3,210 files; 36,814 passed; 80 failed; 324 skipped.
+- Upstream backend baseline after installing the relevant optional SDKs:
+  `./scripts/run_tests.sh` — 3,210 files; 36,903 passed; 5 failed; 320 skipped; exit 1.
+- The exact five remaining failures are documented as `ACCEPTED_UPSTREAM_BASELINE` below and in `KNOWN_ISSUES.md`/`TEST_MATRIX.md`.
+- `.venv/bin/hermes --help` and `.venv/bin/python run_agent.py --help` exit 0.
+- Hermes Desktop baseline: build, typecheck, UI tests, and desktop/platform tests pass.
+- Real host environment is documented in `ENVIRONMENT.md`.
+- `wpctl` enumerates the active PipeWire/WirePlumber graph; missing `pactl` is diagnostic only.
+- NVIDIA RTX 3080 and driver `595.84` are present; the amended compute policy expects CUDA as this host's primary backend, with Vulkan and CPU fallback.
+- No Hafiye runtime, Desktop, gateway, provider, or product source changes have been made.
+
+## ACCEPTED_UPSTREAM_BASELINE
+
+These exact failures existed before Hafiye source changes and are the regression comparison set:
+
+1. `tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip`
+2. `tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries`
+3. `tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]`
+4. `tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning`
+5. `tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics`
+
+After Hafiye source changes, the same five failures are not new regressions. If the count decreases, the accepted baseline is updated. Any new or different failure must be investigated as a regression. These upstream bugs are not being fixed in P0.
 
 ## In progress
 
-- P0 acceptance review and baseline failure classification.
-- Required project-state documents are now being maintained from measured results.
-- Hafiye-specific source changes have not started; P1 has not started.
+- Pinned-source `computer-use-linux` official setup on the real Ubuntu GNOME Wayland session.
+- Readiness acceptance must report all of the following as true and `blockers` as an empty array:
+  `can_register_mcp_tools`, `can_build_accessibility_tree`, `can_send_development_input`, `can_query_windows`.
+- Source checkout: `/tmp/hafiye-computer-use-linux.djXfCX/repo`, commit `94736dc3e0dca56acfc89752c26869fb9ed01202`.
+- The released npm `0.4.9` binary is historical diagnostic evidence only; it is not the final setup path.
 
-## Failed / blockers
+## Active blocker
 
-- The complete upstream backend suite still exits non-zero after optional SDK installation: 5 failures in 5 files. They are host/upstream-sensitive failures, listed with exact evidence in `KNOWN_ISSUES.md`.
-- The real machine has Intel UHD 770 and NVIDIA RTX 3080 hardware, not an AMD GPU. The roadmap's AMD/Vulkan target cannot be verified on this host.
-- `computer-use-linux doctor` reports AT-SPI disabled, GNOME window introspection denied, no GNOME window-control extension, no `ydotool`/`ydotoold`, no `xdotool`, and root-only `/dev/uinput`. Portal input and portal/shell screenshot paths are available.
-- The current `computer-use-linux` source package reports version `0.4.10`, but its matching GitHub release asset returned HTTP 404. The diagnostic was therefore run with the released npm package `0.4.9`; this is recorded in `UPSTREAM.md`.
-- `sudo` requires interactive authentication in this session, so system package installation was not performed automatically. Rust/Cargo, `vulkaninfo`, and `pactl` are not installed.
+The pre-setup doctor report has `can_register_mcp_tools=true` and `can_send_development_input=true`, but `can_build_accessibility_tree=false`, `can_query_windows=false`, and a non-empty blockers array. The official source setup still needs to configure AT-SPI, ydotool/ydotoold, GNOME Wayland window targeting, and user access to `/dev/uinput`. A logout/login may be required; P0 cannot close until the post-setup doctor is green.
+
+`pactl` absence and `vulkaninfo` absence are recorded warnings/diagnostics, not P0 blockers. PipeWire/WirePlumber plus `wpctl` is accepted for audio enumeration, and Vulkan is a fallback rather than this host's primary compute backend.
 
 ## Known regressions
 
-- No Hafiye regression has been introduced: no upstream source file was changed during P0.
-- The upstream baseline emits an existing thread warning in `tests/run_agent/test_run_agent.py`; it is recorded as baseline evidence, not attributed to Hafiye.
+- No Hafiye source regression has been introduced; only repository instructions and P0 evidence documents have changed so far.
+- The accepted five-failure set above is not attributed to Hafiye.
+- Root-only `/dev/uinput`, missing Rust/Cargo before the source setup, and the unconfigured CUA desktop path remain environment/setup findings.
 
-## Last tests
+## Last tests and commands
 
 ### Backend
 
-Commands: `./scripts/run_tests.sh` before optional SDKs, then `./scripts/run_tests.sh` after installing `anthropic`, `fal-client`, `hindsight-client`, `daytona`, `modal`, and `parallel-web` into `.venv`.
-
-Results: initial 3,210 files; 36,814 passed, 80 failed, 324 skipped. Final 3,210 files; 36,903 passed, 5 failed, 320 skipped; exit non-zero. Full details and grouping are in `TEST_MATRIX.md` and `KNOWN_ISSUES.md`.
+- `./scripts/run_tests.sh` with the lean `[all,dev]` environment: 36,814 passed, 80 failed, 324 skipped.
+- `uv pip install --python .venv/bin/python -e '[anthropic,fal,hindsight,daytona,modal]'`
+- `uv pip install --python .venv/bin/python -e '[parallel-web]'`
+- `./scripts/run_tests.sh` with the optional SDKs: 36,903 passed, 5 accepted baseline failures, 320 skipped; exit 1.
 
 ### Desktop
 
+- `npm install` — completed; upstream audit reported 3 high-severity findings.
 - `cd apps/desktop && npm run build` — passed.
 - `cd apps/desktop && npm run typecheck` — passed.
-- `cd apps/desktop && npm run test:ui` — 5,545 passed.
-- `cd apps/desktop && npm run test:desktop:platforms` — 1,598 passed, 3 skipped.
+- `cd apps/desktop && npm run test:ui` — 578 files; 5,545 passed.
+- `cd apps/desktop && npm run test:desktop:platforms` — 112 files; 1,598 passed; 3 skipped.
 
 ### Readiness
 
-Command: `node /tmp/hafiye-computer-use-linux-npm/node_modules/@agent-sh/computer-use-linux/npm/bin/computer-use-linux.js doctor`
-
-Result: command exited 0, but readiness blockers are present; see the saved report and `KNOWN_ISSUES.md`.
+- Historical diagnostic: `node /tmp/hafiye-computer-use-linux-npm/node_modules/@agent-sh/computer-use-linux/npm/bin/computer-use-linux.js doctor` — exit 0 with blockers; saved in `docs/p0/computer-use-linux-doctor-report.json`.
+- Required final command after source setup: `~/.local/bin/computer-use-linux doctor | jq '.readiness'`.
 
 ## Exact next actions
 
-1. Resolve or explicitly baseline-classify the missing optional Hermes test dependencies and rerun the affected files.
-2. Re-run the computer-use doctor after the required user/system prerequisites can be installed and AT-SPI/window targeting can be enabled.
-3. Keep P0 open until the roadmap acceptance decision is supported by passing tests or documented, externally blocked checks; then begin P1 only if no blocker remains.
+1. Run the pinned source checkout's `./install.sh` official setup path with normal interactive sudo if requested.
+2. Complete any required `computer-use-linux setup` and `computer-use-linux setup-window-targeting` steps, then follow the installer's logout/login instruction exactly if GNOME or group/device state requires it.
+3. Rerun the source-built doctor and record all required readiness fields plus the empty blockers array.
+4. If and only if the readiness acceptance is green, mark P0 complete with a clean completion commit and begin P1 external identity/data root work.
 
 ## Environment changes
 
-- Added user-space `uv` at `/home/tolga/.local/bin/uv`.
+- Installed user-space uv at `/home/tolga/.local/bin/uv`.
 - Installed CPython `3.13.15` through uv and created repository `.venv`.
-- Installed upstream Python and Node dependencies for baseline verification.
-- Installed upstream optional provider SDKs only in `.venv` to classify the full baseline; no dependency manifest or lockfile was changed.
-- Installed only temporary diagnostic binaries under `/tmp`; no computer-use binary was added to the product tree.
-- No Hafiye runtime, desktop, service, or provider source changes have been made.
+- Installed upstream Python dependencies and optional provider SDKs only in `.venv`; no dependency manifest or lockfile was changed.
+- Installed root Node dependencies for the upstream Desktop baseline; the upstream lockfile was restored after verification.
+- Inspected pinned `computer-use-linux` source; no final binary has yet been installed from the release channel.
