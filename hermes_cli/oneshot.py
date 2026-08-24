@@ -439,6 +439,11 @@ def _run_agent(
         model=effective_model or "",
         base_url=explicit_base_url_from_alias or "",
         task_text=prompt,
+        explicit_overrides=bool(
+            (model or "").strip()
+            or (provider or "").strip()
+            or env_model
+        ),
     )
     if hafiye_route.provider:
         effective_provider = hafiye_route.provider

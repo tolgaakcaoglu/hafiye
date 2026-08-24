@@ -15,7 +15,10 @@ from hermes_cli.subcommands._shared import add_accept_hooks_flag
 def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
     """Attach the ``cron`` subcommand (and its sub-actions) to ``subparsers``."""
     cron_parser = subparsers.add_parser(
-        "cron", help="Cron job management", description="Manage scheduled tasks"
+        "cron",
+        aliases=["automation"],
+        help="Cron job management",
+        description="Manage scheduled tasks",
     )
     cron_subparsers = cron_parser.add_subparsers(dest="cron_command")
 

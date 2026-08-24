@@ -6,10 +6,18 @@ Handler injected to avoid importing ``main``.
 
 from __future__ import annotations
 
+import argparse
 from typing import Callable
 
+from hermes_cli.local_runtime import BACKENDS, DEFAULT_CONTEXT_SIZE, DEFAULT_PORT
 
-def build_model_parser(subparsers, *, cmd_model: Callable) -> None:
+
+def build_model_parser(
+    subparsers,
+    *,
+    cmd_model: Callable,
+    cmd_hafiye_model: Callable | None = None,
+) -> argparse.ArgumentParser:
     """Attach the ``model`` subcommand to ``subparsers``."""
     # =========================================================================
     # model command
@@ -59,4 +67,26 @@ def build_model_parser(subparsers, *, cmd_model: Callable) -> None:
         action="store_true",
         help="Disable TLS verification for Nous login (testing only)",
     )
+    if cmd_hafiye_model is not None:
+        model_actions = model_parser.add_subparsers(dest="model_action")
+        load = model_actions.add_parser(
+            "load",
+            help="Load a registered GGUF model in llama-server",
+        )
+        load.add_argument("model_id", nargs="?", help="Registered model id (optional when unambiguous)")
+        load.add_argument("--backend", choices=BACKENDS, default="AUTO")
+        load.add_argument("--context-size", type=int, default=DEFAULT_CONTEXT_SIZE)
+        load.add_argument("--gpu-layers", type=int)
+        load.add_argument("--port", type=int, default=DEFAULT_PORT)
+        load.add_argument("--json", action="store_true")
+        load.set_defaults(func=cmd_hafiye_model)
+
+        unload = model_actions.add_parser(
+            "unload",
+            help="Stop llama-server and unload the active model",
+        )
+        unload.add_argument("--json", action="store_true")
+        unload.set_defaults(func=cmd_hafiye_model)
+
     model_parser.set_defaults(func=cmd_model)
+    return model_parser

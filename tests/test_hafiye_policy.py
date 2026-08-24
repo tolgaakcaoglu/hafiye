@@ -85,6 +85,21 @@ def test_task_slot_override_is_scoped_to_the_task():
     assert route.source == "config"
 
 
+def test_explicit_provider_and_model_override_onboarding_default_slot():
+    config = _config()
+
+    route = resolve_hafiye_route(
+        config,
+        provider="gemini",
+        model="gemini-explicit",
+        explicit_overrides=True,
+    )
+
+    assert route.provider == "gemini"
+    assert route.model == "gemini-explicit"
+    assert route.source == "explicit"
+
+
 def test_local_only_blocks_remote_route_even_when_requested_in_prompt():
     config = _config()
     config["hafiye"]["privacy_mode"] = "LOCAL_ONLY"

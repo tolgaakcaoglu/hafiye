@@ -257,8 +257,15 @@ def resolve_hafiye_route(
     base_url: Any = "",
     slot: str = "default",
     task_text: Any = "",
+    explicit_overrides: bool = False,
 ) -> HafiyeRoute:
-    """Resolve the configured slot plus a task-scoped natural-language hint."""
+    """Resolve the configured slot plus a task-scoped natural-language hint.
+
+    ``explicit_overrides`` is used by command/API callers that received an
+    explicit provider/model selection.  Normal gateway turns keep the route
+    slot authoritative; an explicit CLI selection must remain effective even
+    when onboarding has populated the default slot.
+    """
     section = _section(config)
     configured_model = config.get("model") if isinstance(config, Mapping) else None
     configured_base_url = (
@@ -274,9 +281,14 @@ def resolve_hafiye_route(
         selected_slot = "default"
 
     entry = _route_entry(config, selected_slot)
-    selected_provider = _clean(entry.get("provider")) or _clean(provider)
-    selected_model = _clean(entry.get("model")) or _clean(model)
-    source = "config" if entry.get("provider") or entry.get("model") else "runtime"
+    if explicit_overrides:
+        selected_provider = _clean(provider) or _clean(entry.get("provider"))
+        selected_model = _clean(model) or _clean(entry.get("model"))
+        source = "explicit"
+    else:
+        selected_provider = _clean(entry.get("provider")) or _clean(provider)
+        selected_model = _clean(entry.get("model")) or _clean(model)
+        source = "config" if entry.get("provider") or entry.get("model") else "runtime"
     slot_locality_policy = normalize_privacy_mode(entry.get("locality_policy", "NORMAL"))
     task_kind = override.kind
     policy_base_url = effective_base_url

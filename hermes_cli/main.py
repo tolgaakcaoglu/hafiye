@@ -449,6 +449,7 @@ from hermes_cli.subcommands.voice import build_voice_parser
 from hermes_cli.subcommands.hardening import build_hardening_parser
 from hermes_cli.subcommands.profile import build_profile_parser
 from hermes_cli.subcommands.model import build_model_parser
+from hermes_cli.hafiye_cli import build_hafiye_cli_parser, cmd_hafiye_model
 from hermes_cli.subcommands.setup import build_setup_parser
 
 from hermes_cli.subcommands.whatsapp import build_whatsapp_parser
@@ -12085,17 +12086,18 @@ def _build_provider_choices() -> list[str]:
 _BUILTIN_SUBCOMMANDS = frozenset(
     {
         "acp", "approvals", "auth", "backup", "bundles", "checkpoints", "claw", "completion",
-        "computer-use",
+        "computer-use", "computer",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "egress", "fallback", "gateway", "hooks", "import", "import-agent", "insights",
         "gui", "desktop", "emergency-stop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
         "journey", "memory-graph", "learning",
-        "model", "monitoring", "pairing", "pause", "peer", "pets", "plugins", "portal", "profile", "root",
-        "project", "proxy",
+        "model", "models", "monitoring", "pairing", "pause", "peer", "pets", "plugins", "portal", "profile", "root",
+        "project", "projects", "proxy", "providers", "routing", "privacy", "tasks", "task",
+        "ask", "start", "stop", "restart",
         "prompt-size",
         "resume",
         "send", "sessions", "setup",
-        "skin", "skills", "slack", "status", "sync", "tools", "uninstall", "update",
+        "skin", "skills", "slack", "status", "sync", "tools", "uninstall", "update", "automation",
         "webhook", "whatsapp", "whatsapp-cloud", "worktree", "chat", "secrets", "security",
         "verify",
         # Help-ish invocations — plugin commands not being listed in
@@ -12218,7 +12220,7 @@ def _resolve_deferred_platform_cli_command(command_name: str | None) -> None:
         )
 
 
-_AGENT_COMMANDS = {None, "chat", "acp", "rl"}
+_AGENT_COMMANDS = {None, "chat", "ask", "acp", "rl"}
 _AGENT_SUBCOMMANDS = {
     "cron": ("cron_command", {"run", "tick"}),
     "gateway": ("gateway_command", {"run"}),
@@ -12913,7 +12915,16 @@ def main():
     # =========================================================================
     # model command  (parser built in hermes_cli/subcommands/model.py)
     # =========================================================================
-    build_model_parser(subparsers, cmd_model=cmd_model)
+    build_model_parser(
+        subparsers,
+        cmd_model=cmd_model,
+        cmd_hafiye_model=cmd_hafiye_model,
+    )
+    # Hafiye product commands (ask, persistent service lifecycle, local
+    # runtime, routing/privacy, Task Center, and managed computer doctor).
+    # These adapters are registered alongside Hermes commands so both command
+    # surfaces continue to share the same backend boundaries.
+    build_hafiye_cli_parser(subparsers)
 
     from hermes_cli.moa_cmd import cmd_moa
 
