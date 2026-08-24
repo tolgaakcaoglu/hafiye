@@ -55,6 +55,17 @@ def _(rid, params: dict) -> dict:
             source="task_center.cancel",
             consume_output=True,
         )
+        if isinstance(process, dict) and process.get("status") in {
+            "exited",
+            "killed",
+            "cancelled",
+        }:
+            task = task_center.update(
+                task_id,
+                state="CANCELLED",
+                current_step_summary="Task cancelled",
+                subagent_state="CANCELLED",
+            )
         return _ok(rid, {"task": task_center.get(task_id), "process": process})
     except Exception as exc:
         return _err(rid, 5010, str(exc))

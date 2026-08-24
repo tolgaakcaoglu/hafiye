@@ -7,7 +7,7 @@ import { onGatewayEvent } from '@/contrib/events'
 import { AlertCircle, CheckCircle2, Clock, Loader2, StopFilled, Terminal } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
-export interface CodingTaskRecord {
+export interface TaskRecord {
   commands?: string[]
   completed_at?: number | null
   created_at?: number
@@ -16,30 +16,34 @@ export interface CodingTaskRecord {
   file_changes?: string[]
   goal?: string
   model?: string
+  parent_task_id?: string
   privacy_mode?: string
   process_id?: string
   progress_events?: number
   provider?: string
+  repository_path?: string
   result_summary?: string
   route?: string
+  session_id?: string
   started_at?: number | null
   state?: string
+  subagent_state?: string
   task_id: string
   tool_history?: Array<{ at?: number; event?: string; source?: string; tool?: string }>
   updated_at?: number
 }
 
 interface TaskListResponse {
-  tasks?: CodingTaskRecord[]
+  tasks?: TaskRecord[]
 }
 
 const ACTIVE_STATES = new Set(['QUEUED', 'PLANNING', 'RUNNING', 'WAITING', 'PAUSED', 'CANCELLING'])
 
-function isTaskRecord(value: unknown): value is CodingTaskRecord {
+function isTaskRecord(value: unknown): value is TaskRecord {
   return typeof value === 'object' && value !== null && typeof (value as { task_id?: unknown }).task_id === 'string'
 }
 
-function formatElapsed(task: CodingTaskRecord): string {
+function formatElapsed(task: TaskRecord): string {
   const start = task.started_at ?? task.created_at
 
   if (!start) {
@@ -92,7 +96,7 @@ function statusIcon(state: string) {
 
 export function TaskCenterPanel() {
   const { requestGateway } = useGatewayRequest()
-  const [tasks, setTasks] = useState<CodingTaskRecord[]>([])
+  const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [error, setError] = useState('')
 
   const refresh = useCallback(async () => {
@@ -122,7 +126,7 @@ export function TaskCenterPanel() {
 
       setTasks(current => {
         const next = current.filter(task => task.task_id !== payload.task_id)
-        const merged: CodingTaskRecord[] = [payload, ...next]
+        const merged: TaskRecord[] = [payload, ...next]
 
         return merged.sort(
           (left, right) => (right.created_at ?? 0) - (left.created_at ?? 0)
@@ -136,10 +140,25 @@ export function TaskCenterPanel() {
     [tasks]
   )
 
+  const queuedCount = useMemo(
+    () => tasks.filter(task => task.state === 'QUEUED').length,
+    [tasks]
+  )
+
+  const completedCount = useMemo(
+    () => tasks.filter(task => task.state === 'COMPLETED').length,
+    [tasks]
+  )
+
+  const failedCount = useMemo(
+    () => tasks.filter(task => task.state === 'FAILED').length,
+    [tasks]
+  )
+
   const cancel = useCallback(
-    async (task: CodingTaskRecord) => {
+    async (task: TaskRecord) => {
       try {
-        const response = await requestGateway<{ task?: CodingTaskRecord }>('tasks.cancel', {
+        const response = await requestGateway<{ task?: TaskRecord }>('tasks.cancel', {
           task_id: task.task_id
         })
 
@@ -147,7 +166,7 @@ export function TaskCenterPanel() {
           setTasks(current => [response.task!, ...current.filter(item => item.task_id !== task.task_id)])
         }
       } catch (err) {
-        notifyError(err, 'Could not cancel coding task')
+        notifyError(err, 'Could not cancel task')
       }
     },
     [requestGateway]
@@ -158,15 +177,22 @@ export function TaskCenterPanel() {
       <div className="mb-2 flex items-center justify-between gap-2">
         <div>
           <div className="text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
-            Coding tasks
+            Task Center
           </div>
           <div className="mt-1 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
-            {activeCount > 0 ? `${activeCount} active · live OpenHands progress` : 'OpenHands task history'}
+            {activeCount > 0 ? `${activeCount} active · live task progress` : 'Task history'}
           </div>
         </div>
         <Button onClick={() => void refresh()} size="xs" variant="text">
           Refresh
         </Button>
+      </div>
+
+      <div className="mb-3 grid grid-cols-4 gap-1 text-[0.62rem] text-(--ui-text-tertiary)">
+        <span data-testid="task-state-active">Active {activeCount}</span>
+        <span data-testid="task-state-queued">Queued {queuedCount}</span>
+        <span data-testid="task-state-completed">Completed {completedCount}</span>
+        <span data-testid="task-state-failed">Failed {failedCount}</span>
       </div>
 
       {error && (
@@ -191,7 +217,7 @@ export function TaskCenterPanel() {
   )
 }
 
-function TaskRow({ onCancel, task }: { onCancel: () => void; task: CodingTaskRecord }) {
+function TaskRow({ onCancel, task }: { onCancel: () => void; task: TaskRecord }) {
   const state = task.state ?? 'UNKNOWN'
   const Icon = statusIcon(state)
   const active = ACTIVE_STATES.has(state)
@@ -216,7 +242,7 @@ function TaskRow({ onCancel, task }: { onCancel: () => void; task: CodingTaskRec
           </div>
         </div>
         {active && (
-          <Button aria-label="Cancel coding task" onClick={onCancel} size="xs" variant="text">
+          <Button aria-label="Cancel task" onClick={onCancel} size="xs" variant="text">
             <StopFilled className="size-3" />
             Cancel
           </Button>
@@ -234,7 +260,14 @@ function TaskRow({ onCancel, task }: { onCancel: () => void; task: CodingTaskRec
         <span>{task.route || 'coding'}</span>
         <span>{task.privacy_mode || 'NORMAL'}</span>
         <span>{task.progress_events ?? 0} progress events</span>
+        {task.subagent_state && <span>subagent {task.subagent_state}</span>}
       </div>
+
+      {task.repository_path && (
+        <div className="mt-1 truncate font-mono text-[0.62rem] text-(--ui-text-tertiary)">
+          {task.repository_path}
+        </div>
+      )}
 
       {task.process_id && (
         <div className="mt-1 flex items-center gap-1 font-mono text-[0.62rem] text-(--ui-text-tertiary)">
