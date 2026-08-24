@@ -421,3 +421,18 @@ silently treated as passing.
 - Desktop now supplies the real `NORMAL`, `LOCAL_ONLY`, and `OFFLINE` options
   through the existing config renderer. A real Electron test selected
   `LOCAL_ONLY` and verified the value after a renderer reload from the gateway.
+
+## KI-032 — P18 scheduler policy validation
+
+- Status: RESOLVED 2026-08-24; no P18 acceptance blocker.
+- Hermes cron storage, recurring scheduler execution, skills/toolset
+  discovery, and MCP safety merging remain the implementation boundaries.
+  Hafiye route and privacy fields are validated at persistence time and are
+  carried into the real scheduled agent; privacy overrides cannot weaken the
+  configured policy.
+- The real Desktop/gateway acceptance persisted Coding, Local only, and a
+  custom enabled-toolset allowlist through an edit round-trip. The real local
+  recurring-task acceptance completed two scheduler ticks and produced two
+  execution-ledger records. No new or different upstream regression was
+  observed. The two async resource warnings in the cron matrix are existing
+  scheduler/test-harness diagnostics, not Hafiye failures.

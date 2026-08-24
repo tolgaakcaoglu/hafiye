@@ -441,3 +441,25 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   gateway/config/tool/scheduler operations. The shared privacy selector exposes
   the fixed `NORMAL`, `LOCAL_ONLY`, and `OFFLINE` modes. This ADR records the
   implementation boundary and does not override the master roadmap.
+
+## ADR-0028 — Carry Hafiye policy through Hermes scheduled jobs
+
+- Date: 2026-08-24
+- Decision: Reuse Hermes cron persistence, scheduler claims/execution,
+  recurring state updates, skills/toolset catalog, and MCP safety merge. Store
+  optional per-job `route` and `privacy_mode` fields in the existing job
+  record, expose them with the existing profile-aware gateway REST API, and
+  resolve them immediately before the real scheduled `AIAgent` is built.
+  `enabled_toolsets` remains Hermes' explicit allowlist, with its existing
+  managed-MCP and safety denylist merge preserved.
+- Reason: P18 requires scheduled jobs to choose route, privacy mode, and
+  enabled tools through Hafiye Desktop while CLI, gateway, and Desktop keep
+  one scheduler/business-logic boundary. Scheduled jobs are detached from an
+  interactive conversation, so their route slot is stable and natural-language
+  route overrides are not applied. A per-job privacy selection may strengthen
+  the configured route/installation policy but may not weaken it.
+- Consequence: Existing Hermes jobs remain compatible because absent route and
+  privacy fields inherit the normal Hafiye policy. The real cron editor uses
+  the gateway toolset catalog and clearly marks custom allowlists; the
+  scheduler's safety filtering still applies. This ADR records implementation
+  detail only and does not override the master roadmap.

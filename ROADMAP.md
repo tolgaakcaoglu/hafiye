@@ -21,7 +21,7 @@ records execution status only.
 - [x] P15 OpenHands coding delegate
 - [x] P16 Task Center
 - [x] P17 Control Center
-- [ ] P18 Scheduler / skills / MCP
+- [x] P18 Scheduler / skills / MCP
 - [ ] P19 Hardening
 - [ ] P20 Packaging
 - [ ] P21 First-run onboarding
@@ -457,7 +457,7 @@ rendered completed, failed, and queued tasks and cancelled a queued task via
 the real gateway. The separate-process restart smoke preserved completed
 history, failed stale in-flight work honestly, and retained queued work. No
 new or different upstream regression was found. P17 followed and is now
-complete; P18 is the next incomplete phase.
+complete; P18 followed and is now complete; P19 is the next incomplete phase.
 
 ## P17 execution status — complete
 
@@ -479,5 +479,24 @@ P17 is complete. Source/test commit
 `2dc541d09367b895744b512d99b058506d7f78d2` adds the Control Center and its
 real acceptance test. The Electron test opened all 19 pages and persisted
 Privacy Mode through a renderer reload. No new or different upstream
-regression was found. P18 — Scheduler / skills / MCP — is the next incomplete
-phase.
+regression was found. P18 followed and is complete.
+
+## P18 execution status — complete
+
+- [x] Reuse Hermes cron storage, scheduler execution, recurring state, skills,
+      toolset catalog, and MCP safety handling.
+- [x] Persist and validate per-job Hafiye route and privacy selections through
+      the profile-aware gateway REST boundary.
+- [x] Resolve route/provider/model/privacy/fallback policy in the real
+      scheduled `AIAgent` path without weakening the configured privacy mode.
+- [x] Expose route, privacy mode, and enabled-toolset choices in the real
+      Desktop cron editor, with values surviving edit/reload.
+- [x] Verify a recurring local task through two real scheduler ticks.
+- [x] Run the focused backend/Desktop matrix, clean production build, and real
+      Electron/gateway acceptance.
+
+P18 is complete. Source/test commit
+`fd17e6533894a568744b82454635a8e6bf02709b` adds the scheduler policy boundary,
+Desktop controls, and real acceptance tests. The two-tick local task produced
+two completed execution-ledger records. No new or different upstream
+regression was found. P19 — Hardening — is now the next incomplete phase.

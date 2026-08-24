@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P17 Control Center source/test commit):
-  2dc541d09367b895744b512d99b058506d7f78d2
+- Current Hafiye source HEAD (P18 Scheduler / skills / MCP source/test commit):
+  fd17e6533894a568744b82454635a8e6bf02709b
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -489,8 +489,22 @@ P0 computer-use acceptance requires:
   records, and 22 `task.update` events; the Desktop Task Center test/build
   passed. P15, P16, and P17 are complete. P16's durable Task Center
   implementation and P17's real Control Center acceptance are recorded in the
-  current Hafiye commits; P18 is the next phase. No Hermes upstream commit
-  changed.
+  current Hafiye commits; P18 is complete and P19 is the next phase. No Hermes
+  upstream commit changed.
+
+## P18 Scheduler / skills / MCP patch group
+
+- Hafiye source/test commit:
+  `fd17e6533894a568744b82454635a8e6bf02709b`.
+- The patch reuses Hermes cron persistence, scheduler claim/execution and
+  recurring state, the real skills/toolset catalog, and the existing MCP
+  safety merge. It adds validated Hafiye route/privacy fields to the existing
+  profile-aware REST boundary and carries the effective route/policy into
+  scheduled `AIAgent` runs.
+- Desktop's real cron editor now exposes route slots, privacy mode, and a
+  gateway-backed enabled-toolset allowlist. The two-tick local recurring-task
+  acceptance and real Electron/gateway edit round-trip passed.
+- No Hermes upstream commit changed and no upstream history was rewritten.
 
 ## P17 Control Center patch group
 

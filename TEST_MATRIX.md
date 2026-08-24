@@ -304,10 +304,29 @@ fix and real Desktop acceptance. The historical five
 | P17-D-03 | Control Center lint and patch hygiene | `cd apps/desktop && npx eslint src/app/control-center/index.tsx src/app/settings/constants.ts e2e/p17-control-center.spec.ts`; `git diff --check` | Passed; no whitespace errors | PASS |
 | P17-D-04 | Clean Desktop production package | `cd apps/desktop && npm run build` | Clean build stamp `2dc541d09367`; Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing Vite/Babel/chunking warnings remain | PASS WITH WARNING |
 | P17-REAL-01 | Real Control Center and gateway state flow | `cd apps/desktop && npx playwright test e2e/p17-control-center.spec.ts --reporter=list` | Real Electron + real gateway opened all 19 pages; Privacy Mode changed to `LOCAL_ONLY` and remained after renderer reload; 1 passed in 12.7s | PASS |
-| P17-ACCEPTANCE | Master P17 closure | Every roadmap page is functional through real backend/state boundaries; no dead switch or mock success state; config persistence and real Desktop acceptance passed | No new/different upstream regression; P18 is next | PASS |
+| P17-ACCEPTANCE | Master P17 closure | Every roadmap page is functional through real backend/state boundaries; no dead switch or mock success state; config persistence and real Desktop acceptance passed | No new/different upstream regression; P18 followed and P19 is next | PASS |
 
 P17 is accepted. Source/test commit
 `2dc541d09367b895744b512d99b058506d7f78d2` adds the Control Center route,
 page composition, privacy enum, and real Electron acceptance. The pinned
 Hermes commit, baseline merge commit, and accepted five-ID upstream failure
 whitelist remain unchanged.
+
+## P18 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P18-PY-01 | Hermes cron persistence and scheduled Hafiye policy | `.venv/bin/python -m pytest -q tests/cron/test_scheduler.py tests/cron/test_jobs.py tests/cron/test_p18_scheduler_acceptance.py` | 182 passed; two existing async resource warnings from the upstream scheduler/test harness | PASS WITH WARNING |
+| P18-PY-02 | Python quality and patch hygiene | `.venv/bin/ruff check cron/jobs.py cron/scheduler.py hermes_cli/web_models.py hermes_cli/web_server.py tools/cronjob_tools.py tests/cron/test_jobs.py tests/cron/test_scheduler.py tests/cron/test_p18_scheduler_acceptance.py`; `git diff --check` | Ruff passed; no whitespace errors | PASS |
+| P18-D-01 | Desktop cron editor model contract | `cd apps/desktop && npm run test:ui -- src/app/cron/cron-job-model.test.ts` | 15 passed | PASS |
+| P18-D-02 | Desktop renderer/Electron/E2E type boundaries | `cd apps/desktop && npm run typecheck` | Passed | PASS |
+| P18-D-03 | Desktop scheduler UI lint | `cd apps/desktop && npx eslint src/app/cron/index.tsx src/app/cron/cron-job-model.ts src/app/cron/cron-job-model.test.ts e2e/p18-scheduler.spec.ts` | Passed | PASS |
+| P18-D-04 | Clean Desktop production package | `cd apps/desktop && npm run build` | Clean build stamp `fd17e6533894`; Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing npm/Vite/Babel/chunking warnings remain | PASS WITH WARNING |
+| P18-REAL-01 | Real recurring local task | `.venv/bin/python -m pytest -q tests/cron/test_p18_scheduler_acceptance.py` | Two real scheduler ticks completed the local task and produced two execution-ledger records | PASS |
+| P18-REAL-02 | Real Desktop/gateway scheduler policy flow | `cd apps/desktop && npx playwright test e2e/p18-scheduler.spec.ts --reporter=list` | Real Electron + gateway created route/privacy/custom-toolset job and reloaded the values through Edit; 1 passed in 11.1s | PASS |
+| P18-ACCEPTANCE | Master P18 closure | Hermes scheduler/skills/MCP reuse, route/privacy/enabled-tools UI, recurring local task, and real backend boundaries | No new/different upstream regression; P19 is next | PASS |
+
+P18 is accepted. Source/test commit
+`fd17e6533894a568744b82454635a8e6bf02709b` contains the scheduler policy
+boundary, Desktop controls, and acceptance tests. The historical five-ID
+`ACCEPTED_UPSTREAM_BASELINE` remains unchanged.

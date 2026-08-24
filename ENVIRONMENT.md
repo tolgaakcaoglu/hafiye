@@ -342,3 +342,21 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
   device permissions, and persistent host state were not modified.
 - Existing Vite/Babel/chunking warnings remain diagnostic build warnings; no
   new P17 host blocker or upstream regression was observed.
+
+## P18 Scheduler / skills / MCP validation (2026-08-24)
+
+- The P18 backend tests used isolated cron roots and exercised the real
+  Hermes job store, scheduler claim/execution path, recurring next-run update,
+  and execution ledger. A local `no_agent` task completed on two real ticks;
+  two distinct completed execution records and recurring state were verified.
+- The real Desktop build used source/test commit
+  `fd17e6533894a568744b82454635a8e6bf02709b`; Vite, Electron main/preload,
+  native staging, and `assert-dist-built` passed. Existing npm/Vite/Babel/
+  chunking warnings remain diagnostics.
+- A real Electron process connected to an isolated real `hermes serve`
+  gateway, created a recurring job with the `Coding` route, `Local only`
+  privacy, and a custom toolset allowlist, then reopened Edit and verified all
+  three persisted values. The E2E passed 1/1.
+- P18 changed no host service, package, credential, sudo rule, group,
+  device permission, or persistent user gateway state. The current host
+  remains the P0 Ubuntu/GNOME Wayland/NVIDIA CUDA/PipeWire environment.

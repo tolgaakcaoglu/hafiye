@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 2dc541d09367b895744b512d99b058506d7f78d2
-  (P17 Control Center source/test commit)
+- Current Hafiye source HEAD: fd17e6533894a568744b82454635a8e6bf02709b
+  (P18 Scheduler / skills / MCP source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -64,12 +64,20 @@ validated against the P14 acceptance criteria.
 
 P15 — OpenHands coding delegate: complete. The managed official source/runtime,
 real coding delegation, gateway Task Center progress bridge, Desktop Task
-Center panel, and the master fixture E2E all pass. P16 is now the first
-incomplete phase.
+Center panel, and the master fixture E2E all pass. P16, P17, and P18 are also
+complete; P19 is now the first incomplete phase.
 
 P16 — Task Center: complete. The durable generic task record, restart/reconnect
 behavior, complete required Desktop fields/actions, and real Electron
-acceptance pass. P17 is complete; P18 is now the first incomplete phase.
+acceptance pass.
+
+P17 — Control Center: complete. The real 19-page Hafiye surface, shared
+config/backend boundaries, privacy selector, and Electron acceptance pass.
+
+P18 — Scheduler / skills / MCP: complete. Hermes cron/skills/MCP were reused;
+scheduled route, privacy, and enabled-toolset choices persist through the
+gateway and the real recurring local-task acceptance passes. P19 is now the
+first incomplete phase.
 
 ## Verified working
 
@@ -253,6 +261,12 @@ whitelist and current four-ID comparison baseline are unchanged.
 
 P17's Control Center navigation contract, Desktop typecheck, clean production
 build, and real Electron/gateway acceptance passed. The P17 source/test commit
+introduced no new or different upstream failure; the historical five-ID
+whitelist and current four-ID comparison baseline are unchanged.
+
+P18's cron persistence/scheduler matrix, Desktop model/typecheck/lint checks,
+clean production build, real Electron/gateway scheduler acceptance, and two-
+tick recurring local-task acceptance passed. The P18 source/test commit
 introduced no new or different upstream failure; the historical five-ID
 whitelist and current four-ID comparison baseline are unchanged.
 
@@ -708,12 +722,12 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `2dc541d09367b895744b512d99b058506d7f78d2` separate in all
+   source commit `fd17e6533894a568744b82454635a8e6bf02709b` separate in all
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline; investigate any new/different ID.
-3. P15, P16, and P17 are closed. Start P18 — Scheduler / skills / MCP — as
-   the first incomplete phase while preserving the shared gateway and Desktop
+3. P15, P16, P17, and P18 are closed. Start P19 — Hardening — as the first
+   incomplete phase while preserving the shared gateway and Desktop
    business-logic boundary.
 
 ## Environment changes
@@ -789,6 +803,11 @@ config, provider, skills/MCP, scheduler, logs, computer-use, Task Center, and
 About surfaces. The isolated Electron/gateway acceptance changed only its
 temporary HERMES_HOME; no host service, credential, sudo, package, or device
 permission was changed.
+P18 added only the scheduler policy persistence/resolution and Desktop cron
+editor controls. It reused Hermes cron storage, scheduler claims/execution,
+skills/toolset catalog, and MCP safety merge. The backend test sandbox and
+isolated Electron/gateway acceptance changed no host service, credential,
+sudo, package, or device permission.
 
 ### P4 source validation
 
@@ -1209,12 +1228,53 @@ separate:
 - `git diff --check` — passed.
 
 P17 acceptance passed. No new or different upstream regression was found.
-P18 is now the first incomplete phase.
+P18 acceptance passed. No new or different upstream regression was found.
+
+## P18 execution status — complete
+
+The P18 implementation and acceptance are recorded in source/test commit
+`fd17e6533894a568744b82454635a8e6bf02709b`. The commit identities remain
+separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `fd17e6533894a568744b82454635a8e6bf02709b`.
+
+### Implemented and verified
+
+- Reused Hermes cron job persistence, scheduler claims/execution ledger,
+  recurring next-run updates, skills/toolset catalog, and MCP safety merge.
+- Added validated per-job Hafiye `route` and `privacy_mode` fields to the
+  existing cron persistence and profile-aware gateway REST boundary.
+- Resolved a scheduled run's route slot before model/provider fail-fast and
+  passed the effective provider/model/privacy/fallback policy into the real
+  `AIAgent` construction. A per-job privacy override can only strengthen the
+  installation/route policy.
+- Added real Desktop cron-editor controls for Hafiye route slots, privacy
+  mode, and the gateway toolset catalog. Custom toolsets persist as an
+  explicit allowlist while Hermes' scheduler safety denylist remains active.
+- Verified a real recurring local task through two scheduler ticks, with two
+  completed execution-ledger records and recurring state preserved.
+
+### P18 test record
+
+- `.venv/bin/python -m pytest -q tests/cron/test_scheduler.py tests/cron/test_jobs.py tests/cron/test_p18_scheduler_acceptance.py` — 182 passed; two existing async resource warnings were emitted by the upstream scheduler/test harness.
+- `.venv/bin/ruff check cron/jobs.py cron/scheduler.py hermes_cli/web_models.py hermes_cli/web_server.py tools/cronjob_tools.py tests/cron/test_jobs.py tests/cron/test_scheduler.py tests/cron/test_p18_scheduler_acceptance.py` — All checks passed.
+- `cd apps/desktop && npm run typecheck` — passed.
+- `cd apps/desktop && npm run test:ui -- src/app/cron/cron-job-model.test.ts` — 15 passed.
+- `cd apps/desktop && npx eslint src/app/cron/index.tsx src/app/cron/cron-job-model.ts src/app/cron/cron-job-model.test.ts e2e/p18-scheduler.spec.ts` — passed.
+- `cd apps/desktop && npm run build` — clean build stamp `fd17e6533894`; Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing npm/Vite/Babel/chunking warnings remain.
+- `cd apps/desktop && npx playwright test e2e/p18-scheduler.spec.ts --reporter=list` — real Electron + real gateway created a job with Coding, Local only, and a custom toolset, then reloaded those values through Edit; 1 passed in 11.1s.
+- `git diff --check` — passed before the source commit.
+
+P18 acceptance passed. No new or different upstream regression was found.
 
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
    investigate any new or different failure in later phases.
-2. Begin P18 — Scheduler / skills / MCP.
+2. Begin P19 — Hardening: prompt-injection boundary, secrets redaction,
+   outage/crash recovery, loop/action budgets, config recovery, audit
+   retention, and disk limits.
 3. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
    source/test commit separate in all subsequent state updates.
