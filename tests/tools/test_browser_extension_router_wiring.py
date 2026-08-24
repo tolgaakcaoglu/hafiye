@@ -37,6 +37,23 @@ def _route_spy(monkeypatch):
     monkeypatch.setattr(browser_tool, "routed_browser_handler", spy)
     monkeypatch.setattr(browser_cdp_tool, "routed_browser_handler", spy)
     monkeypatch.setattr(browser_tool, "browser_navigate", lambda url="", task_id=None: "legacy-nav")
+    monkeypatch.setattr(
+        browser_tool,
+        "browser_download",
+        lambda ref="", path="", task_id=None: "legacy-download",
+    )
+    # Keep every legacy fallback hermetic.  The real user-space agent-browser
+    # install is intentionally available in this checkout, so an unpatched
+    # fallback would launch a daemon during what is only a registry-wiring
+    # test.
+    monkeypatch.setattr(
+        browser_tool,
+        "_run_browser_command",
+        lambda *args, **kwargs: {
+            "success": False,
+            "error": "legacy-browser-fixture",
+        },
+    )
     monkeypatch.setattr(browser_cdp_tool, "browser_cdp", lambda *a, **k: "legacy-cdp")
     return calls
 
@@ -49,6 +66,7 @@ BROWSER_ACTIONS = [
     "browser_scroll",
     "browser_back",
     "browser_press",
+    "browser_download",
     "browser_get_images",
     "browser_vision",
     "browser_console",
@@ -59,7 +77,7 @@ def test_every_browser_registry_handler_routes_through_wrapper(_route_spy):
     for name in BROWSER_ACTIONS:
         _route_spy.clear()
         handler = registry.get_entry(name).handler
-        args = {"url": "https://example.test", "ref": "@e1", "text": "hi"}
+        args = {"url": "https://example.test", "ref": "@e1", "text": "hi", "path": "/tmp/out.bin"}
         result = handler(dict(args), task_id="task-fixture", session_id="session-fixture")
         assert result is not None
         assert len(_route_spy) == 1, f"{name} did not route through the wrapper"

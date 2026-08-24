@@ -34,6 +34,13 @@ class TestChromiumSearchRoots:
         assert any(r == os.path.join(home, ".cache", "ms-playwright") for r in roots)
 
 
+    def test_includes_current_agent_browser_user_cache(self, monkeypatch):
+        monkeypatch.delenv("PLAYWRIGHT_BROWSERS_PATH", raising=False)
+        roots = bt._chromium_search_roots()
+        home = os.path.expanduser("~")
+        assert any(r == os.path.join(home, ".agent-browser", "browsers") for r in roots)
+
+
 class TestChromiumInstalled:
     def test_true_when_plain_chromium_on_path(self, monkeypatch):
         monkeypatch.delenv("AGENT_BROWSER_EXECUTABLE_PATH", raising=False)
@@ -52,6 +59,21 @@ class TestChromiumInstalled:
         assert bt._chromium_installed() is True
         # Delete after first call — cached True should still return True.
         (tmp_path / "chromium-1208").rmdir()
+        assert bt._chromium_installed() is True
+
+
+    def test_true_when_current_agent_browser_chrome_is_installed(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("AGENT_BROWSER_EXECUTABLE_PATH", raising=False)
+        monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path / "empty"))
+        agent_browser_root = tmp_path / "agent-browser" / "browsers"
+        agent_browser_root.mkdir(parents=True)
+        (agent_browser_root / "chrome-152.0.7977.54").mkdir()
+        monkeypatch.setattr(
+            bt,
+            "_chromium_search_roots",
+            lambda: [str(agent_browser_root)],
+        )
+
         assert bt._chromium_installed() is True
 
 
@@ -81,5 +103,4 @@ class TestRunBrowserCommandChromiumGuard:
     """Verify _run_browser_command fails fast (no timeout hang) when
     Chromium is missing in local mode.
     """
-
 

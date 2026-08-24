@@ -2258,6 +2258,24 @@ BROWSER_TOOL_SCHEMAS = [
         }
     },
     {
+        "name": "browser_download",
+        "description": "Download a file from the current structured-browser page by clicking an element identified by its ref ID. The destination must be an absolute file path. Use this for structured browser downloads; use browser_native only when the task explicitly requires the user's already-authenticated normal desktop browser session.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "ref": {
+                    "type": "string",
+                    "description": "The download link or button ref from the latest browser_snapshot (for example, '@e5')."
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Absolute destination file path for the downloaded file."
+                }
+            },
+            "required": ["ref", "path"]
+        }
+    },
+    {
         "name": "browser_get_images",
         "description": "Get a list of all images on the current page with their URLs and alt text. Useful for finding images to analyze with the vision tool. Requires browser_navigate to be called first.",
         "parameters": {
@@ -3873,6 +3891,86 @@ def browser_press(key: str, task_id: Optional[str] = None) -> str:
         return json.dumps(_copy_fallback_warning(response, result), ensure_ascii=False)
 
 
+def browser_download(ref: str, path: str, task_id: Optional[str] = None) -> str:
+    """Download a current-page link through the structured browser backend.
+
+    ``agent-browser download`` owns the browser download event and writes the
+    resulting file to the caller-selected absolute path.  Keeping this as a
+    dedicated operation (rather than asking the model to use a raw CDP call)
+    preserves the normal browser session and download lifecycle.
+    """
+    if _is_camofox_mode():
+        return json.dumps(
+            {
+                "success": False,
+                "error": "Structured downloads are not available on the Camofox backend.",
+            },
+            ensure_ascii=False,
+        )
+
+    effective_task_id = _last_session_key(task_id or "default")
+    blocked = _blocked_private_page_action(effective_task_id, "download")
+    if blocked is not None:
+        return blocked
+
+    destination = Path(str(path or "").strip()).expanduser()
+    if not destination.is_absolute():
+        return json.dumps(
+            {
+                "success": False,
+                "error": "browser_download requires an absolute destination path.",
+            },
+            ensure_ascii=False,
+        )
+    if "\x00" in str(destination):
+        return json.dumps(
+            {"success": False, "error": "Destination path contains a NUL byte."},
+            ensure_ascii=False,
+        )
+
+    ref = str(ref or "").strip()
+    if not ref:
+        return json.dumps(
+            {"success": False, "error": "A download element ref is required."},
+            ensure_ascii=False,
+        )
+    if not ref.startswith("@"):
+        ref = f"@{ref}"
+
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return json.dumps(
+            {
+                "success": False,
+                "error": f"Could not create download directory: {exc}",
+            },
+            ensure_ascii=False,
+        )
+
+    result = _run_browser_command(
+        effective_task_id,
+        "download",
+        [ref, str(destination)],
+    )
+    if result.get("success"):
+        response = {
+            "success": True,
+            "downloaded": str(destination),
+            "element": ref,
+        }
+        data = result.get("data")
+        if isinstance(data, dict) and data.get("path"):
+            response["backend_path"] = str(data["path"])
+        return json.dumps(_copy_fallback_warning(response, result), ensure_ascii=False)
+
+    response = {
+        "success": False,
+        "error": result.get("error", f"Failed to download from {ref}"),
+    }
+    return json.dumps(_copy_fallback_warning(response, result), ensure_ascii=False)
+
+
 def _blocked_private_page_action(effective_task_id: str, action: str) -> Optional[str]:
     """Return a blocked payload when an unsafe cloud page would receive input."""
     if not _eval_ssrf_guard_active(effective_task_id):
@@ -5121,6 +5219,10 @@ def _chromium_search_roots() -> List[str]:
             home, "AppData", "Local"
         )
         roots.append(os.path.join(local, "ms-playwright"))
+    # Current agent-browser releases install their managed Chrome under this
+    # user-space root (``agent-browser install``), rather than Playwright's
+    # legacy ``ms-playwright`` cache.
+    roots.append(os.path.join(home, ".agent-browser", "browsers"))
     return roots
 
 
@@ -5174,11 +5276,11 @@ def _chromium_installed() -> bool:
         except OSError:
             continue
         # Playwright names them ``chromium-<build>`` and
-        # ``chromium_headless_shell-<build>``; agent-browser accepts either.
+        # ``chromium_headless_shell-<build>``. Current agent-browser names its
+        # managed builds ``chrome-<version>``. All three are valid local
+        # browser roots for the installed CLI.
         for entry in entries:
-            if entry.startswith("chromium-") or entry.startswith(
-                "chromium_headless_shell-"
-            ):
+            if entry.startswith(("chromium-", "chromium_headless_shell-", "chrome-")):
                 _cached_chromium_installed = True
                 return True
 
@@ -5467,6 +5569,10 @@ def check_browser_press_requirements() -> bool:
     return check_browser_routed_requirements("browser_press")
 
 
+def check_browser_download_requirements() -> bool:
+    return check_browser_routed_requirements("browser_download")
+
+
 registry.register(
     name="browser_navigate",
     toolset="browser",
@@ -5558,6 +5664,23 @@ registry.register(
     ),
     check_fn=check_browser_press_requirements,
     emoji="⌨️",
+)
+registry.register(
+    name="browser_download",
+    toolset="browser",
+    schema=_BROWSER_SCHEMA_MAP["browser_download"],
+    handler=lambda args, **kw: routed_browser_handler(
+        "browser_download",
+        args,
+        fallback=lambda: browser_download(
+            ref=args.get("ref", ""),
+            path=args.get("path", ""),
+            task_id=kw.get("task_id"),
+        ),
+        **_browser_router_kw(kw),
+    ),
+    check_fn=check_browser_download_requirements,
+    emoji="⬇️",
 )
 
 registry.register(

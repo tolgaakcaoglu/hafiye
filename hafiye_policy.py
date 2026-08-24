@@ -46,6 +46,8 @@ OFFLINE_NETWORK_TOOLS: frozenset[str] = frozenset(
         "browser_scroll",
         "browser_back",
         "browser_press",
+        "browser_download",
+        "browser_native",
         "browser_get_images",
         "browser_vision",
         "browser_console",
