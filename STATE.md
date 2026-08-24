@@ -1618,6 +1618,11 @@ claimed as passed.
   llama.cpp capped the model at `n_ctx=32768` because its trained context is
   32K, and real `hafiye ask` rejected it below Hermes' 64K minimum. The server
   was restored to the prior 4,096 context setting.
+- Two pinned compatible-model probes were attempted and rolled back: the
+  3B Hermes Q4_K_M model hit a 7,168 MiB CUDA KV-cache OOM at 65K, while the
+  1B Llama Q4_K_M model fit at 65K but generated 39,822 tokens without
+  completing a simple marker request. Both temporary registry entries/files
+  were removed; KI-040 records the remaining local-agent blocker.
 - A fresh root-broker check returned UID `0`; the corresponding live gateway
   process remained EUID `1000` while `hafiye-rootd` was EUID `0`.
 - The live computer doctor also observed a separate root-owned `ydotoold` on
@@ -1640,7 +1645,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.1 Boot | Packaged Desktop reached Composer after a real gateway restart; a fresh reboot/login replay is not recorded | PARTIAL / REBOOT REQUIRED |
 | 23.2 Text | Composer reached Firefox and opened it, but the same turn ended with Gemini HTTP 429 | WARNING / RE-RUN |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
-| 23.4 Local inference | Direct local endpoint marker passed; deliberate offline Hafiye-agent replay is not performed | PARTIAL / OFFLINE REQUIRED |
+| 23.4 Local inference | Direct local endpoint marker passed; Qwen is below 64K and the tested 64K candidates were respectively CUDA-OOM or non-terminating | BLOCKED / KI-040 |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
 | 23.6 Gemini | P22 explicit Gemini one-shot passed; current Composer route hit provider quota | WARNING / RE-RUN |
 | 23.7 Privacy | Shared policy tests pass; final no-cloud request observation is not replayed here | NOT FINAL-CHECKED |

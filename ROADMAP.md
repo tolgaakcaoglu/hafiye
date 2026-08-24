@@ -614,6 +614,9 @@ E2E Suite — is now the first incomplete phase.
       and packaged Desktop boot after a gateway restart.
 - [x] Exercise the structured browser and native Firefox routes; retain the
       native AT-SPI focus warning as KI-022 rather than claiming a clean pass.
+- [x] Probe two pinned 64K-capable GGUF candidates; restore the original
+      Qwen/CUDA runtime after recording KI-040 (one CUDA OOM, one non-
+      terminating agent response).
 - [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
       quota is available.
 - [ ] Execute and record every remaining real-machine item 23.1 and 23.3–23.16

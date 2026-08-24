@@ -556,3 +556,23 @@ silently treated as passing.
   returned all four booleans true and `blockers=[]`. No attempt was made to
   stop or alter the root user-manager process because it may belong to another
   host service and would require privileged operator coordination.
+
+## KI-040 — No compatible 64K local agent GGUF currently fits this host test path
+
+- Status: P23 LOCAL-INFERENCE BLOCKER; no Hafiye source regression.
+- The existing Qwen fixture is healthy on CUDA and the direct local endpoint
+  returned `P23_LOCAL_ENDPOINT_OK`, but its runtime/trained context is below
+  Hermes' 64K agent minimum (KI-014).
+- A pinned `NousResearch/Hermes-3-Llama-3.2-3B-GGUF` Q4_K_M download was
+  attempted at revision `3cd927095d8cbab12c743f932aa63b6f7bbfa141`. With
+  AUTO/CUDA and 65,536 context, llama.cpp failed the CUDA KV-cache allocation
+  (`7168 MiB`) on the RTX 3080. The test model was removed from the registry.
+- A pinned `bartowski/Llama-3.2-1B-Instruct-GGUF` Q4_K_M download was also
+  tested. It fit at 65,536 context and reported `n_ctx_train=131072`, but a
+  real `hafiye ask` generated unbounded output (39,822 generated tokens before
+  interruption) instead of completing the marker request. It was removed from
+  the registry as unsuitable for the agent runtime.
+- The registry and live runtime were restored to the original Gemma/Qwen
+  models with Qwen active at 4,096 context and CUDA selected. A compatible
+  production GGUF must be evaluated before P23 local-agent acceptance can pass;
+  the architecture and backend policy are unchanged.
