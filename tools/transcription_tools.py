@@ -295,6 +295,20 @@ def _get_local_command_template() -> Optional[str]:
     if configured:
         return configured
 
+    # Hafiye's managed whisper.cpp runtime is the local STT path.  Keep the
+    # older PATH-based whisper hook below as a Hermes compatibility fallback,
+    # but do not make faster-whisper or a globally installed binary displace a
+    # ready managed runtime.
+    try:
+        from hermes_cli.voice_runtime import default_local_stt_command
+
+        if _has_managed_whisper_runtime(_load_stt_config()):
+            return default_local_stt_command()
+    except Exception:
+        # Runtime installation is optional during upstream setup/tests; the
+        # existing command and faster-whisper paths must remain available.
+        logger.debug("Managed whisper.cpp runtime probe failed", exc_info=True)
+
     whisper_binary = _find_whisper_binary()
     if whisper_binary:
         quoted_binary = shlex.quote(whisper_binary)
@@ -307,6 +321,22 @@ def _get_local_command_template() -> Optional[str]:
 
 def _has_local_command() -> bool:
     return _get_local_command_template() is not None
+
+
+def _has_managed_whisper_runtime(stt_config: Optional[dict] = None) -> bool:
+    """Return whether Hafiye's managed whisper.cpp STT runtime is ready."""
+    try:
+        from hermes_cli.voice_runtime import whisper_runtime_ready
+
+        model = DEFAULT_LOCAL_MODEL
+        if isinstance(stt_config, dict):
+            local_config = stt_config.get("local")
+            if isinstance(local_config, dict) and local_config.get("model"):
+                model = str(local_config["model"])
+        return whisper_runtime_ready(model=model)
+    except Exception:
+        logger.debug("Managed whisper.cpp readiness probe failed", exc_info=True)
+        return False
 
 
 def _normalize_local_model(model_name: Optional[str]) -> str:
@@ -1051,6 +1081,8 @@ def _get_provider(stt_config: dict) -> str:
 
     if explicit:
         if provider == "local":
+            if _has_managed_whisper_runtime(stt_config):
+                return "local_command"
             if _HAS_FASTER_WHISPER:
                 return "local"
             if _has_local_command():
@@ -1065,6 +1097,8 @@ def _get_provider(stt_config: dict) -> str:
             return "none"
 
         if provider == "local_command":
+            if _has_managed_whisper_runtime(stt_config):
+                return "local_command"
             if _has_local_command():
                 return "local_command"
             if _HAS_FASTER_WHISPER:
@@ -1137,6 +1171,8 @@ def _get_provider(stt_config: dict) -> str:
     # intentionally skipped while `mistralai` is quarantined on PyPI (malicious
     # 2.4.6 release on 2026-05-12).
 
+    if _has_managed_whisper_runtime(stt_config):
+        return "local_command"
     if _HAS_FASTER_WHISPER:
         return "local"
     if _has_local_command():

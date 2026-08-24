@@ -1080,7 +1080,7 @@ def _run_xai_oauth_login_from_setup() -> bool:
 def _setup_tts_provider(config: dict):
     """Interactive TTS provider selection with install flow for NeuTTS."""
     tts_config = config.get("tts", {})
-    current_provider = tts_config.get("provider", "edge")
+    current_provider = tts_config.get("provider", "piper")
     subscription_features = get_nous_subscription_features(config)
 
     provider_labels = {
@@ -1093,6 +1093,7 @@ def _setup_tts_provider(config: dict):
         "gemini": "Google Gemini TTS",
         "neutts": "NeuTTS",
         "kittentts": "KittenTTS",
+        "piper": "Piper (managed local Turkish)",
     }
     current_label = provider_labels.get(current_provider, current_provider)
 
@@ -1117,9 +1118,10 @@ def _setup_tts_provider(config: dict):
             "Google Gemini TTS (30 prebuilt voices, prompt-controllable, needs API key)",
             "NeuTTS (local on-device, free, ~300MB model download)",
             "KittenTTS (local on-device, free, lightweight ~25-80MB ONNX)",
+            "Piper (managed local Turkish, separate runtime)",
         ]
     )
-    providers.extend(["edge", "elevenlabs", "openai", "xai", "minimax", "mistral", "gemini", "neutts", "kittentts"])
+    providers.extend(["edge", "elevenlabs", "openai", "xai", "minimax", "mistral", "gemini", "neutts", "kittentts", "piper"])
     choices.append(f"Keep current ({current_label})")
     keep_current_idx = len(choices) - 1
     idx = prompt_choice("Select TTS provider:", choices, keep_current_idx)
@@ -1306,6 +1308,20 @@ def _setup_tts_provider(config: dict):
             else:
                 print_info("Skipping install. Set tts.provider to 'kittentts' after installing manually.")
                 selected = "edge"
+
+    elif selected == "piper":
+        print()
+        print_info("Piper uses a separate managed runtime and the Turkish tr_TR-dfki-medium voice.")
+        try:
+            from hermes_cli.voice_runtime import DEFAULT_PIPER_VOICE, VoiceRuntimeError, install_piper
+
+            install_piper(voice=DEFAULT_PIPER_VOICE)
+            config.setdefault("tts", {}).setdefault("piper", {})["runtime"] = "managed"
+            config.setdefault("tts", {}).setdefault("piper", {})["voice"] = DEFAULT_PIPER_VOICE
+            print_success(f"Managed Piper runtime ready: {DEFAULT_PIPER_VOICE}")
+        except VoiceRuntimeError as exc:
+            print_warning(f"Managed Piper setup is incomplete: {exc}")
+            print_info("The selection remains Piper; finish it with `hafiye voice install-piper`.")
 
     # Save the selection
     if "tts" not in config:

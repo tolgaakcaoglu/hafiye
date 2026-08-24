@@ -445,6 +445,7 @@ from hermes_cli.subcommands.cron import build_cron_parser
 from hermes_cli.subcommands.sync import build_sync_parser
 from hermes_cli.subcommands.gateway import build_gateway_parser
 from hermes_cli.subcommands.runtime import build_runtime_parser
+from hermes_cli.subcommands.voice import build_voice_parser
 from hermes_cli.subcommands.profile import build_profile_parser
 from hermes_cli.subcommands.model import build_model_parser
 from hermes_cli.subcommands.setup import build_setup_parser
@@ -3377,6 +3378,56 @@ def cmd_runtime(args):
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def cmd_voice(args):
+    """Manage Hafiye's managed local voice runtimes."""
+    from hermes_cli.voice_runtime import (
+        VoiceRuntimeError,
+        install_piper,
+        install_whisper,
+        list_piper_voices,
+        run_whisper_stt,
+        synthesize_piper,
+        voice_runtime_doctor,
+    )
+
+    command = getattr(args, "voice_command", None)
+    try:
+        if command == "doctor":
+            result = voice_runtime_doctor()
+        elif command == "install-whisper":
+            result = install_whisper(
+                backend=args.backend,
+                source_ref=args.source_ref,
+                model=args.model,
+            )
+        elif command == "install-piper":
+            result = install_piper(voice=args.voice)
+        elif command == "voices":
+            result = {"voices": list_piper_voices()}
+        elif command == "stt":
+            result = run_whisper_stt(
+                args.input,
+                args.output_dir,
+                model=args.model,
+                language=args.language,
+                backend=args.backend,
+            )
+        elif command == "piper-speak":
+            result = synthesize_piper(
+                args.text,
+                args.output,
+                {"piper": {"runtime": "managed", "voice": args.voice}},
+            )
+        else:
+            print("Use `hafiye voice {doctor,install-whisper,install-piper,voices,stt,piper-speak}`.")
+            return 0
+    except VoiceRuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False))
     return 0
 
 
@@ -13088,6 +13139,7 @@ def main():
     # Hafiye's managed local llama.cpp/GGUF runtime.  This is a separate
     # lifecycle from Hermes' upstream messaging gateway.
     build_runtime_parser(subparsers, cmd_runtime=cmd_runtime)
+    build_voice_parser(subparsers, cmd_voice=cmd_voice)
 
     # Hafiye's privileged operation boundary. The agent/Desktop process stays
     # non-root; only explicitly requested privileged operations cross the

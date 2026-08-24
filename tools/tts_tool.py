@@ -221,7 +221,7 @@ DEFAULT_OPENAI_MODEL = "gpt-4o-mini-tts"
 MANAGED_OPENAI_TTS_MODELS = frozenset({"gpt-4o-mini-tts"})
 DEFAULT_KITTENTTS_MODEL = "KittenML/kitten-tts-nano-0.8-int8"  # 25MB
 DEFAULT_KITTENTTS_VOICE = "Jasper"
-DEFAULT_PIPER_VOICE = "en_US-lessac-medium"  # balanced size/quality
+DEFAULT_PIPER_VOICE = "tr_TR-dfki-medium"  # Hafiye's default local Turkish voice
 DEFAULT_OPENAI_VOICE = "alloy"
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_MINIMAX_MODEL = "speech-02-hd"
@@ -2908,6 +2908,27 @@ def _check_piper_available() -> bool:
         return False
 
 
+def _managed_piper_config(tts_config: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Return the managed Piper section without importing the Piper package."""
+    if not isinstance(tts_config, dict):
+        return {}
+    piper_config = tts_config.get("piper")
+    return piper_config if isinstance(piper_config, dict) else {}
+
+
+def _managed_piper_ready(tts_config: Optional[Dict[str, Any]]) -> bool:
+    piper_config = _managed_piper_config(tts_config)
+    if piper_config.get("runtime") != "managed":
+        return False
+    try:
+        from hermes_cli.voice_runtime import piper_runtime_ready
+
+        return piper_runtime_ready(voice=str(piper_config.get("voice") or DEFAULT_PIPER_VOICE))
+    except Exception:
+        logger.debug("Managed Piper readiness probe failed", exc_info=True)
+        return False
+
+
 def _get_piper_voices_dir() -> Path:
     """Return the directory where Hermes caches Piper voice models.
 
@@ -2980,10 +3001,15 @@ def _generate_piper_tts(text: str, output_path: str, tts_config: Dict[str, Any])
     writes a WAV file. Caller is responsible for converting to MP3/Opus
     via ffmpeg when a different output format is required.
     """
+    piper_config = _managed_piper_config(tts_config)
+    if piper_config.get("runtime") == "managed":
+        from hermes_cli.voice_runtime import synthesize_piper
+
+        return synthesize_piper(text, output_path, tts_config)
+
     PiperVoice = _import_piper()
     import wave
 
-    piper_config = tts_config.get("piper") or {} if isinstance(tts_config, dict) else {}
     voice_name = piper_config.get("voice") or DEFAULT_PIPER_VOICE
     download_dir = Path(piper_config.get("voices_dir") or _get_piper_voices_dir()).expanduser()
     download_dir.mkdir(parents=True, exist_ok=True)
@@ -3365,15 +3391,25 @@ def _text_to_speech_single(
             _generate_kittentts(text, file_str, tts_config)
 
         elif provider == "piper":
-            try:
-                _import_piper()
-            except ImportError:
-                return json.dumps({
-                    "success": False,
-                    "error": "Piper provider selected but 'piper-tts' package not installed. "
-                             "Run 'hermes tools' and select Piper under TTS, or install manually: "
-                             "pip install piper-tts",
-                }, ensure_ascii=False)
+            if _managed_piper_config(tts_config).get("runtime") == "managed":
+                if not _managed_piper_ready(tts_config):
+                    return json.dumps({
+                        "success": False,
+                        "error": (
+                            "Managed Piper runtime or configured voice is not ready. "
+                            "Run `hafiye voice install-piper`."
+                        ),
+                    }, ensure_ascii=False)
+            else:
+                try:
+                    _import_piper()
+                except ImportError:
+                    return json.dumps({
+                        "success": False,
+                        "error": "Piper provider selected but 'piper-tts' package not installed. "
+                                 "Run 'hermes tools' and select Piper under TTS, or install manually: "
+                                 "pip install piper-tts",
+                    }, ensure_ascii=False)
             logger.info("Generating speech with Piper (local)...")
             _generate_piper_tts(text, file_str, tts_config)
 
@@ -3776,6 +3812,8 @@ def check_tts_requirements() -> bool:
     if provider == "kittentts":
         return _check_kittentts_available()
     if provider == "piper":
+        if _managed_piper_config(tts_config).get("runtime") == "managed":
+            return _managed_piper_ready(tts_config)
         return _check_piper_available()
 
     try:

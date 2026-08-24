@@ -323,12 +323,13 @@ export const ENUM_OPTIONS: Record<string, string[]> = {
     'KittenML/kitten-tts-mini-0.8-int8'
   ],
   'tts.kittentts.voice': ['Jasper'],
-  'tts.piper.voice': ['en_US-lessac-medium', 'en_US-amy-medium', 'en_US-ryan-high', 'en_GB-alan-medium'],
+  'tts.piper.voice': ['tr_TR-dfki-medium', 'en_US-lessac-medium', 'en_US-amy-medium', 'en_US-ryan-high', 'en_GB-alan-medium'],
   'tts.neutts.model': ['neuphonic/neutts-air-q4-gguf', 'neuphonic/neutts-air-q8-gguf', 'neuphonic/neutts-air'],
   // Text-to-speech backends — kept in sync with the built-in source of truth
   // (agent/tts_registry.py::_BUILTIN_NAMES / tools/tts_tool.py::
   // BUILTIN_TTS_PROVIDERS). 'xai' is Grok TTS.
   'tts.provider': [
+    'piper',
     'edge',
     'elevenlabs',
     'openai',
@@ -337,8 +338,7 @@ export const ENUM_OPTIONS: Record<string, string[]> = {
     'mistral',
     'gemini',
     'neutts',
-    'kittentts',
-    'piper'
+    'kittentts'
   ],
   'stt.openai.model': ['whisper-1', 'gpt-4o-mini-transcribe', 'gpt-4o-transcribe', 'gpt-transcribe'],
   'stt.mistral.model': ['voxtral-mini-latest', 'voxtral-mini-2602'],

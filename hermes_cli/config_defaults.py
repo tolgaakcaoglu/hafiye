@@ -1674,8 +1674,8 @@ DEFAULT_CONFIG = {
     # Gemini 32000, Edge 5000, Mistral 4000, NeuTTS/KittenTTS 2000).
     "tts": {
         # Set explicitly to pin a backend:
-        # "edge" (free) | "elevenlabs" (premium) | "openai" | "xai" | "minimax" | "mistral" | "gemini" | "deepinfra" | "neutts" (local) | "kittentts" (local) | "piper" (local)
-        "provider": "edge",
+        # "piper" (managed local default) | "edge" (free) | "elevenlabs" (premium) | "openai" | "xai" | "minimax" | "mistral" | "gemini" | "deepinfra" | "neutts" (local) | "kittentts" (local)
+        "provider": "piper",
         "edge": {
             "voice": "en-US-AriaNeural",
             # Popular: AriaNeural, JennyNeural, AndrewNeural, BrianNeural, SoniaNeural
@@ -1732,11 +1732,16 @@ DEFAULT_CONFIG = {
             "device": "cpu",  # cpu, cuda, or mps
         },
         "piper": {
-            # Voice name (e.g. "en_US-lessac-medium") downloaded on first
+            # Managed external Piper runtime and Turkish voice are the Hafiye
+            # local default. The runtime is installed under
+            # ~/.local/share/hafiye/runtimes/piper and invoked as a separate
+            # process; the Piper package is not imported into Hermes.
+            "runtime": "managed",
+            # Voice name (e.g. "tr_TR-dfki-medium") downloaded during setup
             # use, OR an absolute path to a pre-downloaded .onnx file.
             # Full voice list: https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md
-            "voice": "en_US-lessac-medium",
-            # "voices_dir": "",        # Override voice cache dir; default = ~/.hermes/cache/piper-voices/
+            "voice": "tr_TR-dfki-medium",
+            # "voices_dir": "",        # Override managed voice dir; default = ~/.local/share/hafiye/runtimes/piper/voices/
             # "use_cuda": False,       # Requires onnxruntime-gpu
             # "length_scale": 1.0,     # 2.0 = twice as slow
             # "noise_scale": 0.667,
@@ -1778,7 +1783,9 @@ DEFAULT_CONFIG = {
         "cloud_trim_keep_ms": 300,  # how much of each pause survives (keeps natural pacing)
         "local": {
             "model": "base",  # tiny, base, small, medium, large-v3
-            "language": "",  # auto-detect by default; set to "en", "es", "fr", etc. to force
+            # Hafiye's managed local STT default is Turkish. Cloud providers
+            # continue to use the global stt.language value unless overridden.
+            "language": "tr",
             "initial_prompt": "",
             # Anti-hallucination hardening (faster-whisper decodes junk tokens
             # from silence/noise without these):

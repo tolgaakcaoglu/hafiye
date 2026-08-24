@@ -29,6 +29,28 @@ export interface AudioSpeakResponse {
   provider?: string
 }
 
+export interface PiperVoice {
+  dataset: string
+  language: string
+  name: string
+  path?: string
+}
+
+export interface PiperVoicesResponse {
+  error?: string
+  ok: boolean
+  ready: boolean
+  voices: PiperVoice[]
+}
+
+export interface PiperVoicePreviewResponse {
+  data_url: string
+  mime_type: string
+  ok: boolean
+  provider?: string
+  voice?: string
+}
+
 export interface ElevenLabsVoice {
   label: string
   name: string

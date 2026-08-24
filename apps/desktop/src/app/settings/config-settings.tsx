@@ -32,6 +32,8 @@ import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { PanelEmpty } from '../overlays/panel'
 
 import { ConfigField } from './config-field'
+import { MicrophoneDeviceSetting } from './microphone-device-setting'
+import { PiperVoiceSetting } from './piper-voice-setting'
 import {
   clearsEnabledToolsets,
   enumOptionsFor,
@@ -351,7 +353,10 @@ function ConfigSettingsInner({
     return <SettingsSkeleton sections={[{ rows: 6 }]} />
   }
 
-  const visibleFields = activeSectionId === 'voice' ? fields.filter(([key]) => voiceFieldVisible(key, config)) : fields
+  const visibleFields =
+    activeSectionId === 'voice'
+      ? fields.filter(([key]) => voiceFieldVisible(key, config) && key !== 'tts.piper.voice')
+      : fields
 
   return (
     <SettingsContent>
@@ -387,6 +392,18 @@ function ConfigSettingsInner({
           where image-attachment behavior already lives, so this sits above the
           schema fields for that section. */}
       {activeSectionId === 'chat' ? <AttachmentSizeSetting /> : null}
+      {activeSectionId === 'voice' ? (
+        <>
+          <MicrophoneDeviceSetting />
+          {String(getNested(config, 'tts.provider') || '').toLowerCase() === 'piper' ? (
+            <PiperVoiceSetting
+              onChange={voice => updateConfig(setNested(config, 'tts.piper.voice', voice))}
+              profile={scopeProfile}
+              value={getNested(config, 'tts.piper.voice')}
+            />
+          ) : null}
+        </>
+      ) : null}
       {visibleFields.length === 0 && activeSectionId !== 'chat' ? (
         <EmptyState description={c.emptyDesc} title={c.emptyTitle} />
       ) : visibleFields.length === 0 ? null : (

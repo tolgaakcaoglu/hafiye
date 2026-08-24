@@ -9,7 +9,9 @@ import type {
   ElevenLabsVoicesResponse,
   MemoryProviderConfig,
   MemoryProviderOAuthStatus,
-  MemoryStatusResponse
+  MemoryStatusResponse,
+  PiperVoicePreviewResponse,
+  PiperVoicesResponse
 } from '@/types/hermes'
 
 import { capabilityScoped, hermesApi, type ProfileScope, profileScoped } from './client'
@@ -192,6 +194,27 @@ export function speakText(text: string): Promise<AudioSpeakResponse> {
     // TTS blocks until provider synthesis, file read, and base64 encoding
     // finish. Remote providers and large messages regularly exceed the
     // default 15s Electron backend timeout.
+    timeoutMs: audioSpeakRequestTimeoutMs(text)
+  })
+}
+
+export function getPiperVoices(profile?: null | string): Promise<PiperVoicesResponse> {
+  return hermesApi<PiperVoicesResponse>({
+    ...profileScoped(profile),
+    path: '/api/audio/piper/voices'
+  })
+}
+
+export function getPiperVoicePreview(
+  text: string,
+  voice: string,
+  profile?: null | string
+): Promise<PiperVoicePreviewResponse> {
+  return hermesApi<PiperVoicePreviewResponse>({
+    ...profileScoped(profile),
+    path: '/api/audio/piper/preview',
+    method: 'POST',
+    body: { text, voice },
     timeoutMs: audioSpeakRequestTimeoutMs(text)
   })
 }

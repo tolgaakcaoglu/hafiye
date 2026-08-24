@@ -305,6 +305,11 @@ class TTSSpeakRequest(BaseModel):
     text: str
 
 
+class PiperVoicePreviewRequest(BaseModel):
+    text: str
+    voice: str
+
+
 # --- from web_server.py (originally lines 11549-11551) ---
 
 class OAuthSubmitBody(BaseModel):

@@ -1122,7 +1122,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "tts.provider": {
         "type": "select",
         "description": "Text-to-speech provider",
-        "options": ["edge", "elevenlabs", "openai", "xai", "minimax", "mistral", "gemini", "neutts", "kittentts", "piper"],
+        "options": ["piper", "edge", "elevenlabs", "openai", "xai", "minimax", "mistral", "gemini", "neutts", "kittentts"],
     },
     "stt.provider": {
         "type": "select",
@@ -1133,7 +1133,7 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     },
     "stt.local.model": {
         "type": "select",
-        "description": "Local faster-whisper model size",
+        "description": "Managed local whisper.cpp model size",
         "options": ["tiny", "base", "small", "medium", "large-v3"],
     },
     "stt.groq.model": {
@@ -1571,6 +1571,7 @@ from hermes_cli.web_models import (  # noqa: F401
     LearningNodeEdit,
     DebugShareRequest,
     TTSSpeakRequest,
+    PiperVoicePreviewRequest,
     OAuthSubmitBody,
     BulkDeleteSessions,
     SessionImport,
@@ -5271,6 +5272,87 @@ async def get_client_voice_config(profile: Optional[str] = None):
         return {"ok": True, "stt": fallback, "tts": dict(fallback)}
 
     return {"ok": True, **result}
+
+
+@app.get("/api/audio/piper/voices")
+async def get_piper_voices(profile: Optional[str] = None):
+    """List installed managed Piper voices without exposing runtime paths."""
+    del profile  # Runtime installation is machine-local; the query is kept profile-scoped for API symmetry.
+
+    def _list_voices():
+        from hermes_cli.voice_runtime import list_piper_voices, piper_runtime_ready
+
+        voices = list_piper_voices()
+        ready = any(piper_runtime_ready(voice=str(item.get("name") or "")) for item in voices)
+        public_voices = [
+            {key: value for key, value in item.items() if key != "path"}
+            for item in voices
+        ]
+        return {"ok": True, "ready": ready, "voices": public_voices}
+
+    try:
+        return await asyncio.to_thread(_list_voices)
+    except Exception as exc:
+        _log.exception("Managed Piper voice listing failed")
+        raise HTTPException(status_code=500, detail=f"Could not list Piper voices: {exc}")
+
+
+@app.post("/api/audio/piper/preview")
+async def preview_piper_voice(
+    payload: PiperVoicePreviewRequest,
+    profile: Optional[str] = None,
+):
+    """Render a short installed Piper voice preview for Desktop settings."""
+    del profile
+    text = (payload.text or "").strip()
+    voice = (payload.voice or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Preview text is required")
+    if len(text) > 500:
+        raise HTTPException(status_code=400, detail="Preview text is too long")
+    if not voice or len(voice) > 200:
+        raise HTTPException(status_code=400, detail="Invalid Piper voice")
+
+    output_path = ""
+    try:
+        from hermes_cli.voice_runtime import list_piper_voices, piper_runtime_ready, synthesize_piper
+
+        installed = {str(item.get("name") or "") for item in list_piper_voices()}
+        if voice not in installed or not piper_runtime_ready(voice=voice):
+            raise HTTPException(status_code=400, detail="Requested Piper voice is not installed")
+
+        with tempfile.NamedTemporaryFile(prefix="hafiye-piper-preview-", suffix=".wav", delete=False) as tmp:
+            output_path = tmp.name
+
+        def _synthesize():
+            return synthesize_piper(
+                text,
+                output_path,
+                {"piper": {"runtime": "managed", "voice": voice}},
+            )
+
+        await asyncio.to_thread(_synthesize)
+        with open(output_path, "rb") as stream:
+            audio_bytes = stream.read()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        _log.exception("Managed Piper preview failed")
+        raise HTTPException(status_code=500, detail=f"Piper preview failed: {exc}")
+    finally:
+        if output_path:
+            try:
+                os.unlink(output_path)
+            except OSError:
+                pass
+
+    return {
+        "ok": True,
+        "voice": voice,
+        "data_url": f"data:audio/wav;base64,{base64.b64encode(audio_bytes).decode('ascii')}",
+        "mime_type": "audio/wav",
+        "provider": "piper",
+    }
 
 
 def _elevenlabs_voice_label(voice: Dict[str, Any]) -> str:

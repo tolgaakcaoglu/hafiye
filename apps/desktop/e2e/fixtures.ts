@@ -365,6 +365,8 @@ export interface MockBackendOptions {
   extraConfig?: string
   /** Override the mock model's context window for compression scenarios. */
   modelContextLength?: number
+  /** Extra Electron environment for an isolated test topology. */
+  extraEnv?: Record<string, string>
 }
 
 /**
@@ -394,7 +396,7 @@ export async function setupMockBackend(options: MockBackendOptions = {}): Promis
   writeEnvFile(sandbox.hermesHome)
 
   // 3. Build env + launch
-  const env = buildAppEnv(sandbox)
+  const env = buildAppEnv(sandbox, options.extraEnv)
   const { app, page } = await launchDesktop(env)
 
   return {
