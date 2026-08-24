@@ -638,6 +638,9 @@ E2E Suite — is now the first incomplete phase.
       original local route/privacy state was restored.
 - [x] Rotate the Gemini credential through Linux Secret Service and verify a
       real Gemini one-shot plus the target packaged Composer Firefox action.
+- [x] Execute a real authenticated Desktop session before and after restarting
+      `hafiye-gateway.service`; durable `session.resume` and the post-restart
+      prompt completed with marker `P23_RESTART_RECONNECT_OK`.
 - [ ] Re-run the Gemini Composer text acceptance after the KI-043 unapproved
       sudo-remediation warning is resolved or explicitly bounded by the
       existing approval path.
@@ -649,9 +652,11 @@ E2E Suite — is now the first incomplete phase.
       (KI-042).
 - [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
       quota is available.
-- [ ] Execute and record every remaining real-machine item 23.1 and 23.3–23.16
-      from the master roadmap. Earlier phase evidence is not silently promoted
-      to final P23 acceptance.
+- [ ] Execute and record the remaining real-machine items 23.1, 23.3–23.6,
+      23.14, and the long-running managed desktop portion of 23.15 from the
+      master roadmap. Earlier phase evidence is not silently promoted to final
+      P23 acceptance; 23.16 now has fresh authenticated restart/reconnect
+      evidence.
 - [ ] Mark P23 complete and create its completion commit only after every
       acceptance row has fresh evidence.
 

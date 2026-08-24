@@ -1686,6 +1686,18 @@ claimed as passed.
   Ctrl+A/type/Ctrl+S sequence were sent, the fixture file contained
   `P23_DESKTOP_TARGET`, and the final managed screenshot showed the marker in
   VS Code. The temporary fixture windows were closed afterward.
+- A real authenticated `source=desktop` gateway WebSocket session completed a
+  local-Qwen prompt, `systemctl --user restart hafiye-gateway.service` was
+  executed, the same durable session was reopened with `session.resume`, and a
+  second prompt completed. The service returned `active`; the exact harness
+  result was `P23_RESTART_RECONNECT_OK`. This is fresh 23.16 acceptance
+  evidence.
+- A real authenticated desktop session received the physical
+  `Ctrl+Super+Escape` chord through the GNOME fallback and reported the
+  emergency state paused, then resumed successfully. The model selected the
+  `terminal` tool instead of a managed desktop action, so the required
+  long-running desktop-task stop sequence is not claimed as passed; KI-045
+  records this validation warning.
 - The real P23.7 fail-closed check temporarily selected the configured Gemini
   route, set global `LOCAL_ONLY`, and ran `.venv/bin/hafiye ask` without an
   explicit provider/model. It exited 1 with `Hafiye LOCAL_ONLY policy blocked
@@ -1727,19 +1739,19 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.12 Memory | Fresh `test_project_alias_and_session_context_survive_fresh_process` returned `1 passed in 1.36s` | PASS / FRESH PROCESS |
 | 23.13 OpenHands | Fresh managed doctor plus Gemini-backed `coding_delegate` fixture; Task Center `COMPLETED`, 28 progress events, `bug.py` changed, independent `pytest -q` returned `1 passed` | PASS |
 | 23.14 Barge-in | P13 real stop evidence remains green; exact final phrase is not replayed here | INHERITED / RECHECK |
-| 23.15 Emergency shortcut | P13 emergency-stop evidence remains green; exact final sequence is not replayed here | INHERITED / RECHECK |
-| 23.16 Restart recovery | Gateway restart plus fresh packaged Desktop Composer boot passed; full recoverable-session reconnect is not recorded | PARTIAL / RECHECK |
+| 23.15 Emergency shortcut | Real `Ctrl+Super+Escape` reached the GNOME fallback, paused the emergency state, and `emergency.resume` restored it; the model selected `terminal` instead of a long-running managed desktop action | PARTIAL / KI-045 |
+| 23.16 Restart recovery | Authenticated desktop session completed before restart; service restarted; same durable session resumed; post-restart prompt completed; service remained active; marker `P23_RESTART_RECONNECT_OK` | PASS / REAL SESSION RESUME |
 
 ### Exact next actions
 
 1. Re-run the clean P23.2/P23.6 Gemini-backed Composer check with the rotated
    credential after addressing/replaying the KI-043 sudo-remediation approval
    boundary; quota is no longer the active provider blocker.
-2. Execute and record the remaining real-machine P23.1, P23.3–P23.6, and
-   P23.14–P23.16 acceptance sequences, plus the exact voice, offline, remote,
-   text-safety, barge-in, emergency-stop, and restart-reconnect observations.
-   The 23.8 file fixture, 23.9 desktop sequence, 23.10 browser sequence, and
-   23.13 OpenHands fixture are now accepted; their model/host diagnostics
-   remain documented separately.
+2. Execute and record the remaining real-machine P23.1, P23.3–P23.6,
+   P23.14, and the exact long-running desktop portion of P23.15, plus the
+   voice, offline, remote, text-safety, and barge-in observations. The 23.8
+   file fixture, 23.9 desktop sequence, 23.10 browser sequence, 23.13
+   OpenHands fixture, and 23.16 restart/reconnect sequence are now accepted;
+   their model/host diagnostics remain documented separately.
 3. Only after every ledger row has real evidence, update P23 to complete and
    create the separate P23 completion commit.

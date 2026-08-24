@@ -669,3 +669,17 @@ silently treated as passing.
   the saved fixture contained `P23_DESKTOP_TARGET`, and the final screenshot
   showed the marker in VS Code. This warning remains model/tool-selection
   specific and does not block the direct P23.9 acceptance evidence.
+
+## KI-045 — Gemini desktop fixture selected terminal for the emergency-stop replay
+
+- Status: P23 VALIDATION WARNING; the emergency state transition itself passed,
+  but the exact P23.15 desktop-task acceptance was not established.
+- In a real authenticated `source=desktop` gateway session on 2026-08-25, a
+  prompt requiring a managed desktop wait action produced a `terminal` tool
+  start instead. While that turn was active, the physical `Ctrl+Super+Escape`
+  chord reached the GNOME fallback, the session reported
+  `paused_after_task=true`, and `emergency.resume` restored operation. Because
+  no long-running managed desktop action was selected, this run does not claim
+  that the required desktop action sequence was stopped by the shortcut. No
+  Hafiye source regression is established; direct managed P23.9 acceptance
+  remains green.
