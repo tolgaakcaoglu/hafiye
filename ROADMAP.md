@@ -43,8 +43,9 @@ records execution status only.
       ACCEPTED_UPSTREAM_BASELINE.
 
 P0 is complete. The original five-failure set remains the historical
-`ACCEPTED_UPSTREAM_BASELINE`. A later full run contained four of those IDs plus
-the separately investigated KI-019 browser reconnect diagnostic; the accepted
+`ACCEPTED_UPSTREAM_BASELINE`; the current post-P5 comparison baseline is the
+four members that reproduced. A later full run contained four of those IDs
+plus the separately investigated KI-019 browser reconnect diagnostic; the accepted
 failures, missing pactl, and missing vulkaninfo are documented
 warnings/diagnostics and are not P0 blockers.
 

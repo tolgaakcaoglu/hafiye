@@ -23,6 +23,10 @@ silently treated as passing.
   37,156 passed, 4 failed, and 244 skipped in 541.8 seconds. Four failures were
   members of the original five; the original remote browser-control ID did
   not reproduce in that run.
+- The current comparison baseline is therefore the four reproduced IDs
+  (original IDs 2–5 below); the original five-ID set remains the historical
+  accepted whitelist. This reduction is recorded as a baseline update, not a
+  Hafiye regression.
 - A different browser-control reconnect test appeared in that run. It is
   tracked separately as KI-019 after reproducing in the P6-parent checkout;
   it is not added to this exact five-ID baseline.

@@ -102,7 +102,10 @@ After the P5 source fix, the latest full run covered 3,218 files and measured
 were members of the exact five IDs above; the accepted remote browser-control
 ID did not reproduce. No new or different Hafiye regression was found. The
 earlier local browser reconnect diagnostic is tracked as KI-019, and the
-upstream baseline bugs are not fixed by Hafiye.
+current comparison baseline is therefore the four reproduced IDs (items 2–5).
+The exact five remain the historical accepted whitelist; fewer failures update
+the current baseline, while any new/different ID is investigated as a
+regression. The upstream baseline bugs are not fixed by Hafiye.
 
 ## Computer-use-linux pinned source
 

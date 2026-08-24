@@ -88,7 +88,7 @@ its result says so.
 | P6-GW-01 | Gateway cache/fallback contract regression fix | `./scripts/run_tests.sh tests/gateway/test_compression_failure_session_sync.py tests/gateway/test_fallback_chain_reload.py -q` | 2 files; 6 passed; 0 failed after normalizing cache mappings and retaining refreshed fallback calls | PASS |
 | P6-BE-01 | Post-P6 full backend regression comparison (historical) | `./scripts/run_tests.sh` with persistent gateway and managed local model server stopped temporarily | 3,218 files; 37,154 passed, 5 failed, 244 skipped in 563.7s; four exact accepted-baseline members plus KI-019 browser reconnect diagnostic; superseded by P5-BE-01 | PASS WITH DOCUMENTED BASELINE/DIAGNOSTIC |
 
-## Current ACCEPTED_UPSTREAM_BASELINE
+## Historical ACCEPTED_UPSTREAM_BASELINE and current comparison baseline
 
 The historical post-source comparison set is this exact five-failure baseline:
 
@@ -99,14 +99,17 @@ The historical post-source comparison set is this exact five-failure baseline:
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
 The latest post-P5-source-fix full run contained four members of this set; the
-remote browser-control ID did not reproduce. The separate local reconnect
-failure was observed only in the earlier post-P6 comparison, reproduced in the
-P6-parent checkout, and is documented as KI-019. A web-server file also had a
-retry-only scheduling flake that passed on retry; it is not a new regression.
+remote browser-control ID did not reproduce. The current comparison baseline is
+therefore items 2–5 above, while the exact five remain the historical accepted
+whitelist. The separate local reconnect failure was observed only in the
+earlier post-P6 comparison, reproduced in the P6-parent checkout, and is
+documented as KI-019. A web-server file also had a retry-only scheduling flake
+that passed on retry; it is not a new regression.
 
-The same current five after future Hafiye changes are accepted. Fewer failures
-update the baseline. Any new or different failure is a regression to
-investigate. The upstream baseline bugs are not fixed by Hafiye P0/P1.
+Future failures within the historical five are accepted for comparison. Fewer
+failures update the current comparison baseline; any new or different failure
+is a regression to investigate. The upstream baseline bugs are not fixed by
+Hafiye.
 
 ## P0 computer-use acceptance
 

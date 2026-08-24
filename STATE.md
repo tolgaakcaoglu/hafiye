@@ -381,8 +381,9 @@ directory:
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
-changes. The exact five IDs remain the accepted regression baseline even though
-the latest post-Hafiye full run reproduced only four of them:
+changes. The exact five IDs remain the historical accepted regression
+whitelist. The current post-P5 comparison baseline is the four IDs that
+reproduced:
 
 1. tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip
 2. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
@@ -390,19 +391,21 @@ the latest post-Hafiye full run reproduced only four of them:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The exact five IDs remain the historical comparison baseline. The latest run
-contained four of those IDs; the accepted remote browser-control ID did not
-reproduce in that run. The separate local reconnect scheduling failure is
-documented in KI-019 and is not added to the exact baseline. The upstream bugs
-are not being fixed by Hafiye.
+The accepted remote browser-control ID (item 1) did not reproduce in the latest
+run, so the current baseline was reduced to items 2–5. The separate local
+reconnect scheduling failure is documented in KI-019 and is not added to the
+historical whitelist. Future failures within the historical five are classified
+against that upstream whitelist; any new or different ID is a regression to
+investigate. The upstream bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
 1. Keep the verified source commit
    `45294d3f77a3929731ac29d89d54f5d53c70957d` separate from the pinned
    upstream and baseline merge SHAs.
-2. Keep the exact five-ID `ACCEPTED_UPSTREAM_BASELINE` rule for future phases;
-   investigate any new or different full-suite failure.
+2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
+   current four-ID comparison baseline for future phases; reduce the current
+   baseline again if failures disappear, and investigate any new/different ID.
 3. P7 — Full host tools + execution policy is the next incomplete phase and
    should begin on the next authorized implementation turn.
 
