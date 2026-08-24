@@ -239,6 +239,9 @@ export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}
     HERMES_HOME: sandbox.hermesHome,
     HERMES_DESKTOP_USER_DATA_DIR: sandbox.userDataDir,
     HERMES_DESKTOP_IGNORE_EXISTING: '1',
+    // Hafiye's normal Linux Desktop prefers the persistent user gateway. E2E
+    // sandboxes must opt out so their isolated HERMES_HOME owns the backend.
+    HAFIYE_DESKTOP_DISABLE_PERSISTENT_GATEWAY: '1',
     HERMES_DESKTOP_HERMES_ROOT: REPO_ROOT,
     HERMES_DESKTOP_APP_NAME: `HermesE2E-${Date.now()}`,
     // `app.close()` in teardown must exit even when a spec leaves a turn
@@ -287,10 +290,15 @@ export function findElectron(): string {
   // In dev mode, we use the `electron` binary directly (not the packaged app).
   // The dev:electron script in package.json does exactly this: `electron .`
   // after building. We replicate that here.
-  const localElectron = path.join(REPO_ROOT, 'node_modules', 'electron', 'dist', 'electron')
+  const localElectrons = [
+    path.join(DESKTOP_ROOT, 'node_modules', 'electron', 'dist', 'electron'),
+    path.join(REPO_ROOT, 'node_modules', 'electron', 'dist', 'electron')
+  ]
 
-  if (fs.existsSync(localElectron)) {
-    return localElectron
+  for (const localElectron of localElectrons) {
+    if (fs.existsSync(localElectron)) {
+      return localElectron
+    }
   }
 
   // Fall back to PATH
