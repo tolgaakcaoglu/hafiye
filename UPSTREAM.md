@@ -11,9 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P16 Task Center persistence and Desktop
-  acceptance source/test commit):
-  f93d9183544581636c6af5b619d62d221040391d
+- Current Hafiye source HEAD (P17 Control Center source/test commit):
+  2dc541d09367b895744b512d99b058506d7f78d2
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -488,9 +487,20 @@ P0 computer-use acceptance requires:
   returned the external `pytest -q` result `1 passed in 0.00s`. A separate
   real gateway smoke observed `RUNNING`, final `COMPLETED`, 18 progress
   records, and 22 `task.update` events; the Desktop Task Center test/build
-  passed. P15 and P16 are complete. P16's durable Task Center implementation
-  and real Desktop acceptance are recorded in the current Hafiye commits;
-  P17 is the next phase. No Hermes upstream commit changed.
+  passed. P15, P16, and P17 are complete. P16's durable Task Center
+  implementation and P17's real Control Center acceptance are recorded in the
+  current Hafiye commits; P18 is the next phase. No Hermes upstream commit
+  changed.
+
+## P17 Control Center patch group
+
+- Hafiye source/test commit:
+  `2dc541d09367b895744b512d99b058506d7f78d2`.
+- The patch adds a Hafiye-specific Control Center overlay route and composes
+  the existing real Hermes/Hafiye config, provider, skills/MCP, scheduler,
+  logs, computer-use, Task Center, and About surfaces. The shared privacy
+  enum is exposed as `NORMAL`, `LOCAL_ONLY`, and `OFFLINE`.
+- No Hermes upstream commit changed and no upstream history was rewritten.
 
 ## P14 memory and project registry validation
 

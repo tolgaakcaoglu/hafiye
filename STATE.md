@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: f93d9183544581636c6af5b619d62d221040391d
-  (P16 Task Center persistence and Desktop acceptance source/test commit)
+- Current Hafiye source HEAD: 2dc541d09367b895744b512d99b058506d7f78d2
+  (P17 Control Center source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -69,7 +69,7 @@ incomplete phase.
 
 P16 — Task Center: complete. The durable generic task record, restart/reconnect
 behavior, complete required Desktop fields/actions, and real Electron
-acceptance pass. P17 is now the first incomplete phase.
+acceptance pass. P17 is complete; P18 is now the first incomplete phase.
 
 ## Verified working
 
@@ -248,6 +248,11 @@ whitelist and current four-ID comparison baseline are unchanged.
 P16's durable Task Center Python/RPC matrix, separate-process restart smoke,
 Desktop component test, E2E typecheck, typecheck, lint, production build, and
 real Electron + gateway acceptance passed. The P16 source/test commits
+introduced no new or different upstream failure; the historical five-ID
+whitelist and current four-ID comparison baseline are unchanged.
+
+P17's Control Center navigation contract, Desktop typecheck, clean production
+build, and real Electron/gateway acceptance passed. The P17 source/test commit
 introduced no new or different upstream failure; the historical five-ID
 whitelist and current four-ID comparison baseline are unchanged.
 
@@ -703,12 +708,13 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `54b4ee49569267b21e10b357acdde427a8a844ff` separate in all
+   source commit `2dc541d09367b895744b512d99b058506d7f78d2` separate in all
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline; investigate any new/different ID.
-3. P15 and P16 are closed. Start P17 as the first incomplete phase while
-   preserving the shared gateway and Desktop business-logic boundary.
+3. P15, P16, and P17 are closed. Start P18 — Scheduler / skills / MCP — as
+   the first incomplete phase while preserving the shared gateway and Desktop
+   business-logic boundary.
 
 ## Environment changes
 
@@ -778,6 +784,11 @@ P16 added the user-scoped Task Center SQLite WAL store at
 `~/.local/state/hafiye/task_center.db`, plus restart recovery and the real
 Desktop acceptance path. This required no sudo, system package, service,
 device-permission, credential, or password change.
+P17 added the Hafiye Control Center overlay route and reused the real Hermes
+config, provider, skills/MCP, scheduler, logs, computer-use, Task Center, and
+About surfaces. The isolated Electron/gateway acceptance changed only its
+temporary HERMES_HOME; no host service, credential, sudo, package, or device
+permission was changed.
 
 ### P4 source validation
 
@@ -1160,12 +1171,50 @@ separate:
 - Ruff, `py_compile`, and `git diff --check` passed on P16 changes.
 
 P16 acceptance passed. No new or different upstream regression was found.
-P17 is now the first incomplete phase.
+
+## P17 execution status — complete
+
+The P17 implementation and acceptance are recorded in source/test commit
+`2dc541d09367b895744b512d99b058506d7f78d2`. The commit identities remain
+separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `2dc541d09367b895744b512d99b058506d7f78d2`.
+
+### Implemented and verified
+
+- Added the real Hafiye Control Center overlay route with every roadmap page:
+  Overview, Chat, Tasks, Models, Providers, Routing, Voice, Computer,
+  Browser, Coding, Memory, Skills, MCP, Automation, Permissions, Privacy,
+  Logs, Developer, and About.
+- Reused existing backend/state boundaries instead of adding a second config
+  system: config-backed pages write through `ConfigSettings`, providers use
+  the provider APIs, Skills/MCP use the capabilities APIs, Automation uses
+  the persistent scheduler APIs, Logs use the gateway log API, and Tasks use
+  the durable Task Center/RPC contract.
+- Added the roadmap privacy enum (`NORMAL`, `LOCAL_ONLY`, `OFFLINE`) to the
+  shared Desktop config control. No new dead switch or mock success state was
+  added.
+- Added a Settings entry and route classification for Control Center while
+  preserving the existing Hermes Settings surface and deep links.
+
+### P17 test record
+
+- `cd apps/desktop && npm run test:ui -- src/app/control-center/index.test.tsx src/app/routes.test.ts` — 7 passed.
+- `cd apps/desktop && npm run typecheck` — renderer, Electron, and E2E typechecks passed.
+- `cd apps/desktop && npx eslint src/app/control-center/index.tsx src/app/settings/constants.ts e2e/p17-control-center.spec.ts` — passed.
+- `cd apps/desktop && npm run build` — clean build stamp `2dc541d09367`, Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing Vite/Babel/chunking warnings remain.
+- `cd apps/desktop && npx playwright test e2e/p17-control-center.spec.ts --reporter=list` — real Electron + real gateway, all 19 pages opened and Privacy Mode persisted across renderer reload; 1 passed in 12.7s.
+- `git diff --check` — passed.
+
+P17 acceptance passed. No new or different upstream regression was found.
+P18 is now the first incomplete phase.
 
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
    investigate any new or different failure in later phases.
-2. Begin P17 — Control Center.
+2. Begin P18 — Scheduler / skills / MCP.
 3. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
    source/test commit separate in all subsequent state updates.

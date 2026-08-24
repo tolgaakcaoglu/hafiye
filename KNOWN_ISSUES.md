@@ -411,3 +411,13 @@ silently treated as passing.
   remains queued.
 - Real separate-process RPC smoke and real Electron plus gateway E2E pass.
   No secrets, transcript, or private chain-of-thought are stored or shown.
+
+## KI-031 — Privacy Mode initially rendered as a free-form field in Control Center
+
+- Status: RESOLVED 2026-08-24; no P17 acceptance blocker.
+- The backend schema describes `hafiye.privacy_mode` as a string. Before the
+  P17 Desktop enum mapping, the shared config renderer therefore exposed a
+  free-form input instead of the fixed roadmap modes.
+- Desktop now supplies the real `NORMAL`, `LOCAL_ONLY`, and `OFFLINE` options
+  through the existing config renderer. A real Electron test selected
+  `LOCAL_ONLY` and verified the value after a renderer reload from the gateway.

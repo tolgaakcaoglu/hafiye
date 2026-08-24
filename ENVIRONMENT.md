@@ -327,3 +327,18 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 - A real separate-process gateway/RPC smoke and a real Electron + gateway E2E
   verified completed/failed/queued display, queued cancellation, and restart
   recovery on this host's Linux Desktop environment.
+
+## P17 Control Center validation (2026-08-24)
+
+- The clean Desktop build used source/test commit
+  `2dc541d09367b895744b512d99b058506d7f78d2`; Vite, Electron main/preload,
+  native staging, and `assert-dist-built` passed.
+- A real Electron process connected to an isolated real `hermes serve`
+  gateway and opened all 19 Control Center pages. Privacy Mode was changed
+  through the Desktop selector to `LOCAL_ONLY`, then verified after a renderer
+  reload from the sandbox gateway config.
+- The E2E used a temporary `HERMES_HOME` and user-data directory. The actual
+  `hafiye-gateway.service`, host credentials, system packages, sudo rules,
+  device permissions, and persistent host state were not modified.
+- Existing Vite/Babel/chunking warnings remain diagnostic build warnings; no
+  new P17 host blocker or upstream regression was observed.

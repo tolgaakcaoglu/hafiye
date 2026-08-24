@@ -294,3 +294,20 @@ durable registry and complete Task Center surface; source/test commit
 `f93d9183544581636c6af5b619d62d221040391d` contains the queued-state recovery
 fix and real Desktop acceptance. The historical five
 `ACCEPTED_UPSTREAM_BASELINE` failures remain unchanged.
+
+## P17 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P17-D-01 | Control Center page navigation contract | `cd apps/desktop && npm run test:ui -- src/app/control-center/index.test.tsx src/app/routes.test.ts` | 2 files; 7 passed | PASS |
+| P17-D-02 | Desktop renderer/Electron/E2E type boundaries | `cd apps/desktop && npm run typecheck`; `../../node_modules/.bin/tsc -p tsconfig.e2e.json --noEmit` | Passed | PASS |
+| P17-D-03 | Control Center lint and patch hygiene | `cd apps/desktop && npx eslint src/app/control-center/index.tsx src/app/settings/constants.ts e2e/p17-control-center.spec.ts`; `git diff --check` | Passed; no whitespace errors | PASS |
+| P17-D-04 | Clean Desktop production package | `cd apps/desktop && npm run build` | Clean build stamp `2dc541d09367`; Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing Vite/Babel/chunking warnings remain | PASS WITH WARNING |
+| P17-REAL-01 | Real Control Center and gateway state flow | `cd apps/desktop && npx playwright test e2e/p17-control-center.spec.ts --reporter=list` | Real Electron + real gateway opened all 19 pages; Privacy Mode changed to `LOCAL_ONLY` and remained after renderer reload; 1 passed in 12.7s | PASS |
+| P17-ACCEPTANCE | Master P17 closure | Every roadmap page is functional through real backend/state boundaries; no dead switch or mock success state; config persistence and real Desktop acceptance passed | No new/different upstream regression; P18 is next | PASS |
+
+P17 is accepted. Source/test commit
+`2dc541d09367b895744b512d99b058506d7f78d2` adds the Control Center route,
+page composition, privacy enum, and real Electron acceptance. The pinned
+Hermes commit, baseline merge commit, and accepted five-ID upstream failure
+whitelist remain unchanged.

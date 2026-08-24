@@ -20,7 +20,7 @@ records execution status only.
 - [x] P14 Memory + project registry
 - [x] P15 OpenHands coding delegate
 - [x] P16 Task Center
-- [ ] P17 Control Center
+- [x] P17 Control Center
 - [ ] P18 Scheduler / skills / MCP
 - [ ] P19 Hardening
 - [ ] P20 Packaging
@@ -456,5 +456,28 @@ recovery fix and real Desktop acceptance are in
 rendered completed, failed, and queued tasks and cancelled a queued task via
 the real gateway. The separate-process restart smoke preserved completed
 history, failed stale in-flight work honestly, and retained queued work. No
-new or different upstream regression was found. P17 remains unchecked and is
-the next incomplete phase.
+new or different upstream regression was found. P17 followed and is now
+complete; P18 is the next incomplete phase.
+
+## P17 execution status — complete
+
+- [x] Add the Hafiye Control Center overlay route and expose all 19 roadmap
+      pages: Overview, Chat, Tasks, Models, Providers, Routing, Voice,
+      Computer, Browser, Coding, Memory, Skills, MCP, Automation, Permissions,
+      Privacy, Logs, Developer, and About.
+- [x] Reuse the real Hermes/Hafiye backend boundaries for config, providers,
+      skills/MCP, scheduler, logs, computer-use readiness, Task Center, and
+      About instead of introducing a second state system.
+- [x] Add the real `NORMAL` / `LOCAL_ONLY` / `OFFLINE` privacy selector and
+      verify that it persists through the gateway config path.
+- [x] Add Settings navigation and route classification while preserving the
+      existing Hermes Settings surface and deep links.
+- [x] Run the focused UI/typecheck/lint/build checks and real Electron/gateway
+      acceptance.
+
+P17 is complete. Source/test commit
+`2dc541d09367b895744b512d99b058506d7f78d2` adds the Control Center and its
+real acceptance test. The Electron test opened all 19 pages and persisted
+Privacy Mode through a renderer reload. No new or different upstream
+regression was found. P18 — Scheduler / skills / MCP — is the next incomplete
+phase.

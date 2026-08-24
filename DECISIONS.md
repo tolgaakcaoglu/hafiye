@@ -424,3 +424,20 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   gateway reconnects. Actual worker resumption is not inferred after process
   loss; future scheduling/resume semantics remain subject to the roadmap's
   later phases. This ADR does not override the master roadmap.
+
+## ADR-0027 — Compose the P17 Control Center from existing real surfaces
+
+- Date: 2026-08-24
+- Decision: Add a Hafiye-specific `/control-center` Electron overlay with the
+  19 roadmap pages, while keeping the existing Hermes Settings route and
+  deep-link behavior intact. Config pages use `ConfigSettings`; providers,
+  Skills/MCP, scheduler, logs, computer-use, Task Center, and About reuse their
+  existing backend/API surfaces.
+- Reason: The master roadmap requires one functional Hafiye Control Center,
+  not a second configuration system. Composing the already-tested surfaces
+  keeps Desktop and CLI/gateway state on one business-logic boundary and
+  avoids decorative switches or duplicated persistence.
+- Consequence: Page navigation is Hafiye-specific, but mutations remain real
+  gateway/config/tool/scheduler operations. The shared privacy selector exposes
+  the fixed `NORMAL`, `LOCAL_ONLY`, and `OFFLINE` modes. This ADR records the
+  implementation boundary and does not override the master roadmap.
