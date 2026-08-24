@@ -154,6 +154,20 @@ def test_native_readiness_uses_pinned_doctor(monkeypatch):
     assert calls == [("/opt/computer-use-linux", 5.0)]
 
 
+def test_native_failure_returns_structured_recovery_code_and_redacts(monkeypatch):
+    def fake_call(tool, args, **kwargs):
+        return json.dumps({"error": "AT-SPI unavailable sk-hafiye-secret-012345678901234567890"})
+
+    monkeypatch.setattr(native_browser, "_call_managed_tool", fake_call)
+
+    result = json.loads(native_browser.browser_native("state", window_id=7))
+
+    assert result["success"] is False
+    assert result["failure"]["code"] == "accessibility_unavailable"
+    assert result["failure"]["blocker"] is True
+    assert "sk-hafiye-secret" not in json.dumps(result)
+
+
 def test_structured_browser_download_calls_agent_browser_download(monkeypatch, tmp_path):
     from tools import browser_tool
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from dataclasses import dataclass, field
 from typing import Any, Mapping
 
@@ -180,6 +181,7 @@ class ToolCallGuardrailConfig:
 # pathological, so the defaults are deliberately low.
 _DEFAULT_MAX_WEB_SEARCHES_PER_TURN = 50
 _DEFAULT_MAX_SUBAGENTS_PER_TURN = 50
+_DEFAULT_MAX_ACTIONS_PER_TURN = 200
 
 
 @dataclass(frozen=True)
@@ -202,6 +204,7 @@ class LoopCapConfig:
 
     max_web_searches: int = _DEFAULT_MAX_WEB_SEARCHES_PER_TURN
     max_subagents: int = _DEFAULT_MAX_SUBAGENTS_PER_TURN
+    max_actions: int = _DEFAULT_MAX_ACTIONS_PER_TURN
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any] | None) -> "LoopCapConfig":
@@ -215,6 +218,9 @@ class LoopCapConfig:
             ),
             max_subagents=_non_negative_int(
                 data.get("max_subagents"), defaults.max_subagents
+            ),
+            max_actions=_non_negative_int(
+                data.get("max_actions"), defaults.max_actions
             ),
         )
 
@@ -368,6 +374,11 @@ class ToolCallGuardrailController:
         # single agent loop rather than accumulating across the session.
         self._turn_web_search_count = 0
         self._turn_subagent_count = 0
+        self._turn_action_count = 0
+        # Concurrent tool batches call before_call() from worker threads.  The
+        # action budget must be an atomic admission decision or a large batch
+        # could race past its configured ceiling.
+        self._counter_lock = threading.Lock()
 
     @property
     def halt_decision(self) -> ToolGuardrailDecision | None:
@@ -672,25 +683,46 @@ class ToolCallGuardrailController:
         """
         caps = self.config.loop_caps
 
-        if tool_name == "web_search":
-            cap = caps.max_web_searches
-            if cap and self._turn_web_search_count >= cap:
+        with self._counter_lock:
+            cap = caps.max_actions
+            if cap and self._turn_action_count >= cap:
                 decision = ToolGuardrailDecision(
                     action="block",
-                    code="loop_web_search_cap",
+                    code="task_action_budget",
                     message=(
-                        f"Blocked web_search: this turn has already made {cap} "
-                        "web searches, the per-turn limit. This looks like a "
-                        "runaway search loop. Work with the results you already "
-                        "have and give the user your answer."
+                        f"Blocked {tool_name}: this task has already used "
+                        f"{self._turn_action_count} tool actions, the per-task "
+                        f"limit of {cap}. Stop issuing actions and report the "
+                        "current result or blocker."
                     ),
                     tool_name=tool_name,
-                    count=self._turn_web_search_count,
+                    count=self._turn_action_count,
                     signature=signature,
                 )
                 self._halt_decision = decision
                 return decision
-            self._turn_web_search_count += 1
+            self._turn_action_count += 1
+
+        if tool_name == "web_search":
+            cap = caps.max_web_searches
+            with self._counter_lock:
+                if cap and self._turn_web_search_count >= cap:
+                    decision = ToolGuardrailDecision(
+                        action="block",
+                        code="loop_web_search_cap",
+                        message=(
+                            f"Blocked web_search: this turn has already made {cap} "
+                            "web searches, the per-turn limit. This looks like a "
+                            "runaway search loop. Work with the results you already "
+                            "have and give the user your answer."
+                        ),
+                        tool_name=tool_name,
+                        count=self._turn_web_search_count,
+                        signature=signature,
+                    )
+                    self._halt_decision = decision
+                    return decision
+                self._turn_web_search_count += 1
             return None
 
         if tool_name == "delegate_task":
@@ -703,23 +735,24 @@ class ToolCallGuardrailController:
                 # block: once the spawn cap is hit, steering/stopping the
                 # existing children is exactly what should still work.
                 return None
-            if self._turn_subagent_count >= cap:
-                decision = ToolGuardrailDecision(
-                    action="block",
-                    code="loop_subagent_cap",
-                    message=(
-                        f"Blocked delegate_task: this turn has already spawned "
-                        f"{self._turn_subagent_count} subagents (limit {cap}). "
-                        "This looks like a runaway delegation loop. Finish the "
-                        "work with the results you have and answer the user."
-                    ),
-                    tool_name=tool_name,
-                    count=self._turn_subagent_count,
-                    signature=signature,
-                )
-                self._halt_decision = decision
-                return decision
-            self._turn_subagent_count += spawn_count
+            with self._counter_lock:
+                if self._turn_subagent_count >= cap:
+                    decision = ToolGuardrailDecision(
+                        action="block",
+                        code="loop_subagent_cap",
+                        message=(
+                            f"Blocked delegate_task: this turn has already spawned "
+                            f"{self._turn_subagent_count} subagents (limit {cap}). "
+                            "This looks like a runaway delegation loop. Finish the "
+                            "work with the results you have and answer the user."
+                        ),
+                        tool_name=tool_name,
+                        count=self._turn_subagent_count,
+                        signature=signature,
+                    )
+                    self._halt_decision = decision
+                    return decision
+                self._turn_subagent_count += spawn_count
             return None
 
         return None

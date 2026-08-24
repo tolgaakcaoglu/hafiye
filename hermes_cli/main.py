@@ -446,6 +446,7 @@ from hermes_cli.subcommands.sync import build_sync_parser
 from hermes_cli.subcommands.gateway import build_gateway_parser
 from hermes_cli.subcommands.runtime import build_runtime_parser
 from hermes_cli.subcommands.voice import build_voice_parser
+from hermes_cli.subcommands.hardening import build_hardening_parser
 from hermes_cli.subcommands.profile import build_profile_parser
 from hermes_cli.subcommands.model import build_model_parser
 from hermes_cli.subcommands.setup import build_setup_parser
@@ -3384,8 +3385,10 @@ def cmd_runtime(args):
                     result = manager.stop_server()
                 elif server_command == "health":
                     result = manager.health()
+                elif server_command == "recover":
+                    result = manager.recover_server(max_attempts=args.attempts)
                 else:
-                    print("Use `hafiye runtime server {start,stop,restart,health,unload}`.")
+                    print("Use `hafiye runtime server {start,stop,restart,health,recover,unload}`.")
                     return 0
             else:
                 print("Use `hafiye runtime {install,version,doctor,openhands,model,server}`.")
@@ -3445,6 +3448,22 @@ def cmd_voice(args):
         return 1
     print(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False))
     return 0
+
+
+def cmd_hardening(args):
+    """Inspect or maintain Hafiye's P19 hardening boundaries."""
+    from hafiye_hardening import enforce_hardening_retention, hardening_doctor
+
+    command = getattr(args, "hardening_command", None)
+    if command == "doctor":
+        result = hardening_doctor()
+    elif command == "prune":
+        result = enforce_hardening_retention()
+    else:
+        print("Use `hafiye hardening {doctor,prune}`.")
+        return 0
+    print(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False))
+    return 0 if result.get("ok", False) else 1
 
 
 def cmd_root(args):
@@ -13156,6 +13175,7 @@ def main():
     # lifecycle from Hermes' upstream messaging gateway.
     build_runtime_parser(subparsers, cmd_runtime=cmd_runtime)
     build_voice_parser(subparsers, cmd_voice=cmd_voice)
+    build_hardening_parser(subparsers, cmd_hardening=cmd_hardening)
 
     # Hafiye's privileged operation boundary. The agent/Desktop process stays
     # non-root; only explicitly requested privileged operations cross the

@@ -104,6 +104,66 @@ def _error_text(result: subprocess.CompletedProcess[str]) -> str:
     return text.splitlines()[-1][:400] if text else "computer-use-linux returned no diagnostic"
 
 
+def classify_computer_use_failure(value: Any) -> Dict[str, Any]:
+    """Turn a managed desktop-action failure into a stable recovery contract.
+
+    The upstream MCP server owns the actual AT-SPI/Wayland implementation.  A
+    Hafiye caller still needs to distinguish a missing readiness prerequisite
+    from a stale window target or a transient action timeout, without exposing
+    raw child-process diagnostics or credentials to the model/logs.
+    """
+    payload = value
+    if isinstance(value, str):
+        try:
+            payload = json.loads(value)
+        except (TypeError, ValueError):
+            payload = value
+    if isinstance(payload, dict):
+        parts = [payload.get("error"), payload.get("message"), payload.get("detail")]
+        text = " ".join(str(part) for part in parts if part).strip()
+    else:
+        text = str(payload or "").strip()
+    try:
+        from agent.redact import redact_sensitive_text
+
+        text = redact_sensitive_text(text, force=True)
+    except Exception:
+        pass
+    lowered = text.lower()
+
+    if any(
+        token in lowered
+        for token in (
+            "at-spi",
+            "accessibility tree",
+            "accessibility",
+            "can_build_accessibility_tree",
+        )
+    ):
+        code, retryable, blocker = "accessibility_unavailable", False, True
+    elif any(
+        token in lowered
+        for token in ("uinput", "ydotool", "development input", "can_send_development_input")
+    ):
+        code, retryable, blocker = "input_backend_unavailable", False, True
+    elif any(token in lowered for token in ("readiness", "doctor", "not registered", "blocker")):
+        code, retryable, blocker = "computer_use_not_ready", False, True
+    elif any(token in lowered for token in ("window", "focused", "target")):
+        code, retryable, blocker = "window_target_unavailable", True, False
+    elif any(token in lowered for token in ("timeout", "timed out", "deadline")):
+        code, retryable, blocker = "desktop_action_timeout", True, False
+    else:
+        code, retryable, blocker = "desktop_action_failed", True, False
+
+    return {
+        "ok": False,
+        "code": code,
+        "retryable": retryable,
+        "blocker": blocker,
+        "detail": text[-400:] if text else "computer-use-linux action failed",
+    }
+
+
 def _normalise_doctor_report(report: Any) -> Dict[str, Any]:
     """Keep the upstream report intact while exposing stable Hafiye fields."""
     report = report if isinstance(report, dict) else {}

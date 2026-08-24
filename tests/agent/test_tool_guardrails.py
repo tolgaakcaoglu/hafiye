@@ -149,6 +149,8 @@ def test_loop_cap_zero_disables_and_junk_falls_back():
     assert LoopCapConfig.from_mapping({"max_web_searches": 0}).max_web_searches == 0
     assert LoopCapConfig.from_mapping({"max_web_searches": -5}).max_web_searches == 50
     assert LoopCapConfig.from_mapping({"max_subagents": "nope"}).max_subagents == 50
+    assert LoopCapConfig.from_mapping({"max_actions": 0}).max_actions == 0
+    assert LoopCapConfig.from_mapping({"max_actions": -1}).max_actions == 200
 
 
 def test_web_search_cap_blocks_after_limit_regardless_of_hard_stop():
@@ -168,6 +170,26 @@ def test_web_search_cap_blocks_after_limit_regardless_of_hard_stop():
     assert decision.code == "loop_web_search_cap"
     assert decision.should_halt is True
 
+
+def test_task_action_budget_blocks_after_limit_and_resets_per_turn():
+    controller = ToolCallGuardrailController(
+        ToolCallGuardrailConfig(
+            loop_caps=LoopCapConfig(
+                max_actions=2,
+                max_web_searches=0,
+                max_subagents=0,
+            )
+        )
+    )
+    assert controller.before_call("read_file", {"path": "one"}).action == "allow"
+    assert controller.before_call("terminal", {"command": "true"}).action == "allow"
+    decision = controller.before_call("write_file", {"path": "three"})
+    assert decision.action == "block"
+    assert decision.code == "task_action_budget"
+    assert decision.count == 2
+
+    controller.reset_for_turn()
+    assert controller.before_call("read_file", {"path": "new-turn"}).action == "allow"
 
 
 

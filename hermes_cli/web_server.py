@@ -7383,6 +7383,21 @@ async def get_local_runtime_server_health():
     return await asyncio.to_thread(_local_runtime_call, lambda manager: manager.health())
 
 
+@app.post("/api/local-runtime/server/recover")
+async def recover_local_runtime_server(body: dict[str, Any] | None = None):
+    body = body or {}
+    try:
+        attempts = int(body.get("attempts", 1))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="attempts must be an integer") from exc
+    if not 1 <= attempts <= 3:
+        raise HTTPException(status_code=422, detail="attempts must be between 1 and 3")
+    return await asyncio.to_thread(
+        _local_runtime_call,
+        lambda manager: manager.recover_server(max_attempts=attempts),
+    )
+
+
 @app.post("/api/local-runtime/server/start")
 async def start_local_runtime_server(body: dict[str, Any]):
     model_id = str(body.get("model_id", "")).strip()

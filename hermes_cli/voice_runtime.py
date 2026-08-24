@@ -177,6 +177,12 @@ def _failure(label: str, result: subprocess.CompletedProcess[str]) -> VoiceRunti
     details = (result.stderr or result.stdout or "").strip()
     if len(details) > 4000:
         details = details[-4000:]
+    try:
+        from agent.redact import redact_sensitive_text
+
+        details = redact_sensitive_text(details, force=True)
+    except Exception:
+        pass
     return VoiceRuntimeError(f"{label} failed (exit {result.returncode}): {details or 'no output'}")
 
 
@@ -420,44 +426,61 @@ def run_whisper_stt(
 
     environment = detect_compute_environment()
     candidates = _whisper_candidates(backend, environment=environment, compiled=compiled)
+    available_indices = [
+        index
+        for index, candidate in enumerate(candidates)
+        if Path(str(binaries.get(candidate, ""))).is_file()
+        and os.access(str(binaries.get(candidate, "")), os.X_OK)
+    ]
     failures: list[str] = []
-    for candidate in candidates:
+    for candidate_index, candidate in enumerate(candidates):
         binary = Path(str(binaries.get(candidate, "")))
         if not binary.is_file() or not os.access(str(binary), os.X_OK):
             failures.append(f"{candidate}: binary missing")
             continue
-        target = destination / "transcript"
-        target.with_suffix(".txt").unlink(missing_ok=True)
-        command = [
-            str(binary),
-            "-m",
-            str(model_path),
-            "-f",
-            str(source),
-            "-otxt",
-            "-of",
-            str(target),
-            "-l",
-            str(language or DEFAULT_WHISPER_LANGUAGE),
-            "-np",
-        ]
-        if candidate == "CPU":
-            command.append("-ng")
-        result = _run(command, timeout=600)
-        transcript_path = target.with_suffix(".txt")
-        if result.returncode == 0 and transcript_path.is_file():
-            transcript = transcript_path.read_text(encoding="utf-8", errors="replace").strip()
-            return {
-                "success": True,
-                "provider": "local_command",
-                "backend": candidate,
-                "model": model,
-                "language": language or DEFAULT_WHISPER_LANGUAGE,
-                "transcript": transcript,
-                "output_path": str(transcript_path),
-            }
-        detail = (result.stderr or result.stdout or "no transcript output").strip()
-        failures.append(f"{candidate}: {detail[-800:]}")
+        # Backend fallback is the first recovery path.  If CPU is the final
+        # available backend, retry it once for a transient process crash; no
+        # more than two subprocess attempts are ever made for one backend.
+        attempts = 2 if available_indices and candidate_index == available_indices[-1] else 1
+        for attempt in range(1, attempts + 1):
+            target = destination / "transcript"
+            target.with_suffix(".txt").unlink(missing_ok=True)
+            command = [
+                str(binary),
+                "-m",
+                str(model_path),
+                "-f",
+                str(source),
+                "-otxt",
+                "-of",
+                str(target),
+                "-l",
+                str(language or DEFAULT_WHISPER_LANGUAGE),
+                "-np",
+            ]
+            if candidate == "CPU":
+                command.append("-ng")
+            result = _run(command, timeout=600)
+            transcript_path = target.with_suffix(".txt")
+            if result.returncode == 0 and transcript_path.is_file():
+                transcript = transcript_path.read_text(encoding="utf-8", errors="replace").strip()
+                return {
+                    "success": True,
+                    "provider": "local_command",
+                    "backend": candidate,
+                    "model": model,
+                    "language": language or DEFAULT_WHISPER_LANGUAGE,
+                    "transcript": transcript,
+                    "output_path": str(transcript_path),
+                }
+            detail = (result.stderr or result.stdout or "no transcript output").strip()
+            try:
+                from agent.redact import redact_sensitive_text
+
+                detail = redact_sensitive_text(detail, force=True)
+            except Exception:
+                pass
+            failures.append(f"{candidate} attempt {attempt}: {detail[-800:]}")
 
     raise VoiceRuntimeError("whisper.cpp STT failed across backends: " + " | ".join(failures))
 
@@ -620,24 +643,40 @@ def synthesize_piper(
     if piper_config.get("normalize_audio") is False:
         command.append("--no-normalize")
     command.extend(["--", str(text)])
-    result = _run(command, timeout=600)
-    if result.returncode != 0:
-        raise _failure("Piper synthesis", result)
-    if not wav_path.is_file() or wav_path.stat().st_size == 0:
-        raise VoiceRuntimeError(f"Piper completed without audio output: {wav_path}")
-
-    if wav_path != destination:
-        ffmpeg = shutil.which("ffmpeg")
-        if not ffmpeg:
-            raise VoiceRuntimeError("ffmpeg is required to convert Piper WAV output")
-        converted = _run(
-            [ffmpeg, "-y", "-loglevel", "error", "-i", str(wav_path), str(destination)],
-            timeout=120,
-        )
-        if converted.returncode != 0:
-            raise _failure("Piper audio conversion", converted)
+    failures: list[str] = []
+    for attempt in range(1, 3):
+        # A crashed Piper process can leave a zero-byte or partial WAV behind;
+        # remove it before each bounded retry so stale output is never reported
+        # as a successful synthesis.
         wav_path.unlink(missing_ok=True)
-    return str(destination)
+        if wav_path != destination:
+            destination.unlink(missing_ok=True)
+        result = _run(command, timeout=600)
+        if result.returncode != 0:
+            failures.append(str(_failure("Piper synthesis", result)))
+            continue
+        if not wav_path.is_file() or wav_path.stat().st_size == 0:
+            failures.append(f"Piper attempt {attempt} completed without audio output")
+            continue
+
+        if wav_path != destination:
+            ffmpeg = shutil.which("ffmpeg")
+            if not ffmpeg:
+                raise VoiceRuntimeError("ffmpeg is required to convert Piper WAV output")
+            converted = _run(
+                [ffmpeg, "-y", "-loglevel", "error", "-i", str(wav_path), str(destination)],
+                timeout=120,
+            )
+            if converted.returncode != 0:
+                failures.append(str(_failure("Piper audio conversion", converted)))
+                continue
+            wav_path.unlink(missing_ok=True)
+        return str(destination)
+
+    raise VoiceRuntimeError(
+        "Piper synthesis recovery exhausted after 2 bounded attempts: "
+        + " | ".join(failures)
+    )
 
 
 def voice_runtime_doctor(paths: VoiceRuntimePaths | None = None) -> dict[str, Any]:

@@ -30,6 +30,13 @@ DEFAULT_CONFIG = {
             "remote": {"provider": "", "model": ""},
             "gemini": {"provider": "gemini", "model": ""},
         },
+        # P19 retention controls. Runtime recovery and safety boundaries remain
+        # code-owned; these values only bound maintenance work and diagnostics.
+        "hardening": {
+            "audit_retention_days": 30,
+            "audit_max_total_size_mb": 100,
+            "min_free_space_mb": 1024,
+        },
     },
     # SQLite journal mode used by every Hermes database opener. WAL is the
     # normal default; set DELETE for weak-fsync/shared filesystems where WAL is
@@ -754,8 +761,9 @@ DEFAULT_CONFIG = {
         # is never starved. They are always-on and fire regardless of the
         # warn/hard-stop thresholds above. A single turn issuing dozens of web
         # searches or spawning dozens of subagents is already pathological, so
-        # the defaults are low. Set either to 0 to disable that cap (unlimited).
+        # the defaults are low. Set any value to 0 to disable that cap (unlimited).
         "loop_caps": {
+            "max_actions": 200,        # max tool actions per task/turn (0 = unlimited)
             "max_web_searches": 50,   # max web_search calls per turn (0 = unlimited)
             "max_subagents": 50,      # max subagents spawned per turn (0 = unlimited)
         },

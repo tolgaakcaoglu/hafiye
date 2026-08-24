@@ -69,6 +69,17 @@ def build_runtime_parser(subparsers, *, cmd_runtime: Callable) -> None:
     restart.add_argument("--gpu-layers", type=int)
     restart.add_argument("--port", type=int, default=DEFAULT_PORT)
     server_commands.add_parser("health", help="Show server health, active model, and log tail")
+    recover = server_commands.add_parser(
+        "recover",
+        help="Recover a crashed/unhealthy llama-server from its saved state",
+    )
+    recover.add_argument(
+        "--attempts",
+        type=int,
+        default=1,
+        choices=range(1, 4),
+        help="Bounded recovery attempts (1-3; default: 1)",
+    )
     server_commands.add_parser("unload", help="Stop llama-server and unload the active model")
 
     parser.set_defaults(func=cmd_runtime)

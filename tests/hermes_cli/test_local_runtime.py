@@ -104,3 +104,50 @@ def test_server_health_is_safe_when_not_running(tmp_path: Path):
     assert health["running"] is False
     assert health["ready"] is False
     assert health["endpoint"] == "http://127.0.0.1:11435/v1"
+
+
+def test_server_recovery_reuses_saved_state_and_is_bounded(tmp_path: Path, monkeypatch):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    manager._write_server_state(
+        {
+            "pid": 999999,
+            "model_id": "saved-model",
+            "requested_backend": "CUDA",
+            "context_size": 8192,
+            "gpu_layers": 99,
+            "port": 12345,
+        }
+    )
+    calls = []
+
+    def fake_start(model_id, **kwargs):
+        calls.append((model_id, kwargs))
+        return {"running": True, "ready": True, "model_id": model_id}
+
+    monkeypatch.setattr(manager, "start_server", fake_start)
+
+    result = manager.recover_server(max_attempts=2)
+
+    assert result["ok"] is True
+    assert result["recovered"] is True
+    assert calls == [
+        (
+            "saved-model",
+            {
+                "backend": "CUDA",
+                "context_size": 8192,
+                "gpu_layers": 99,
+                "port": 12345,
+            },
+        )
+    ]
+
+
+def test_server_recovery_does_not_guess_when_state_is_missing(tmp_path: Path):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+
+    result = manager.recover_server()
+
+    assert result["ok"] is False
+    assert result["code"] == "runtime_recovery_state_missing"
+    assert result["attempts"] == []

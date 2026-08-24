@@ -77,3 +77,137 @@ def test_whisper_backend_fallback_order_uses_cuda_vulkan_cpu(monkeypatch):
         environment={"cuda_build_available": True},
         compiled=["CPU", "CUDA", "VULKAN"],
     ) == ["CUDA", "VULKAN", "CPU"]
+
+
+def test_whisper_retries_final_backend_after_process_crash(tmp_path: Path, monkeypatch):
+    paths = voice_runtime.VoiceRuntimePaths.from_roots(tmp_path / "data", tmp_path / "state")
+    source = tmp_path / "input.wav"
+    source.write_bytes(b"wav")
+    model = paths.whisper_models / "ggml-base.bin"
+    binary = paths.whisper_root / "build-cpu" / "bin" / "whisper-cli"
+    model.parent.mkdir(parents=True)
+    binary.parent.mkdir(parents=True)
+    model.write_bytes(b"model")
+    binary.write_bytes(b"#!/bin/sh\n")
+    binary.chmod(0o700)
+    paths.whisper_manifest.parent.mkdir(parents=True, exist_ok=True)
+    paths.whisper_manifest.write_text(
+        json.dumps(
+            {
+                "source_commit": "abc123",
+                "compiled_backends": ["CPU"],
+                "binaries": {"CPU": str(binary)},
+                "models": {"base": str(model)},
+            }
+        )
+    )
+    attempts = []
+
+    def fake_run(command, **kwargs):
+        attempts.append(command)
+        if len(attempts) == 2:
+            output_base = Path(command[command.index("-of") + 1])
+            output_base.with_suffix(".txt").write_text("merhaba dünya\n")
+            return voice_runtime.subprocess.CompletedProcess(command, 0, "", "")
+        return voice_runtime.subprocess.CompletedProcess(command, 139, "", "segmentation fault")
+
+    monkeypatch.setattr(voice_runtime, "_run", fake_run)
+    monkeypatch.setattr(
+        voice_runtime,
+        "detect_compute_environment",
+        lambda: {"cuda_build_available": False, "vulkan_runtime_available": False},
+    )
+
+    result = voice_runtime.run_whisper_stt(
+        source,
+        tmp_path / "transcripts",
+        paths=paths,
+    )
+
+    assert result["success"] is True
+    assert result["backend"] == "CPU"
+    assert len(attempts) == 2
+
+
+def test_whisper_retries_last_available_backend_when_later_binary_is_missing(
+    tmp_path: Path, monkeypatch
+):
+    paths = voice_runtime.VoiceRuntimePaths.from_roots(tmp_path / "data", tmp_path / "state")
+    source = tmp_path / "input.wav"
+    source.write_bytes(b"wav")
+    model = paths.whisper_models / "ggml-base.bin"
+    binary = paths.whisper_root / "build-vulkan" / "bin" / "whisper-cli"
+    model.parent.mkdir(parents=True)
+    binary.parent.mkdir(parents=True)
+    model.write_bytes(b"model")
+    binary.write_bytes(b"#!/bin/sh\n")
+    binary.chmod(0o700)
+    paths.whisper_manifest.parent.mkdir(parents=True, exist_ok=True)
+    paths.whisper_manifest.write_text(
+        json.dumps(
+            {
+                "source_commit": "abc123",
+                "compiled_backends": ["VULKAN", "CPU"],
+                "binaries": {"VULKAN": str(binary)},
+                "models": {"base": str(model)},
+            }
+        )
+    )
+    attempts = []
+
+    def fake_run(command, **kwargs):
+        attempts.append(command)
+        if len(attempts) == 2:
+            output_base = Path(command[command.index("-of") + 1])
+            output_base.with_suffix(".txt").write_text("merhaba dünya\n")
+            return voice_runtime.subprocess.CompletedProcess(command, 0, "", "")
+        return voice_runtime.subprocess.CompletedProcess(command, 139, "", "segmentation fault")
+
+    monkeypatch.setattr(voice_runtime, "_run", fake_run)
+    monkeypatch.setattr(
+        voice_runtime,
+        "detect_compute_environment",
+        lambda: {"cuda_build_available": False, "vulkan_runtime_available": True},
+    )
+
+    result = voice_runtime.run_whisper_stt(
+        source,
+        tmp_path / "transcripts",
+        backend="AUTO",
+        paths=paths,
+    )
+
+    assert result["success"] is True
+    assert result["backend"] == "VULKAN"
+    assert len(attempts) == 2
+
+
+def test_piper_retries_a_crashed_process_once(tmp_path: Path, monkeypatch):
+    paths = voice_runtime.VoiceRuntimePaths.from_roots(tmp_path / "data", tmp_path / "state")
+    paths.piper_python.parent.mkdir(parents=True)
+    paths.piper_python.write_bytes(b"#!/bin/sh\n")
+    paths.piper_python.chmod(0o700)
+    monkeypatch.setattr(voice_runtime, "piper_runtime_ready", lambda **kwargs: True)
+    attempts = []
+
+    def fake_run(command, **kwargs):
+        attempts.append(command)
+        if len(attempts) == 2:
+            output = Path(command[command.index("-f") + 1])
+            output.write_bytes(b"RIFF-valid-enough")
+            return voice_runtime.subprocess.CompletedProcess(command, 0, "", "")
+        return voice_runtime.subprocess.CompletedProcess(command, 139, "", "piper crashed")
+
+    monkeypatch.setattr(voice_runtime, "_run", fake_run)
+    output = tmp_path / "speech.wav"
+
+    result = voice_runtime.synthesize_piper(
+        "Merhaba",
+        output,
+        {"piper": {"voice": "tr_TR-dfki-medium"}},
+        paths=paths,
+    )
+
+    assert result == str(output)
+    assert output.read_bytes() == b"RIFF-valid-enough"
+    assert len(attempts) == 2

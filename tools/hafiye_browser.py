@@ -166,6 +166,23 @@ def _decode_result(value: Any) -> Any:
         return value
 
 
+def _redacted_result(value: Any) -> Any:
+    """Redact secrets from native-desktop diagnostics before model exposure."""
+    try:
+        from agent.redact import redact_sensitive_text
+
+        if isinstance(value, str):
+            return redact_sensitive_text(value, force=True)
+        serialized = json.dumps(value, ensure_ascii=False)
+        redacted = redact_sensitive_text(serialized, force=True)
+        try:
+            return json.loads(redacted)
+        except (TypeError, ValueError):
+            return redacted
+    except Exception:
+        return value
+
+
 def _result_failed(value: Any) -> bool:
     payload = _decode_result(value)
     if not isinstance(payload, dict):
@@ -193,7 +210,13 @@ def _call_managed_tool(
 
             discover_mcp_tools()
         except Exception as exc:
-            return tool_error(f"Managed computer-use-linux discovery failed: {exc}")
+            try:
+                from agent.redact import redact_sensitive_text
+
+                detail = redact_sensitive_text(str(exc), force=True)
+            except Exception:
+                detail = "discovery failed"
+            return tool_error(f"Managed computer-use-linux discovery failed: {detail[-400:]}")
     if registry.get_entry(name) is None:
         return tool_error(
             "The managed computer-use-linux MCP tools are not registered. "
@@ -258,14 +281,27 @@ def _run_steps(
             session_id=session_id,
             user_task=user_task,
         )
-        results.append({"tool": tool, "result": _decode_result(result)})
+        results.append({"tool": tool, "result": _redacted_result(_decode_result(result))})
         if _result_failed(result):
+            try:
+                from hafiye_computer_use import classify_computer_use_failure
+
+                failure = classify_computer_use_failure(result)
+            except Exception:
+                failure = {
+                    "ok": False,
+                    "code": "desktop_action_failed",
+                    "retryable": True,
+                    "blocker": False,
+                    "detail": "computer-use-linux action failed",
+                }
             return json.dumps(
                 {
                     "success": False,
                     "route": "native",
                     "action": action,
                     "steps": results,
+                    "failure": failure,
                 },
                 ensure_ascii=False,
             )

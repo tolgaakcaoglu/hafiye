@@ -270,9 +270,22 @@ def _process_start_marker(pid: int) -> str | None:
 
 def _tail(path: Path, limit: int = 80) -> list[str]:
     try:
-        return path.read_text(encoding="utf-8", errors="replace").splitlines()[-limit:]
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()[-limit:]
+        return [_redact_runtime_diagnostic(line, limit=1200) for line in lines]
     except OSError:
         return []
+
+
+def _redact_runtime_diagnostic(value: Any, *, limit: int = 800) -> str:
+    """Return bounded recovery diagnostics without leaking credentials."""
+    text = str(value or "").strip()
+    try:
+        from agent.redact import redact_sensitive_text
+
+        text = redact_sensitive_text(text, force=True)
+    except Exception:
+        pass
+    return text[-limit:] if text else "no diagnostic"
 
 
 class LocalRuntimeManager:
@@ -697,6 +710,129 @@ class LocalRuntimeManager:
         self._write_server_state({})
         return {"ok": True, "stopped": True}
 
+    def recover_server(self, *, max_attempts: int = 1) -> dict[str, Any]:
+        """Recover a crashed/unhealthy server from its last safe state.
+
+        Recovery is deliberately explicit and bounded.  It never guesses a
+        model, backend, or port when the persisted state is absent, and it
+        never recursively retries through ``start_server``.  A failed startup
+        already clears the live server state, so a later invocation must be a
+        new, observable recovery request rather than an unbounded supervisor.
+        """
+        try:
+            attempts_limit = int(max_attempts)
+        except (TypeError, ValueError) as exc:
+            raise LocalRuntimeError("max_attempts must be an integer") from exc
+        if not 1 <= attempts_limit <= 3:
+            raise LocalRuntimeError("max_attempts must be between 1 and 3")
+
+        try:
+            state = self._read_server_state()
+        except LocalRuntimeError as exc:
+            return {
+                "ok": False,
+                "recovered": False,
+                "code": "runtime_state_invalid",
+                "blockers": [_redact_runtime_diagnostic(exc)],
+                "attempts": [],
+            }
+
+        model_id = str(state.get("model_id", "") or "").strip()
+        if not model_id:
+            return {
+                "ok": False,
+                "recovered": False,
+                "code": "runtime_recovery_state_missing",
+                "blockers": [
+                    "No crashed llama-server state is available; choose a model and start the server first."
+                ],
+                "attempts": [],
+            }
+
+        if self._server_is_alive(state):
+            current = self.health()
+            if current.get("ready"):
+                return {
+                    "ok": True,
+                    "recovered": False,
+                    "code": "runtime_already_ready",
+                    "health": current,
+                    "attempts": [],
+                }
+            # A live but unhealthy process must be stopped before start_server;
+            # otherwise its same-model fast path would return the unhealthy
+            # status without replacing the process.
+            self.stop_server()
+
+        requested_backend = str(state.get("requested_backend", "AUTO") or "AUTO")
+        try:
+            requested_backend = normalize_backend(requested_backend)
+        except LocalRuntimeError:
+            requested_backend = "AUTO"
+
+        def _state_int(name: str, fallback: int) -> int:
+            try:
+                value = int(state.get(name, fallback))
+            except (TypeError, ValueError):
+                return fallback
+            return value
+
+        context_size = max(1, _state_int("context_size", DEFAULT_CONTEXT_SIZE))
+        port = _state_int("port", DEFAULT_PORT)
+        if not 1024 <= port <= 65535:
+            port = DEFAULT_PORT
+        raw_gpu_layers = state.get("gpu_layers")
+        try:
+            gpu_layers = int(raw_gpu_layers) if raw_gpu_layers is not None else None
+        except (TypeError, ValueError):
+            gpu_layers = None
+
+        attempts: list[dict[str, Any]] = []
+        for attempt in range(1, attempts_limit + 1):
+            try:
+                health = self.start_server(
+                    model_id,
+                    backend=requested_backend,
+                    context_size=context_size,
+                    gpu_layers=gpu_layers,
+                    port=port,
+                )
+            except LocalRuntimeError as exc:
+                attempts.append(
+                    {
+                        "attempt": attempt,
+                        "ok": False,
+                        "error": _redact_runtime_diagnostic(exc),
+                    }
+                )
+                continue
+            if health.get("ready"):
+                return {
+                    "ok": True,
+                    "recovered": True,
+                    "code": "runtime_recovered",
+                    "health": health,
+                    "attempts": [*attempts, {"attempt": attempt, "ok": True}],
+                }
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "ok": False,
+                    "error": "llama-server started without becoming ready",
+                }
+            )
+
+        return {
+            "ok": False,
+            "recovered": False,
+            "code": "runtime_recovery_failed",
+            "model_id": model_id,
+            "attempts": attempts,
+            "blockers": [
+                "llama-server recovery exhausted its bounded attempts; inspect the local runtime log and choose a new recovery action."
+            ],
+        }
+
     def doctor(self) -> dict[str, Any]:
         environment = detect_compute_environment()
         version = self.version()
@@ -735,5 +871,6 @@ __all__ = [
     "choose_backend",
     "detect_compute_environment",
     "normalize_backend",
+    "_redact_runtime_diagnostic",
     "runtime_manager",
 ]

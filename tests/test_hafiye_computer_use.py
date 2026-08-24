@@ -98,3 +98,15 @@ def test_mcp_config_injects_managed_server_without_editing_user_config(monkeypat
         result = _load_mcp_config()
 
     assert result["hafiye-computer-use-linux"] == managed
+
+
+def test_computer_use_failure_contract_classifies_readiness_and_redacts():
+    result = computer_use.classify_computer_use_failure(
+        json.dumps({"error": "AT-SPI readiness failed for sk-hafiye-secret-012345678901234567890"})
+    )
+
+    assert result["ok"] is False
+    assert result["code"] == "accessibility_unavailable"
+    assert result["retryable"] is False
+    assert result["blocker"] is True
+    assert "sk-hafiye-secret" not in result["detail"]
