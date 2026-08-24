@@ -621,6 +621,9 @@ E2E Suite — is now the first incomplete phase.
 - [x] Add and test the narrowly scoped managed Qwen2 YaRN/context-metadata
       compatibility path; verify the live CUDA runtime reports 65,536 context
       and that direct AIAgent plus packaged Desktop terminal calls pass.
+- [x] Freshly recheck project alias/session persistence, OpenHands readiness,
+      root-broker UID, and voice-runtime readiness; retain the exact voice and
+      fixture delegation sequences as separate open acceptance work.
 - [ ] Complete the real 23.8 file organize-and-verify replay; the current
       Qwen2 validation fixture did not complete the multi-step tool sequence
       (KI-041).
