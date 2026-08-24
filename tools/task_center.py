@@ -32,7 +32,16 @@ TASK_STATES = (
     "CANCELLED",
 )
 _TERMINAL_STATES = {"COMPLETED", "FAILED", "CANCELLED"}
-_RECOVERABLE_ACTIVE_STATES = set(TASK_STATES) - _TERMINAL_STATES
+# QUEUED tasks have not acquired a worker yet and may legitimately survive a
+# gateway reconnect. Only states that imply an in-flight worker are marked
+# interrupted when a fresh gateway process opens the store.
+_RECOVERABLE_ACTIVE_STATES = {
+    "PLANNING",
+    "RUNNING",
+    "WAITING",
+    "PAUSED",
+    "CANCELLING",
+}
 _MAX_STEP_LENGTH = 1000
 _MAX_SUMMARY_LENGTH = 12000
 _MAX_ERROR_LENGTH = 4000
@@ -62,9 +71,9 @@ class TaskCenterRegistry:
 
     The default database is under Hafiye's XDG state root. Tests and isolated
     callers can pass ``":memory:"`` or an explicit path. A fresh registry
-    marks non-terminal records as interrupted when they came from a previous
+    marks in-flight records as interrupted when they came from a previous
     process: an old worker cannot be reported as still running after a gateway
-    restart.
+    restart, while unstarted QUEUED work remains queued.
     """
 
     def __init__(self, db_path: str | Path | None = None) -> None:
