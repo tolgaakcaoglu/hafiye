@@ -9,8 +9,8 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: a87eaaba7373a2c23fa73b7ef498b64d67c989f5
-  (P21 First-run Onboarding source/test commit)
+- Current Hafiye source HEAD: e031162fd
+  (P22 CLI source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -65,7 +65,8 @@ validated against the P14 acceptance criteria.
 P15 — OpenHands coding delegate: complete. The managed official source/runtime,
 real coding delegation, gateway Task Center progress bridge, Desktop Task
 Center panel, and the master fixture E2E all pass. P16, P17, P18, P19, and P20
-are complete; P21 is also complete and P22 is now the first incomplete phase.
+are complete; P21 and P22 are also complete, and P23 is now the first
+incomplete phase.
 
 P16 — Task Center: complete. The durable generic task record, restart/reconnect
 behavior, complete required Desktop fields/actions, and real Electron
@@ -91,7 +92,12 @@ doctor pass.
 
 P21 — First-run onboarding: complete. The implementation, backend boundary,
 packaged runtime validation, and complete 20-step real packaged Electron GUI
-replay are accepted. P22 is now the first incomplete phase.
+replay are accepted.
+
+P22 — CLI: complete. The product command vocabulary, shared backend adapters,
+real service/model/computer checks, explicit Gemini one-shot, and accepted
+upstream-baseline comparison are recorded below. P23 — Final E2E Suite — is
+now the first incomplete phase.
 
 ## Verified working
 
@@ -117,6 +123,18 @@ replay are accepted. P22 is now the first incomplete phase.
 - The real user-scoped `hafiye-gateway.service` is enabled and active on
   `127.0.0.1:9120`; its owner-only token and descriptor are under
   `~/.local/state/hafiye/gateway/`.
+- The P22 product CLI is available through `.venv/bin/hafiye`: `ask`, service
+  lifecycle (`start|stop|restart`), GGUF model listing/load/unload, provider
+  listing, routing/privacy, Task Center, and computer-use doctor all use the
+  existing Hafiye runtime/configuration boundaries.
+- A real `hafiye restart` left `hafiye-gateway.service` active and enabled; a
+  real model unload/load cycle restored the Qwen GGUF server with
+  `selected_backend=CUDA` and `ready=true`.
+- A real explicit `hafiye ask --safe-mode --provider gemini
+  --model gemini-flash-lite-latest ...` returned the marker
+  `P22_GEMINI_CLI_OK`. The local small-Qwen one-shot remains limited by KI-014
+  because that fixture reports a 4,096-token runtime context below Hermes'
+  64K minimum agent context.
 - Desktop boot authenticated to the persistent backend, and closing the real
   Electron process left the service active with `NRestarts=0` and the endpoint
   reachable.
@@ -1474,4 +1492,71 @@ separate:
 
 P21 acceptance passed. The final live doctor returned `ok=true`,
 `blockers=[]`, `computer_ready=true`, `local_server_ready=true`, `voice_ok=true`,
-and `autostart_enabled=true`. P22 — CLI — is now the first incomplete phase.
+and `autostart_enabled=true`.
+
+## P22 execution status — complete
+
+The P22 source/test commit is `e031162fd`. The commit identities remain
+separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `e031162fd`.
+
+### Implemented and verified
+
+- Added `hermes_cli/hafiye_cli.py` as a thin product vocabulary adapter. It
+  reuses the existing one-shot agent, persistent gateway service, local
+  runtime, provider catalog, Hafiye route/privacy policy, durable Task Center,
+  and computer-use-linux doctor; it does not add a second backend or config.
+- Exposed the P22 product commands and nested actions: `ask`,
+  `start|stop|restart`, `models`, `model load|unload`, `providers`, `routing`,
+  `privacy`, `tasks`, `task show|cancel`, and `computer doctor`. Existing
+  `status`, `doctor`, `voice`, `root`, `memory`, `skills`, `mcp`, and `logs`
+  surfaces remain available. `projects` and `automation` are aliases for the
+  existing project and scheduler implementations.
+- Preserved the normal gateway route-slot authority while allowing explicit
+  one-shot CLI provider/model arguments to override an onboarding-populated
+  default slot. The explicit path is covered by a policy regression test.
+
+### P22 test and real-host record
+
+- `.venv/bin/pytest -q tests/hermes_cli/test_hafiye_cli.py tests/test_hafiye_policy.py tests/gateway/test_hafiye_routing.py tests/hermes_cli/test_cron_parser_builder.py tests/hermes_cli/test_persistent_gateway.py tests/hermes_cli/test_projects_cli.py` — 32 passed, 1 warning.
+- `.venv/bin/ruff check` on all changed P22 Python source/tests — passed.
+- `.venv/bin/python -m py_compile` on all changed P22 Python source/tests —
+  passed; `git diff --check` — passed.
+- `.venv/bin/hafiye --help`, nested command help, parser smoke, and read-only
+  `models/providers/routing/privacy/tasks/computer/projects/automation/root`
+  commands — passed. Computer doctor returned all four required readiness
+  booleans true and `blockers=[]`.
+- `.venv/bin/hafiye restart` followed by `systemctl --user is-active` and
+  `is-enabled hafiye-gateway.service` — active and enabled.
+- `.venv/bin/hafiye model unload --json` — stopped the managed server;
+  `.venv/bin/hafiye model load qwen2.5-0.5b-instruct-q4 --backend AUTO --json`
+  — `running=true`, `ready=true`, `selected_backend=CUDA`.
+- `timeout 120 .venv/bin/hafiye ask --safe-mode --model
+  gemini-flash-lite-latest --provider gemini 'Reply with exactly
+  P22_GEMINI_CLI_OK and nothing else.'` — exit 0 and exact marker returned.
+- `.venv/bin/hafiye ask --model qwen2.5-0.5b-instruct-q4 --provider custom
+  'Reply with exactly P22_CLI_OK'` — rejected by the existing Hermes 64K
+  minimum against the small fixture's 4,096-token context; recorded under
+  KI-014 and not treated as a P22 product regression.
+- Exact five-ID upstream comparison after P22 — `3 failed, 2 passed`; IDs 2,
+  3, and 5 failed exactly as in the accepted baseline, while IDs 1 and 4
+  passed. No new or different failure was observed.
+
+### Exact P22 baseline command
+
+```bash
+PATH="$PWD/.venv/bin:$PATH" .venv/bin/pytest -q \
+  tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip \
+  tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries \
+  'tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]' \
+  tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning \
+  tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
+```
+
+Result: `3 failed, 2 passed`; this is the unchanged
+`ACCEPTED_UPSTREAM_BASELINE`, not a P22 blocker. P23 — Final E2E Suite — is
+now the first incomplete phase; its required real-machine checks are not yet
+claimed as passed.

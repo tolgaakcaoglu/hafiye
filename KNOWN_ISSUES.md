@@ -193,12 +193,17 @@ silently treated as passing.
 
 ## KI-014 — Small validation GGUFs have a lower trained context window
 
-- Status: TEST-FIXTURE LIMITATION; not a runtime or P4 blocker.
+- Status: TEST-FIXTURE LIMITATION; not a runtime, P4, or P22 blocker.
 - The real Gemma and Qwen validation files report a trained context limit of
   32,768 tokens, while Hermes' default local-agent configuration can request a
   larger context. The CUDA endpoint and Hermes one-shot were verified by using
   an explicit compatible server context and disabling auxiliary compression for
   the small Qwen smoke model.
+- The real P22 `hafiye ask` attempt against the onboarding-selected Qwen
+  fixture was rejected because the running fixture advertised a 4,096-token
+  context below Hermes' 64K minimum agent context. This is the same fixture
+  limitation, not a new CLI/runtime regression. The explicit Gemini
+  `hafiye ask` path returned `P22_GEMINI_CLI_OK`.
 - Production model entries must advertise a context window compatible with the
   requested Hafiye agent configuration. This is a model-selection/configuration
   concern, not a reason to weaken the managed runtime contract.

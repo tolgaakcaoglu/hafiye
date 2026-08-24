@@ -386,4 +386,35 @@ baseline merge remain `f293e7206b4ddd66042329442c6afebc19a8808d` and
 full packaged Electron replay reached all 20 steps and completed the wizard.
 The temporary acceptance gate was removed afterward; the normal service and
 CUDA local server were restored, and the authenticated final doctor remained
-green. P22 — CLI — is now the first incomplete phase.
+green. P22 — CLI — followed and is complete; P23 is now the first incomplete
+phase.
+
+## P22 acceptance — complete
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P22-PY-01 | Product CLI and policy regression matrix | `.venv/bin/pytest -q tests/hermes_cli/test_hafiye_cli.py tests/test_hafiye_policy.py tests/gateway/test_hafiye_routing.py tests/hermes_cli/test_cron_parser_builder.py tests/hermes_cli/test_persistent_gateway.py tests/hermes_cli/test_projects_cli.py` | 32 passed, 1 warning | PASS |
+| P22-LINT-01 | P22 Python quality and patch hygiene | `.venv/bin/ruff check` on changed P22 files; `.venv/bin/python -m py_compile` on changed P22 files; `git diff --check` | All passed | PASS |
+| P22-CLI-01 | Product command parser/help surface | `.venv/bin/hafiye --help`, nested help, parser smoke for `ask`, service lifecycle, models/model, providers, routing/privacy, tasks/task, computer, and existing `projects`/`automation` aliases | All required commands parsed and help rendered | PASS |
+| P22-REAL-01 | Persistent Hafiye service | `.venv/bin/hafiye restart`; `systemctl --user is-active/is-enabled hafiye-gateway.service` | Restart returned 0; service active and enabled | PASS |
+| P22-REAL-02 | Managed GGUF lifecycle and compute selection | `.venv/bin/hafiye model unload --json`; `.venv/bin/hafiye model load qwen2.5-0.5b-instruct-q4 --backend AUTO --json` | Unload succeeded; reload returned `running=true`, `ready=true`, `selected_backend=CUDA` | PASS |
+| P22-REAL-03 | Read-only product surfaces | `.venv/bin/hafiye models/providers/routing/privacy/tasks/computer --json`; `projects list`; `automation list`; `root status` | All returned successfully; computer doctor required readiness fields true and `blockers=[]` | PASS |
+| P22-REAL-04 | Explicit Gemini product one-shot | `timeout 120 .venv/bin/hafiye ask --safe-mode --model gemini-flash-lite-latest --provider gemini 'Reply with exactly P22_GEMINI_CLI_OK and nothing else.'` | Exit 0; exact `P22_GEMINI_CLI_OK` marker returned | PASS |
+| P22-REAL-05 | Small local fixture one-shot diagnostic | `.venv/bin/hafiye ask --model qwen2.5-0.5b-instruct-q4 --provider custom 'Reply with exactly P22_CLI_OK'` | Hermes rejected the 4,096-token fixture context below its 64K minimum; tracked as KI-014, while the real CUDA endpoint/runtime remains healthy | WARNING / KNOWN ISSUE |
+| P22-BE-01 | Exact five upstream regression comparison | The exact five-ID command below, after P22 source changes | `3 failed, 2 passed`; only accepted historical IDs 2, 3, and 5 failed; IDs 1 and 4 passed | ACCEPTED BASELINE UNCHANGED |
+| P22-ACCEPTANCE | Master P22 closure | CLI vocabulary, shared backend/config boundaries, real service/model/computer checks, Gemini one-shot, and baseline comparison | All P22 evidence recorded; P23 is next | PASS |
+
+### P22 exact baseline command
+
+```bash
+PATH="$PWD/.venv/bin:$PATH" .venv/bin/pytest -q \
+  tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip \
+  tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries \
+  'tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]' \
+  tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning \
+  tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
+```
+
+The five IDs are the permanent `ACCEPTED_UPSTREAM_BASELINE`; the same set is
+not counted as a Hafiye regression in later phases. A smaller set updates the
+comparison baseline, while any new or different failure requires investigation.

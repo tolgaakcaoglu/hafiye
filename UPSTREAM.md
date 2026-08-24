@@ -11,8 +11,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P21 First-run Onboarding source/test commit):
-  a87eaaba7373a2c23fa73b7ef498b64d67c989f5
+- Current Hafiye source HEAD (P22 CLI source/test commit): e031162fd
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -559,7 +558,27 @@ P0 computer-use acceptance requires:
 - The exact five-ID comparison after P21 remained `3 failed, 2 passed`; only
   accepted historical IDs 2, 3, and 5 failed. No Hermes upstream commit
   changed and no upstream history was rewritten. P21 is accepted; P22 — CLI —
-  is the next incomplete phase.
+  followed and is complete, with P23 as the next incomplete phase.
+
+## P22 CLI patch group
+
+- Hafiye source/test commit: `e031162fd`.
+- The product CLI vocabulary is a thin adapter over existing Hermes/Hafiye
+  boundaries: one-shot agent execution, the persistent user service, the
+  managed local GGUF runtime, provider catalog, route/privacy policy, durable
+  Task Center, and the pinned computer-use-linux doctor. No second backend,
+  configuration store, project registry, or scheduler was introduced.
+- `projects` and `automation` are aliases for the existing project and cron
+  implementations. Explicit one-shot provider/model flags are allowed to win
+  over an onboarding-populated default route slot; normal gateway route-slot
+  behavior remains unchanged.
+- Real P22 validation passed for the parser/help surface, service restart,
+  CUDA model unload/load, provider/routing/privacy/task/computer surfaces, and
+  the explicit Gemini one-shot. The computer-use doctor returned all four
+  required readiness fields true with an empty blocker list.
+- The exact five-ID comparison after P22 remained `3 failed, 2 passed`, with
+  only accepted historical IDs 2, 3, and 5 failing. No Hermes upstream commit
+  changed and no upstream history was rewritten.
 
 ## P17 Control Center patch group
 

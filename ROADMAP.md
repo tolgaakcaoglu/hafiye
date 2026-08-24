@@ -25,7 +25,7 @@ records execution status only.
 - [x] P19 Hardening
 - [x] P20 Packaging
 - [x] P21 First-run onboarding
-- [ ] P22 CLI
+- [x] P22 CLI
 - [ ] P23 Final E2E suite
 
 ## P11 execution status
@@ -571,5 +571,29 @@ The current exact five-ID comparison is `3 failed, 2 passed`, with only
 accepted historical IDs 2, 3, and 5 failing. The packaged Electron replay
 reached all 20 steps and completed the wizard. After the temporary acceptance
 gate was removed, the normal live service and CUDA local server were restored
-and the authenticated final doctor remained green. P22 — CLI — is now the first
-incomplete phase.
+and the authenticated final doctor remained green. P22 — CLI — followed and is
+complete; P23 is now the first incomplete phase.
+
+## P22 execution status — complete
+
+- [x] Expose the Hafiye product command vocabulary while retaining the
+      upstream Hermes CLI compatibility surface.
+- [x] Route `hafiye ask` through the existing one-shot agent path and keep
+      explicit provider/model selections effective even when onboarding has
+      populated the default route slot.
+- [x] Reuse the existing persistent gateway service, local GGUF runtime,
+      provider catalog, route/privacy policy, durable Task Center, and
+      computer-use-linux doctor boundaries.
+- [x] Add the product aliases `projects` and `automation` without creating
+      second project or scheduler implementations.
+- [x] Run targeted Python tests, lint/compile/whitespace checks, real CLI
+      parser/help checks, service/model lifecycle checks, computer-use doctor,
+      and real Gemini one-shot validation.
+- [x] Compare the exact five upstream baseline tests after the source change;
+      the accepted set remained unchanged and no new regression was found.
+
+P22 source/test commit: `e031162fd`. The exact five-ID comparison returned
+`3 failed, 2 passed`; only accepted historical IDs 2, 3, and 5 failed. The
+small local Qwen one-shot remains the documented KI-014 context-window test
+fixture limitation; the explicit Gemini `hafiye ask` path passed. P23 — Final
+E2E Suite — is now the first incomplete phase.

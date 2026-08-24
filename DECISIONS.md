@@ -537,3 +537,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   now returns `ok=true` with `blockers=[]`. No root service or passwordless sudo
   rule is involved. This records implementation detail only and does not
   override the master roadmap.
+
+## ADR-0033 — Keep the product CLI as adapters over existing Hafiye boundaries
+
+- Date: 2026-08-25
+- Decision: Implement the P22 `hafiye` command vocabulary as thin adapters over
+  the existing one-shot agent, persistent gateway service, local GGUF runtime,
+  provider catalog, Hafiye route/privacy policy, durable Task Center, and
+  computer-use-linux doctor. Preserve Hermes' existing CLI commands and use
+  `projects` and `automation` as aliases for the existing project and cron
+  implementations.
+- Reason: The master roadmap requires CLI and Desktop to share backend/business
+  logic. A second command-specific config, model registry, task store, or
+  scheduler would split state and violate that boundary.
+- Consequence: Normal gateway turns continue to treat configured route slots as
+  authoritative. Explicit one-shot CLI provider/model arguments use a narrowly
+  scoped policy override so a populated onboarding default cannot swallow an
+  explicit command-line selection. This records implementation detail only and
+  does not override `HAFIYE_MASTER_ROADMAP.md`.
