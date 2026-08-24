@@ -13,7 +13,7 @@ records execution status only.
 - [x] P7 Full host tools + execution policy
 - [x] P8 Hafiye root broker
 - [x] P9 Linux computer use
-- [ ] P10 Browser
+- [x] P10 Browser
 - [ ] P11 Local Turkish voice stack
 - [ ] P12 Custom Hafiye wake word
 - [ ] P13 Barge-in + emergency stop
@@ -284,5 +284,32 @@ and baseline merge commit are unchanged. The managed provider doctor reports
 all four required readiness booleans true with `blockers=[]`; real MCP
 discovery registered 18 tools; the real desktop E2E passed. Firefox's
 AT-SPI focus warning and VS Code's sparse accessibility tree are documented as
-KI-022 and KI-023 warnings, not P9 blockers. P10 — Browser is now the next
-incomplete phase.
+KI-022 and KI-023 warnings, not P9 blockers.
+
+## P10 execution status
+
+- [x] Reuse Hermes structured browser automation as Hafiye's structured lane;
+      keep the current Hermes backend selection behavior intact.
+- [x] Add the structured browser download operation using the current
+      official `agent-browser` command and absolute destination validation.
+- [x] Add an explicit native desktop-browser route through the managed
+      `computer-use-linux` MCP provider for an existing authenticated browser
+      session; do not create a second browser profile or cookie path.
+- [x] Preserve the existing browser extension-router boundary and Hafiye
+      `NORMAL`/`LOCAL_ONLY`/`OFFLINE` policy behavior for both routes.
+- [x] Test structured navigation, page extraction, and download on a real
+      local fixture.
+- [x] Test native operation on the real existing Firefox Wayland window,
+      including exact-window binding, navigation, focus/title readback, and
+      temporary-tab cleanup.
+- [x] Run the affected browser regression matrix, focused tests, lint,
+      compilation, and whitespace checks.
+
+P10 is complete. The source implementation is recorded in commit
+`5d2354095562d149ff54e58d664c1b042cf50c3e`. The structured path passed real
+navigation, extraction, and download; the native path passed through the
+managed `computer-use-linux` MCP tools against the existing Firefox Wayland
+window with `blockers=[]`. The browser regression matrix measured 504 passed
+and 7 deselected with no failure. KI-022 remains a measured Firefox AT-SPI
+warning only; there is no P10 blocker or new/different regression. P11 — Local
+Turkish voice stack is now the next incomplete phase.

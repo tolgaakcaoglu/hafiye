@@ -234,3 +234,23 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   cua-driver integration remains intact for its other supported platforms;
   this ADR does not override the master roadmap or change the Hermes upstream
   pin.
+
+## ADR-0017 — Keep structured and native browser control as explicit lanes
+
+- Date: 2026-08-24
+- Decision: Reuse Hermes' existing structured `browser_*` automation as
+  Hafiye's structured browser lane while preserving current Hermes backend
+  selection. Add `browser_download` for the official `agent-browser`
+  download operation, and add one explicit `browser_native`
+  adapter that delegates to the already-managed computer-use-linux MCP tools
+  for an existing normal desktop browser window.
+- Reason: P10 requires both structured automation and native control of a
+  user's already-authenticated browser session. A dedicated adapter keeps the
+  distinction visible to the model and preserves the existing Hermes browser
+  extension router, while avoiding a second desktop-control implementation,
+  browser profile, or cookie store.
+- Consequence: Native actions must bind an exact window and fail closed when a
+  target or accessibility selector is missing. Navigation retains Hafiye URL
+  secret/metadata safety checks. Structured downloads require an absolute
+  destination path. This is an implementation detail and does not override
+  the master roadmap.

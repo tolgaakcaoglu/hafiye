@@ -178,3 +178,19 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 - `pactl` and `vulkaninfo` are still absent. PipeWire/WirePlumber plus `wpctl`
   remains the accepted audio path, and Vulkan remains a fallback/diagnostic
   path rather than this host's primary compute backend.
+
+## P10 browser validation (2026-08-24)
+
+- `npx --yes agent-browser@^0.26.0 install` completed without sudo and
+  installed the managed Chrome payload in the user cache
+  `~/.agent-browser/browsers/chrome-152.0.7977.54`.
+- Hermes structured browser acceptance used the current explicit
+  `browser.backend: off` configuration to exercise the built-in
+  `browser_*` lane; navigation, extraction, and download passed against a
+  local `ThreadingHTTPServer` fixture.
+- Native browser acceptance used the existing Firefox Wayland window through
+  the pinned managed computer-use-linux MCP provider. It opened and closed
+  only a temporary test tab; existing Firefox windows and authenticated state
+  were not inspected.
+- No sudo, system package, systemd, group, device-permission, or password
+  change was required for P10.

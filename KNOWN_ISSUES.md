@@ -293,3 +293,19 @@ silently treated as passing.
   with successfully, satisfying the P9 acceptance requirement.
 - Semantic VS Code interaction should be revisited if a later phase needs it;
   P9 only requires launching VS Code and interacting with Files.
+
+## KI-024 — Browser wiring fixture launched a real agent-browser daemon (resolved)
+
+- Status: RESOLVED 2026-08-24; test-harness issue, not a runtime or P10
+  acceptance blocker.
+- P10 expanded the browser registry-wiring test with `browser_download` and
+  the real user-space `agent-browser` Chrome cache became discoverable. The
+  fixture's legacy fallbacks were therefore able to launch a detached daemon;
+  the following cleanup test hit the repository live-system guard while
+  trying to terminate its foreign PID.
+- The wiring fixture now stubs `_run_browser_command` for every legacy fallback,
+  preserving the purpose of the test without launching a browser. The exact
+  browser matrix then passed with 504 passed, 7 deselected, and 0 failed.
+- No production browser route or user browser session was left running; the
+  P10 native probe's temporary Firefox tab was closed and a post-cleanup
+  window query found no P10 marker.

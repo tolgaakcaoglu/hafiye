@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 6d3672e498e1bcb9316e5c7d88c9fc896714630c
-  (P9 managed computer-use-linux MCP integration; source commit)
+- Current Hafiye source HEAD: 5d2354095562d149ff54e58d664c1b042cf50c3e
+  (P10 browser routing/download integration; source commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -43,8 +43,10 @@ P7 — Full host tools + execution policy: complete.
 
 P8 — Hafiye root broker: complete.
 
-P9 — Linux computer use: complete. P10 — Browser is the next incomplete
-phase.
+P9 — Linux computer use: complete.
+
+P10 — Browser: complete. P11 — Local Turkish voice stack is the next
+incomplete phase.
 
 ## Verified working
 
@@ -538,6 +540,40 @@ directory:
   closed through the managed input path; the user's existing Firefox windows
   remained open.
 
+## P10 browser
+
+- Status: complete; no blocker and no new/different regression.
+- Source commit: `5d2354095562d149ff54e58d664c1b042cf50c3e`.
+- Structured browser path: Hermes `browser_*` tools remain Hafiye's
+  structured automation lane. When the current Hermes configuration selects
+  its Browser Use CLI backend, that existing `browser_exec` behavior remains
+  intact; the real P10 structured acceptance selected the built-in lane with
+  `browser.backend: off`. Hafiye adds the dedicated
+  `browser_download` operation using the current official
+  `agent-browser download` command and recognizes the user-space Chrome
+  cache installed by `agent-browser@^0.26.0`.
+- Native browser path: `browser_native` is an explicit route through the
+  already-managed `hafiye-computer-use-linux` MCP tools. It enumerates and
+  binds an exact existing Firefox window, performs focus/state/navigation/key
+  operations, and does not create a profile or read cookies.
+- Real structured probe: an isolated `HERMES_HOME` with
+  `browser.backend: off` served a local page; navigation, extraction marker,
+  and `browser_download` all passed. The downloaded content was
+  `HAFIYE_STRUCTURED_DOWNLOAD_OK`.
+- Real native probe: `discover_mcp_tools()` plus
+  `model_tools.handle_function_call("browser_native", ...)` controlled the
+  existing Firefox Wayland window, opened a temporary tab, navigated to a
+  local marker page, read the focused window title, and closed only the test
+  tab. Result: `native_navigation=true`, `blockers=[]`; post-cleanup window
+  query found no `Hafiye P10 Native` marker window.
+- Firefox's existing AT-SPI focus warning remains KI-022; compositor focus,
+  ydotool input, navigation, and title readback passed. No authenticated page
+  content or cookies were inspected.
+- Final browser regression: `.venv/bin/python -m pytest -q
+  tests/tools/test_browser_*.py tests/tools/test_hafiye_browser.py` — 504
+  passed, 7 deselected, 0 failed. Focused Hafiye/policy/router matrix — 49
+  passed, 0 failed. Ruff, `py_compile`, and `git diff --check` passed.
+
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
@@ -560,16 +596,15 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Keep the verified P9 source commit
-   `6d3672e498e1bcb9316e5c7d88c9fc896714630c` separate from the pinned
+1. Keep the verified P10 source commit
+   `5d2354095562d149ff54e58d664c1b042cf50c3e` separate from the pinned
    upstream and baseline merge SHAs.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline for future phases; reduce the current
    baseline again if failures disappear, and investigate any new/different ID.
-3. Start P10 — Browser. Preserve the P8 root-broker boundary: the main Hafiye
-   process remains non-root and only explicitly privileged operations cross
-   the local `hafiye-rootd` socket. Keep the P9 managed MCP provider enabled
-   while wiring browser routing.
+3. Start P11 — Local Turkish voice stack. Preserve the P8 root-broker
+   boundary and keep the P9 managed MCP provider and P10 browser routing
+   enabled; the main Hafiye process remains non-root.
 
 ## Environment changes
 
@@ -606,6 +641,11 @@ computer-use-linux checkout/binary, added only the Hafiye-managed MCP/provider
 and Desktop diagnostics wiring, and closed the real Calculator, VS Code, and
 Files test windows after acceptance. The user's existing Firefox windows were
 left open.
+P10 required no sudo or system-package changes. It installed the official
+`agent-browser@^0.26.0` Chrome payload under the user cache
+`~/.agent-browser/browsers/`, added structured download/native browser routing,
+and closed the temporary native Firefox tab. Existing Firefox windows and
+authenticated state were not inspected or modified.
 P5's live Gemini credential was saved to Linux Secret Service and hydrated from
 the canonical Hafiye config root; no plaintext credential was added to the
 repository or configuration. The provider lifecycle/XDG fix is source commit

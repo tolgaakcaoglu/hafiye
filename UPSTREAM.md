@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye HEAD (latest product/source commit):
-  4972645e07c408a8f0856bc4f1ee1b1cd62cd63a
+- Current Hafiye source HEAD (P10 source commit):
+  5d2354095562d149ff54e58d664c1b042cf50c3e
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -75,6 +75,10 @@ The Hafiye source history contains these separable logical groups:
 - root-broker: strict local Unix-socket privileged-operation broker,
   `hafiye-rootd.service`, peer authentication, audit trail, root-broker CLI,
   and packaged `hafiye-rootd` entrypoint.
+- browser-routing: structured Hermes browser reuse and explicit native browser
+  routing through the managed computer-use-linux MCP provider.
+- structured-browser-download: current official agent-browser download
+  command, absolute destination validation, and user-cache Chromium discovery.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -84,6 +88,8 @@ Future changes should remain separable under the roadmap groups:
 - routing
 - linux-computer-use
 - root-broker
+- browser-routing
+- structured-browser-download
 - voice-local-stack
 - hafiye-wakeword
 - project-registry
@@ -321,6 +327,34 @@ P0 computer-use acceptance requires:
   Calculator input/result verification, Firefox tab/navigation and app
   switching, VS Code launch, and Files interaction. Firefox focus feedback and
   VS Code's sparse tree are documented as KI-022/KI-023 warnings.
+- The pinned Hermes commit
+  `f293e7206b4ddd66042329442c6afebc19a8808d` and baseline merge commit
+  `2ac06b131a237916432503ac67bbcada6dbea39e` are unchanged. No upstream
+  Hermes commit was rewritten.
+
+## P10 browser integration
+
+- Hafiye source commit:
+  `5d2354095562d149ff54e58d664c1b042cf50c3e`.
+- Structured browser automation remains Hermes' existing `browser_*` path;
+  current Hermes Browser Use CLI selection remains intact. Hafiye adds
+  `browser_download`, calling the current official
+  `agent-browser download <ref> <absolute-path>` command and preserving the
+  existing browser extension-router wrapper. The real P10 structured probe
+  selected the built-in lane with `browser.backend: off`.
+- The current official user-space Chrome cache is recognized under
+  `~/.agent-browser/browsers/`; this matches the installed
+  `agent-browser@^0.26.0` CLI path without changing Hermes' backend choice.
+- Native desktop-browser control is an explicit `browser_native` Hafiye
+  adapter. It dispatches only to the already-managed
+  `mcp__hafiye_computer_use_linux__*` tools, binds an exact existing window,
+  and does not launch a new profile or inspect cookies.
+- The native route uses the existing pinned source commit
+  `94736dc3e0dca56acfc89752c26869fb9ed01202`; no CUA implementation was
+  copied or made the Linux primary path.
+- Real structured navigation/extraction/download and real native Firefox
+  navigation/focus/title-readback passed. The Firefox AT-SPI focus warning is
+  the existing KI-022 diagnostic, not a new upstream divergence.
 - The pinned Hermes commit
   `f293e7206b4ddd66042329442c6afebc19a8808d` and baseline merge commit
   `2ac06b131a237916432503ac67bbcada6dbea39e` are unchanged. No upstream

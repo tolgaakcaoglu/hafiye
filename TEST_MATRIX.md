@@ -125,6 +125,17 @@ user configuration edit. The Calculator, Firefox, VS Code, and Files flow was
 completed on the actual Wayland/GNOME session. P9 is accepted; KI-022 and
 KI-023 are warnings only.
 
+## P10 acceptance
+
+| ID | Boundary | Command | Result | Status |
+|---|---|---|---|---|
+| P10-PY-01 | Hafiye browser route, download, policy, Chromium detection, and extension wiring | `.venv/bin/python -m pytest -q tests/tools/test_hafiye_browser.py tests/tools/test_browser_chromium_check.py tests/tools/test_browser_extension_router.py tests/tools/test_browser_extension_router_wiring.py tests/test_hafiye_policy.py` | 49 passed; 0 failed | PASS |
+| P10-PY-02 | Full Hermes browser regression plus Hafiye browser tests | `.venv/bin/python -m pytest -q tests/tools/test_browser_*.py tests/tools/test_hafiye_browser.py` | 504 passed; 7 deselected; 0 failed; 29.83s | PASS |
+| P10-LINT-01 | P10 Python lint, compile, and patch hygiene | `.venv/bin/ruff check tools/hafiye_browser.py tools/browser_tool.py hafiye_policy.py toolsets.py tests/tools/test_hafiye_browser.py tests/tools/test_browser_chromium_check.py tests/tools/test_browser_extension_router_wiring.py && .venv/bin/python -m py_compile tools/hafiye_browser.py tools/browser_tool.py hafiye_policy.py toolsets.py tests/tools/test_hafiye_browser.py tests/tools/test_browser_chromium_check.py tests/tools/test_browser_extension_router_wiring.py && git diff --check` | Ruff, bytecode compilation, and whitespace checks passed | PASS |
+| P10-REAL-01 | Structured navigation, extraction, and download | Isolated inline Python `ThreadingHTTPServer` fixture with `HERMES_HOME` and `browser.backend: off`; `browser_navigate`, `browser_snapshot`, `browser_download` | Page marker, extraction marker, and `HAFIYE_STRUCTURED_DOWNLOAD_OK` content all verified; cleanup completed | PASS |
+| P10-REAL-02 | Native existing-browser operation through managed computer-use-linux | Inline Python `discover_mcp_tools()` plus `model_tools.handle_function_call("browser_native", ...)` on the real GNOME Wayland session | Existing Firefox window targeted; exact-window focus, temporary-tab navigation, focused title marker, and `blockers=[]` verified; temporary tab closed | PASS WITH KI-022 WARNING |
+| P10-REAL-03 | Native browser cleanup | Inline `browser_native windows` query after P10-REAL-02 | No `Hafiye P10 Native` marker window remained; 2 Firefox windows remained | PASS |
+
 ## Historical ACCEPTED_UPSTREAM_BASELINE and current comparison baseline
 
 The historical post-source comparison set is this exact five-failure baseline:
