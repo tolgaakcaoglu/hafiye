@@ -310,9 +310,9 @@ silently treated as passing.
   P10 native probe's temporary Firefox tab was closed and a post-cleanup
   window query found no P10 marker.
 
-## KI-025 — Real Turkish microphone speech acceptance is not met
+## KI-025 — Real Turkish microphone speech acceptance was initially not met
 
-- Status: P11 ACCEPTANCE BLOCKER.
+- Status: RESOLVED 2026-08-24; P11 acceptance passed.
 - The final real capture used `pw-record --target 37 --rate 16000 --channels 1
   --format s16 --container wav` for `Trust GXT 232 Microphone Mono`; the WAV
   was 9.982 seconds, 16 kHz mono S16, with measured mean volume `-15.5 dB`.
@@ -321,11 +321,10 @@ silently treated as passing.
   text instead of the sentence, including:
   `Ha ha ha ... Sona da işe olup onun üstüne başka bir iddi ha daha konuşurum
   Abi de sen ne işle yok`.
-- The managed voice doctor is green and direct Piper plus Hermes TTS passed,
-  so this issue is specifically the real microphone-to-correct-Turkish-text
-  acceptance boundary. The root cause has not been established; do not infer
-  one from this sample.
-- Repeat the capture with synchronized speech and inspect the input routing
-  and transcript. P11 must remain open until a real Turkish sentence is
-  transcribed correctly. This is not an upstream baseline failure and no new
-  upstream regression was added.
+- A synchronized follow-up capture after a short countdown used the same
+  default node 37 and returned `Merhaba hafiye, bugün nasılsın bana Türkçe
+  cevap ver?` through CUDA whisper.cpp. The same WAV returned the same correct
+  text through Hafiye's `transcribe_audio()` hook with `provider: local_command`.
+- The initial bad samples remain recorded as capture-window/low-level audio
+  observations; no broader device defect is asserted. This was not an
+  upstream baseline failure and no new upstream regression was added.

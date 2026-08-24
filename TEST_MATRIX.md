@@ -147,12 +147,12 @@ KI-023 are warnings only.
 | P11-D-01 | Desktop voice settings and microphone-device unit tests | `cd apps/desktop && npm run test:ui -- src/app/settings/voice-provider-fields.test.ts src/app/settings/voice-field-visible.test.ts src/app/settings/helpers.test.ts src/lib/voice-input-device.test.ts` | 4 files; 50 passed | PASS |
 | P11-D-02 | Desktop typecheck and production build | `cd apps/desktop && npm run typecheck && npm run build` | Typecheck, Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing toolchain warnings remain | PASS WITH WARNING |
 | P11-D-03 | Real Electron boot and voice settings smoke | `npx playwright test e2e/boot.spec.ts --reporter=line`; `npx playwright test e2e/voice-settings.spec.ts --reporter=line` | Boot 5/5 passed; voice settings 1/1 passed; managed Piper list and preview returned real WAV data | PASS |
-| P11-REAL-03 | Real Turkish microphone → correct text | `timeout --signal=INT 10s pw-record --target 37 --rate 16000 --channels 1 --format s16 --container wav ...`; managed CUDA whisper STT | Capture completed, but transcript was incorrect/repetitive; exact evidence is KI-025 | FAIL / P11 BLOCKER |
+| P11-REAL-03 | Real Turkish microphone → correct text | `sleep 5; timeout --signal=INT 15s pw-record --target 37 --rate 16000 --channels 1 --format s16 --container wav ...`; managed CUDA whisper STT and `tools.transcription_tools.transcribe_audio()` | 14.995s real capture; both paths returned `Merhaba hafiye, bugün nasılsın bana Türkçe cevap ver?` correctly | PASS |
 
-P11 remains open because the master-roadmap test requires correct text from a
-real Turkish microphone. The same five historical upstream failures remain the
+P11 is accepted. The master-roadmap test received correct text from a real
+Turkish microphone, and the same five historical upstream failures remain the
 `ACCEPTED_UPSTREAM_BASELINE`; no new/different upstream failure was found in
-the P11 targeted matrix.
+the P11 targeted matrix. P12 is now the next incomplete phase.
 
 ## Historical ACCEPTED_UPSTREAM_BASELINE and current comparison baseline
 

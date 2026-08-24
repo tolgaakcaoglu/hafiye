@@ -14,7 +14,7 @@ records execution status only.
 - [x] P8 Hafiye root broker
 - [x] P9 Linux computer use
 - [x] P10 Browser
-- [ ] P11 Local Turkish voice stack
+- [x] P11 Local Turkish voice stack
 - [ ] P12 Custom Hafiye wake word
 - [ ] P13 Barge-in + emergency stop
 - [ ] P14 Memory + project registry
@@ -40,14 +40,15 @@ records execution status only.
       handling for push-to-talk, continuous capture, and wake capture paths.
 - [x] Run the managed doctor, targeted backend tests, Desktop UI/typecheck/build,
       and real Electron voice settings smoke tests.
-- [ ] Speak Turkish into the real microphone and obtain the correct text.
+- [x] Speak Turkish into the real microphone and obtain the correct text.
 - [x] Verify a Turkish Hafiye response is synthesized through the real managed
       Piper process.
 
-P11 is not complete. The runtime and Piper speech acceptance pass, but the
-real microphone capture produced incorrect CUDA whisper.cpp transcription in
-the final smoke (`KI-025`). Do not start P12 or mark this phase complete until
-the microphone sentence is transcribed correctly.
+P11 is complete. The synchronized real microphone capture produced the correct
+Turkish sentence through both the managed whisper.cpp command and Hafiye's
+`transcribe_audio()` hook. Direct Piper, Hafiye TTS, Desktop settings, and the
+real Electron voice smoke also passed. KI-025 is resolved; P12 is now the next
+incomplete phase.
 
 ## P0 execution status
 
@@ -332,5 +333,5 @@ navigation, extraction, and download; the native path passed through the
 managed `computer-use-linux` MCP tools against the existing Firefox Wayland
 window with `blockers=[]`. The browser regression matrix measured 504 passed
 and 7 deselected with no failure. KI-022 remains a measured Firefox AT-SPI
-warning only; there is no P10 blocker or new/different regression. P11 — Local
-Turkish voice stack is now the next incomplete phase.
+warning only; there is no P10 blocker or new/different regression. P11 is
+complete and P12 — Custom Hafiye wake word is now the next incomplete phase.

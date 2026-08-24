@@ -210,10 +210,12 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
   `voices/tr_TR-dfki-medium.onnx` with its JSON metadata.
 - `.venv/bin/python -m hermes_cli.voice_runtime doctor` returned `ok=true`,
   `blockers=[]`, and no warnings.
-- The current PipeWire source used for the real capture was node 37,
-  `Trust GXT 232 Microphone Mono`. A final `pw-record` capture at 16 kHz,
-  mono, signed 16-bit WAV lasted 9.982 seconds and measured mean volume
-  `-15.5 dB`; CUDA transcription did not recover the prompted Turkish sentence.
-  This is recorded as KI-025 and keeps P11 open.
+- The current PipeWire source used for the accepted real capture was node 37,
+  `Trust GXT 232 Microphone Mono`, the default unmuted source at volume 1.00.
+  After a five-second countdown, a 14.995-second `pw-record` capture at 16 kHz,
+  mono, signed 16-bit WAV was correctly transcribed by CUDA whisper.cpp as
+  `Merhaba hafiye, bugün nasılsın bana Türkçe cevap ver?`. Hafiye's own
+  `transcribe_audio()` hook returned the same text with `provider:
+  local_command`.
 - Direct Piper synthesis, the Hafiye TTS tool, and `pw-play` completed real
   Turkish audio playback. No cloud STT/TTS was used for this acceptance.

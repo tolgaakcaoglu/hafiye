@@ -47,9 +47,9 @@ P9 — Linux computer use: complete.
 
 P10 — Browser: complete.
 
-P11 — Local Turkish voice stack: in progress. The managed runtimes, backend
-hook, Desktop settings, and Piper speech path are implemented and tested. The
-real-microphone Turkish speech acceptance remains open as KI-025.
+P11 — Local Turkish voice stack: complete. Managed whisper.cpp/Piper, the
+Hafiye transcription hook, Desktop voice settings, real Piper playback, and
+real Turkish microphone transcription are accepted. P12 is next.
 
 ## Verified working
 
@@ -196,8 +196,7 @@ are documented.
 
 ## Active blockers
 
-P5, P6, P7, P8, P9, and the non-microphone portions of P11 have no open
-acceptance blockers. The user service and
+P5, P6, P7, P8, P9, and P11 have no open acceptance blockers. The user service and
 `hafiye-rootd.service` are active
 and the local CUDA runtime doctor is green. `loginctl` reports `Linger=no`,
 and a full reboot was not performed; GNOME's `Super+Shift+Space` conflict
@@ -208,8 +207,8 @@ packaged source entrypoint and is recorded as resolved KI-021.
 The accepted upstream failures, KI-019 browser scheduling diagnostic, KI-022
 Firefox focus warning, KI-023 VS Code accessibility warning, npm audit
 warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
-warnings are documented diagnostics. KI-025 is the active P11 acceptance
-blocker; it is not silently treated as a pass.
+warnings are documented diagnostics. KI-025 is resolved after the synchronized
+real-microphone rerun recorded below.
 
 ## Last tests and commands
 
@@ -699,7 +698,7 @@ repository or configuration. The provider lifecycle/XDG fix is source commit
   P6-parent checkout and is tracked as KI-019; no Hafiye source regression was
   found.
 
-## P11 execution status — in progress
+## P11 execution status — complete
 
 The commit identities remain separate and are recorded here explicitly:
 
@@ -721,17 +720,18 @@ The commit identities remain separate and are recorded here explicitly:
   API, microphone-device persistence/hotplug path, and Desktop Voice settings
   controls are implemented.
 
-### Acceptance and blocker
+### Acceptance
 
 - Real voice doctor returned `ok: true`, `blockers: []`, with CUDA selected,
   all three whisper backends compiled, and the Turkish Piper voice ready.
 - Direct Piper synthesis and the Hermes TTS path both produced Turkish WAV/MP3
   audio; `pw-play` completed the real playback smoke.
-- The real microphone acceptance is not met yet. The final capture used
-  `pw-record --target 37 --rate 16000 --channels 1 --format s16 --container wav`
-  for the `Trust GXT 232 Microphone Mono` source. CUDA whisper.cpp returned
-  repeated/nonsensical text rather than the prompted Turkish sentence; see
-  KI-025. No new or different upstream regression was observed.
+- The synchronized real microphone capture used the default PipeWire node 37
+  (`Trust GXT 232 Microphone Mono`) at 16 kHz, mono, signed 16-bit WAV. CUDA
+  whisper.cpp returned the prompted Turkish sentence correctly, and the same
+  file passed through Hafiye's `transcribe_audio()` hook with
+  `provider: local_command`. The real Turkish microphone acceptance passed;
+  the earlier unsynchronized samples remain historical KI-025 evidence.
 
 ### P11 test record
 
@@ -748,6 +748,11 @@ The commit identities remain separate and are recorded here explicitly:
 - `cd apps/desktop && npx playwright test e2e/boot.spec.ts --reporter=line`
   — 5 passed; `npx playwright test e2e/voice-settings.spec.ts --reporter=line`
   — 1 passed in the real Electron path.
+- `.venv/bin/python -m hermes_cli.voice_runtime stt --input /tmp/hafiye-p11-mic-20260824-countdown.wav --output-dir /tmp/hafiye-p11-stt-countdown --language tr --backend AUTO`
+  — CUDA/local command returned the correct Turkish sentence.
+- `.venv/bin/python` calling `tools.transcription_tools.transcribe_audio()` on
+  the same WAV — `success: True`, `provider: local_command`, correct Turkish
+  sentence returned.
 - The first combined boot+voice run had one parallel boot-readiness timeout;
   isolated reruns passed, so it is recorded as a test-topology observation,
   not a source regression.
@@ -755,8 +760,6 @@ The commit identities remain separate and are recorded here explicitly:
 
 ### Exact next action
 
-Repeat the real microphone smoke with a synchronized spoken Turkish sentence
-inside the capture window, inspect the resulting transcript, and only then
-close P11. If the transcript is correct, update this record and proceed to P12;
-otherwise keep KI-025 open and investigate capture/input routing without
-changing the prescribed whisper.cpp/Piper architecture.
+Begin P12 — Custom Hafiye wake word. Preserve the pinned upstream commit,
+baseline merge commit, and current Hafiye source HEAD separately when updating
+the next phase.

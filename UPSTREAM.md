@@ -380,8 +380,9 @@ P0 computer-use acceptance requires:
   runtime root. The public voice-list response strips local runtime paths.
 - The Hafiye patch uses Hermes' custom local-STT command hook and existing TTS
   boundary; it does not mass-rename Hermes modules or copy unrelated upstream
-  code. Real runtime doctor, Piper synthesis, and Desktop settings smoke pass;
-  real microphone-to-correct-Turkish-text remains open as KI-025.
+  code. Real runtime doctor, Piper synthesis, Desktop settings smoke, and
+  synchronized microphone-to-correct-Turkish-text acceptance pass. The initial
+  capture-window observation is resolved as KI-025.
 
 ## Baseline divergence
 
