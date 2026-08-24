@@ -85,6 +85,22 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 - `loginctl show-user`: `Linger=no`; the session is active. Persistent service work in P2 must explicitly handle the no-linger state.
 - The main Hafiye process has not been installed or run as root.
 
+## P8 privileged root broker
+
+- Installed with normal interactive sudo from a visible system terminal; no
+  passwordless sudo or `NOPASSWD` sudoers rule was created.
+- System unit: `/usr/lib/systemd/system/hafiye-rootd.service`.
+- Runtime state: `hafiye-rootd.service` is enabled and active as root EUID 0;
+  the main `hafiye-gateway.service` remains the normal user EUID 1000.
+- Socket: `/run/hafiye/root.sock`, Unix stream only, mode `0600`, owned by
+  `tolga:tolga`; no TCP/UDP listener is configured.
+- The broker audit log is `/var/log/hafiye/rootd-audit.log`, root-owned with
+  restricted permissions. Audit records include peer identity, lifecycle
+  status, duration, and redacted arguments.
+- Real host checks passed for non-root `root.exec`, privileged temporary-file
+  write, malformed duplicate-key rejection, and an actual `nobody` peer
+  receiving `permission_denied`.
+
 ## Computer-use-linux pinned source readiness
 
 - Source repository: `agent-sh/computer-use-linux`.
@@ -117,9 +133,9 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
   25.7.0`. A live round-trip wrote, read, deleted, and removed a provider
   secret reference without recording the secret value; Hafiye config contained
   no raw provider secret.
-- No `GEMINI_API_KEY` is configured in the Secret Service, `.env`, or process
-  environment. Automated Gemini provider tests pass, but a live Gemini test
-  connection remains intentionally unrun.
+- The live Gemini credential is stored in Linux Secret Service; its raw value
+  is not recorded in this file, `.env`, or repository configuration. The live
+  model-list and Hafiye connection tests passed as recorded in STATE.md.
 - `uv sync --locked --all-extras --no-extra wake --no-extra matrix --python
   3.13` completed with the relevant optional SDKs. The `wake` exclusion is
   required because `tflite-runtime==2.14.0` has no compatible CPython 3.13

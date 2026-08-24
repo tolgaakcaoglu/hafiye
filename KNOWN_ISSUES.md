@@ -258,3 +258,16 @@ silently treated as passing.
   passed on the immediate isolated retry. Future full runs must continue to
   classify the exact failure IDs against the historical five and investigate
   any new or different ID.
+
+## KI-021 — P8 editable-v-env systemd entrypoint (resolved)
+
+- Status: RESOLVED 2026-08-24; not a P8 blocker.
+- The first normal-sudo installation generated a unit using
+  `python -m hafiye_rootd`. The editable venv's generated finder did not map
+  the new top-level module when systemd started it outside the repository
+  working directory, so the service repeatedly exited with `No module named
+  hafiye_rootd`.
+- The service generator now executes the installed `hafiye_rootd.py` entry file
+  directly, and the package declares both the module and the `hafiye-rootd`
+  console entrypoint. After the unit was regenerated, `hafiye-rootd.service`
+  became active/enabled and the real broker acceptance tests passed.

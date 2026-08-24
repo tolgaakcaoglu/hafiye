@@ -11,7 +11,7 @@ records execution status only.
 - [x] P5 Providers + Gemini + remote OpenAI-compatible
 - [x] P6 Model router + privacy modes
 - [x] P7 Full host tools + execution policy
-- [ ] P8 Hafiye root broker
+- [x] P8 Hafiye root broker
 - [ ] P9 Linux computer use
 - [ ] P10 Browser
 - [ ] P11 Local Turkish voice stack
@@ -226,5 +226,36 @@ production build pass. The full backend comparison measured 3,219 files,
 upstream baseline; the two cold-start failures pass with the persistent
 Hafiye service stopped and remain KI-016 topology diagnostics; the browser
 reconnect failure is the existing KI-019 scheduling diagnostic and passed on
-an immediate isolated retry. No new Hafiye regression was found. P8 is now
-the next incomplete phase.
+an immediate isolated retry. No new Hafiye regression was found. P8 is closed
+below.
+
+## P8 execution status
+
+- [x] Add `hafiye-rootd` as a dedicated system service without running the
+      main Hafiye process as root.
+- [x] Use a local Unix socket at `/run/hafiye/root.sock` with Linux
+      `SO_PEERCRED` authentication and an exact configured local UID allowlist.
+- [x] Enforce strict length-prefixed JSON framing, duplicate-key rejection,
+      request/argument validation, size limits, timeouts, and fail-closed
+      malformed/unauthorized responses.
+- [x] Implement `package.install`, `package.remove`, `service.start`,
+      `service.stop`, `service.restart`, `file.write_privileged`,
+      `power.action`, and `root.exec` through the broker.
+- [x] Audit accepted, rejected, failed, and closed requests with peer
+      identity, durations, and redacted arguments; expose no TCP/UDP listener.
+- [x] Add the Hafiye CLI root-broker management commands and packaged
+      `hafiye-rootd` entrypoint.
+- [x] Install the real system service with normal interactive sudo and verify
+      the root/non-root process boundary on the host.
+- [x] Run broker unit/security, packaging, CLI-registry, lint/compile, real
+      privileged-operation, malformed-request, unauthorized-peer, and audit
+      checks and record exact results in TEST_MATRIX.md.
+
+P8 is complete. The source implementation is recorded in commit
+`4972645e07c408a8f0856bc4f1ee1b1cd62cd63a`. The service is enabled and active;
+the root broker returns UID 0 while the Hafiye gateway remains UID 1000. Real
+privileged file-write and `root.exec` smoke tests passed, malformed duplicate
+JSON failed closed, an actual `nobody` peer received `permission_denied`, and
+audit records contained peer/lifecycle/duration data without raw command text.
+The affected CLI/packaging matrix passed with no new Hafiye regression. P9 is
+now the next incomplete phase.

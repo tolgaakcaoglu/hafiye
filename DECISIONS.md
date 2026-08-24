@@ -197,3 +197,22 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   mutations; confirmation policies fail closed without an interactive user
   approval surface. P8's `hafiye-rootd` remains the later privileged-operation
   broker and is not folded into P7.
+
+## ADR-0015 — Keep privileged operations behind a local root broker
+
+- Date: 2026-08-24
+- Decision: Implement the roadmap-prescribed `hafiye-rootd` as a dedicated
+  root systemd service on `/run/hafiye/root.sock`. Authenticate Linux peers
+  with `SO_PEERCRED`, allow only the configured local UID, use strict
+  length-prefixed JSON framing, and audit every accepted/rejected request with
+  redacted arguments. Keep the main Hafiye gateway and Desktop processes
+  non-root.
+- Reason: P8 requires narrowly brokered privileged operations without running
+  the agent stack as root. A local Unix socket preserves the required host
+  capability while avoiding a network-exposed root API and keeping the
+  privileged boundary explicit for CLI, gateway, and future Desktop callers.
+- Consequence: Package/service/power/file/root-exec operations have one shared
+  protocol and audit boundary. The service installation uses normal
+  interactive sudo once; no passwordless sudo or `NOPASSWD` sudoers rule is
+  introduced. The rootd implementation and its CLI remain separate from
+  Hermes' upstream agent loop and prompt-cache-sensitive tool schema.

@@ -98,6 +98,15 @@ its result says so.
 | P7-DIAG-01 | Persistent-service cold-start topology diagnostic | `.venv/bin/python -m pytest -q tests/hermes_cli/test_update_cold_start_gateway_liveness.py` with `hafiye-gateway.service` stopped | 2 passed; service restarted and verified active afterward | PASS / KI-016 |
 | P7-DIAG-02 | Browser reconnect scheduling diagnostic | `.venv/bin/python -m pytest -q tests/gateway/test_browser_control_api.py -k test_local_api_same_identity_reconnect_completes_command_started_on_old_socket` | First run timed out; immediate isolated retry passed 1/1; tracked as KI-019 | DIAGNOSTIC |
 
+| P8-PY-01 | Root broker protocol/security and packaging regression tests | `.venv/bin/python -m pytest -q tests/test_hafiye_rootd.py tests/test_packaging_metadata.py` | 13 passed; strict framing, duplicate-key rejection, peer rejection, operation validation, audit behavior, unit generation, and packaging metadata covered | PASS |
+| P8-PY-02 | CLI registration and emergency-stop regression matrix | `.venv/bin/python -m pytest -q tests/hermes_cli/test_startup_plugin_gating.py tests/test_estop.py tests/test_packaging_metadata.py tests/test_hafiye_rootd.py` | 39 passed; 0 failed | PASS |
+| P8-CLI-01 | Packaged root broker entrypoints | `uv pip install --python .venv/bin/python -e . --no-deps; .venv/bin/hafiye-rootd --help; .venv/bin/hafiye root --help` | Editable package refreshed; both root-broker help surfaces rendered; exit 0 | PASS |
+| P8-LINT-01 | Root broker lint, compile, and patch hygiene | `.venv/bin/ruff check hafiye_rootd.py hermes_cli/main.py tests/test_hafiye_rootd.py; .venv/bin/python -m py_compile hafiye_rootd.py hermes_cli/main.py tests/test_hafiye_rootd.py; git diff --check` | All checks passed | PASS |
+| P8-REAL-01 | Real rootd system service and process boundary | Normal visible-terminal `.venv/bin/hafiye root install`; `systemctl is-enabled/is-active`; `systemctl status`; `ps`; `stat` | `/usr/lib/systemd/system/hafiye-rootd.service` enabled/active; rootd EUID 0; gateway EUID 1000; `/run/hafiye/root.sock` mode 0600 owned by `tolga`; no TCP/UDP listener | PASS |
+| P8-REAL-02 | Harmless privileged operation through non-root broker | `.venv/bin/python` `RootBrokerClient`: `root.exec id -u` and `file.write_privileged` temporary-file smoke | Client EUID 1000; broker UID `0`; privileged write/content/mode/SHA-256 verified | PASS |
+| P8-REAL-03 | Real malformed and unauthorized socket clients | Duplicate-key frame through `/run/hafiye/root.sock`; broker-controlled `runuser -u nobody` peer probe | Malformed response code `malformed_request`; actual `nobody` client received `permission_denied` | PASS |
+| P8-REAL-04 | Real audit trail | `RootBrokerClient` read of redacted audit-log sample through `root.exec` | 33 records sampled; 11 complete request groups; accepted/rejected + closed lifecycle, peer/duration fields present; raw test command text absent | PASS |
+
 ## Historical ACCEPTED_UPSTREAM_BASELINE and current comparison baseline
 
 The historical post-source comparison set is this exact five-failure baseline:

@@ -9,12 +9,13 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 404197560629cde55232518c21d3d98b3cbe4988
-  (P7 host execution policy)
+- Current Hafiye source HEAD: 4972645e07c408a8f0856bc4f1ee1b1cd62cd63a
+  (P8 privileged root broker; source commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
-the third is the current Hafiye product source commit.
+the third is the current Hafiye product source commit. Documentation closure
+commits after the source commit do not change the product source pin.
 
 ## Current phase
 
@@ -38,8 +39,10 @@ connection are verified.
 
 P6 — Model router + privacy modes: complete.
 
-P7 — Full host tools + execution policy: complete. P8 — Hafiye root broker is
-the next incomplete phase.
+P7 — Full host tools + execution policy: complete.
+
+P8 — Hafiye root broker: complete. P9 — Linux computer use is the next
+incomplete phase.
 
 ## Verified working
 
@@ -129,6 +132,15 @@ the next incomplete phase.
   API; it is not a mock-only control.
 - Real dispatcher smoke passed for a host terminal command, a temporary-file
   read, and a background process start/wait cycle.
+- `hafiye-rootd.service` is installed at `/usr/lib/systemd/system/`, enabled,
+  and active as EUID 0. It listens only on `/run/hafiye/root.sock`, owned by
+  `tolga` with mode `0600`; the main Hafiye gateway remains EUID 1000.
+- The real non-root broker client completed `root.exec id -u` with broker UID
+  `0`, performed a privileged temporary-file write, and received a strict
+  `malformed_request` response for duplicate JSON keys.
+- The real system socket rejected a `nobody` peer with `permission_denied`.
+  Broker audit records contain peer identity, request lifecycle, duration, and
+  redacted arguments; no raw acceptance command text was present.
 
 ## Regression status
 
@@ -147,13 +159,23 @@ endpoint, remote OpenAI-compatible path, live Gemini model listing, and live
 Gemini one-shot. P6 targeted policy/gateway/agent tests and Desktop settings
 validation pass.
 
+P8 targeted broker, packaging, startup-registry, emergency-stop, lint, and
+compile checks pass. The real system service is active/enabled, the non-root
+broker smoke passed, malformed and unauthorized clients failed closed, and
+audit records were read through the broker without exposing raw command text.
+The accepted five-ID upstream whitelist and current four-ID comparison baseline
+are unchanged; no new P8 regression was found in the affected CLI/packaging
+matrix.
+
 ## Active blockers
 
-P5, P6, and P7 have no open acceptance blockers. The user service is active
+P5, P6, P7, and P8 have no open acceptance blockers. The user service and
+`hafiye-rootd.service` are active
 and the local CUDA runtime doctor is green. `loginctl` reports `Linger=no`,
 and a full reboot was not performed; GNOME's `Super+Shift+Space` conflict
-remains the existing operational warning. P8 — Hafiye root broker is the next
-incomplete roadmap phase.
+remains the existing operational warning. The initial development-v-env
+systemd `-m hafiye_rootd` entrypoint failure was corrected by using the
+packaged source entrypoint and is recorded as resolved KI-021.
 
 The accepted upstream failures, KI-019 browser scheduling diagnostic, npm audit
 warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
@@ -435,6 +457,30 @@ directory:
 - `.venv/bin/hafiye runtime doctor` after restoration — `ok=true`,
   `blockers=[]`, selected backend `CUDA`; `hafiye-gateway.service` active.
 
+### P8 privileged root broker
+
+- `.venv/bin/python -m pytest -q tests/test_hafiye_rootd.py
+  tests/test_packaging_metadata.py` — 13 passed, 0 failed.
+- `.venv/bin/python -m pytest -q tests/hermes_cli/test_startup_plugin_gating.py
+  tests/test_estop.py tests/test_packaging_metadata.py tests/test_hafiye_rootd.py`
+  — 39 passed, 0 failed.
+- `.venv/bin/ruff check hafiye_rootd.py hermes_cli/main.py
+  tests/test_hafiye_rootd.py`; `py_compile`; and `git diff --check` — all
+  passed.
+- `uv pip install --python .venv/bin/python -e . --no-deps` — editable
+  package refreshed; `.venv/bin/hafiye-rootd --help` and `.venv/bin/hafiye
+  root --help` rendered successfully.
+- Normal visible-terminal sudo install — `/usr/lib/systemd/system/
+  hafiye-rootd.service` enabled and active; rootd PID EUID 0; socket
+  `/run/hafiye/root.sock` mode 0600 owned by `tolga`.
+- Real `.venv/bin/python` broker smoke — client EUID 1000, `root.exec id -u`
+  returned broker UID 0, privileged temporary write succeeded, duplicate-key
+  request returned `malformed_request`, and `nobody` returned
+  `permission_denied` on the real system socket.
+- Audit verification through `RootBrokerClient` — 33 records sampled, 11
+  complete request groups, accepted/rejected plus closed lifecycle events,
+  peer and duration fields present, and raw test command text absent.
+
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
@@ -457,15 +503,15 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Keep the verified P7 source commit
-   `404197560629cde55232518c21d3d98b3cbe4988` separate from the pinned
+1. Keep the verified P8 source commit
+   `4972645e07c408a8f0856bc4f1ee1b1cd62cd63a` separate from the pinned
    upstream and baseline merge SHAs.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline for future phases; reduce the current
    baseline again if failures disappear, and investigate any new/different ID.
-3. P8 — Hafiye root broker is the next incomplete phase. Keep the main Hafiye
-   process non-root and route only explicitly privileged operations through
-   the roadmap-prescribed local `hafiye-rootd` Unix-socket boundary.
+3. P9 — Linux computer use is the next incomplete phase. Preserve the P8
+   root-broker boundary: the main Hafiye process remains non-root and only
+   explicitly privileged operations cross the local `hafiye-rootd` socket.
 
 ## Environment changes
 
@@ -492,6 +538,11 @@ the runtime doctor then reported `ok=true`, `blockers=[]`, and selected backend
 P7 added only the shared host execution-policy classifier/dispatch enforcement,
 the existing Hermes approval-surface integration, and the real Desktop config
 select; no system package, sudo, service, or password change was made.
+P8 installed and enabled `/usr/lib/systemd/system/hafiye-rootd.service` using
+normal interactive sudo in a visible terminal. The service runs as root only
+for brokered privileged operations, permits the configured local UID 1000 over
+`/run/hafiye/root.sock`, and uses no TCP/UDP listener. No passwordless sudo or
+`NOPASSWD` sudoers rule was created.
 P5's live Gemini credential was saved to Linux Secret Service and hydrated from
 the canonical Hafiye config root; no plaintext credential was added to the
 repository or configuration. The provider lifecycle/XDG fix is source commit

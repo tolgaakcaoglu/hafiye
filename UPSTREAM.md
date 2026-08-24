@@ -12,7 +12,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
 - Current Hafiye HEAD (latest product/source commit):
-  404197560629cde55232518c21d3d98b3cbe4988
+  4972645e07c408a8f0856bc4f1ee1b1cd62cd63a
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -72,6 +72,9 @@ The Hafiye source history contains these separable logical groups:
 - host-execution-policy: shared Hafiye host-tool policy classification,
   existing Hermes approval-surface enforcement, fail-closed read-only and
   confirmation behavior, and the real Desktop execution-policy setting.
+- root-broker: strict local Unix-socket privileged-operation broker,
+  `hafiye-rootd.service`, peer authentication, audit trail, root-broker CLI,
+  and packaged `hafiye-rootd` entrypoint.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -270,6 +273,34 @@ P0 computer-use acceptance requires:
 - The pinned Hermes commit
   `f293e7206b4ddd66042329442c6afebc19a8808d` and baseline merge commit
   `2ac06b131a237916432503ac67bbcada6dbea39e` are unchanged. No upstream
+  commit was rewritten.
+
+## P8 source validation
+
+- Current Hafiye source commit:
+  `4972645e07c408a8f0856bc4f1ee1b1cd62cd63a`.
+- `hafiye_rootd.py` is a standard-library-only broker implementation. Its
+  wire protocol is one 4-byte length-prefixed strict JSON request per local
+  Unix-stream connection; duplicate keys, oversized frames, unknown fields,
+  malformed requests, unauthorized peers, and unsupported operations fail
+  closed.
+- The system service is installed at
+  `/usr/lib/systemd/system/hafiye-rootd.service`, runs as `root`, binds only
+  `/run/hafiye/root.sock`, and allows only UID 1000 on this host. The socket is
+  mode `0600` and no TCP/UDP listener is configured.
+- Supported operations are the roadmap-prescribed package, service, privileged
+  file-write, power, and root-exec operations. Requests are audited as JSONL
+  with peer identity, lifecycle status, durations, and redacted arguments.
+- The normal Hafiye CLI remains non-root and exposes the root-broker commands;
+  the real broker smoke returned UID 0 to a UID 1000 client, while the real
+  `nobody` peer failed with `permission_denied`.
+- The first development-v-env `-m hafiye_rootd` systemd entrypoint exposed
+  the editable-install/cwd boundary. The service generator now executes the
+  packaged module file directly; the corrected unit is active and the issue is
+  recorded as resolved KI-021.
+- The pinned Hermes commit
+  `f293e7206b4ddd66042329442c6afebc19a8808d` and baseline merge commit
+  `2ac06b131a237916432503ac67bbcada6dbea39e` remain unchanged. No upstream
   commit was rewritten.
 
 ## Baseline divergence
