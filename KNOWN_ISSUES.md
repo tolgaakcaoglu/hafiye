@@ -541,6 +541,11 @@ silently treated as passing.
   was restarted and verified active/enabled. Re-run the clean Composer/Gemini
   acceptance when provider quota is available; do not change the architecture
   or treat the quota error as a Hafiye routing regression.
+- Separately, the real P23.7 fail-closed check temporarily selected this Gemini
+  route, set global `LOCAL_ONLY`, and ran `hafiye ask` without explicit model
+  overrides. The request exited 1 with `Hafiye LOCAL_ONLY policy blocked
+  provider 'gemini'` before any provider call; route/privacy were restored to
+  local custom/Qwen and `NORMAL` afterward.
 
 ## KI-038 — Doctor reports intentional Secret Service/.env and workspace audit diagnostics
 

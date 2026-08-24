@@ -624,6 +624,9 @@ E2E Suite — is now the first incomplete phase.
 - [x] Freshly recheck project alias/session persistence, OpenHands readiness,
       root-broker UID, and voice-runtime readiness; retain the exact voice and
       fixture delegation sequences as separate open acceptance work.
+- [x] Verify the real `LOCAL_ONLY` fail-closed boundary against a configured
+      Gemini route; the request was blocked before provider execution and the
+      original local route/privacy state was restored.
 - [ ] Complete the real 23.8 file organize-and-verify replay; the current
       Qwen2 validation fixture did not complete the multi-step tool sequence
       (KI-041).

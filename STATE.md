@@ -1654,6 +1654,12 @@ claimed as passed.
   `blockers=[]`, Piper ready, Whisper ready, and AUTO selecting CUDA. These
   are supporting 23.3/23.11–23.13 evidence, not a claim that the exact voice,
   OpenHands fixture, or emergency sequences have all been replayed.
+- The real P23.7 fail-closed check temporarily selected the configured Gemini
+  route, set global `LOCAL_ONLY`, and ran `.venv/bin/hafiye ask` without an
+  explicit provider/model. It exited 1 with `Hafiye LOCAL_ONLY policy blocked
+  provider 'gemini'` before a provider call. Privacy was restored to `NORMAL`
+  and the default route to custom/Qwen; `hafiye routing --json` confirmed the
+  restored state.
 - A fresh root-broker check returned UID `0`; the corresponding live gateway
   process remained EUID `1000` while `hafiye-rootd` was EUID `0`.
 - The live computer doctor also observed a separate root-owned `ydotoold` on
@@ -1679,7 +1685,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
 | 23.6 Gemini | P22 explicit Gemini one-shot passed; current Composer route hit provider quota | WARNING / RE-RUN |
-| 23.7 Privacy | Shared policy tests pass; final no-cloud request observation is not replayed here | NOT FINAL-CHECKED |
+| 23.7 Privacy | Real Gemini-configured route under global `LOCAL_ONLY` exited before provider call with the policy-block message; settings restored | PASS / FAIL-CLOSED |
 | 23.8 Files | Isolated real fixture replay did not move the files with the Qwen2 validation model; KI-041 records the exact result | NOT ACCEPTED / KI-041 |
 | 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
 | 23.10 Browser | Structured local navigation passed; native route actions returned `ok=true`, but Firefox AT-SPI focus/title confirmation warned under KI-022 | WARNING / RECHECK |
