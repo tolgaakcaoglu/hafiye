@@ -1606,6 +1606,21 @@ claimed as passed.
   `ok=true`, `blockers=[]`, and `selected_backend=CUDA` on the RTX 3080 host.
 - The live computer-use-linux `windows` query returned exit 0 and enumerated
   Firefox and Hafiye windows. The required readiness doctor remains green.
+- A real `hafiye restart` followed by a fresh launch of the packaged
+  `release/linux-unpacked/hafiye-desktop` reached the Hafiye title and visible
+  Composer (`P23_BOOT_COMPOSER_READY Hafiye`). This covers restart-to-Desktop
+  boot recovery, but not yet a full reboot/login replay.
+- A direct request to the real local llama.cpp OpenAI-compatible endpoint
+  returned the exact marker `P23_LOCAL_ENDPOINT_OK`. This confirms the local
+  CUDA endpoint remains usable, but it is not being counted as the required
+  disconnected-network Hafiye-agent test.
+- A fresh root-broker check returned UID `0`; the corresponding live gateway
+  process remained EUID `1000` while `hafiye-rootd` was EUID `0`.
+- The structured browser route navigated a local page successfully. The native
+  Firefox route returned successful focus/input/close operations, but Firefox
+  reported no focused AT-SPI element and the final page title could not be
+  independently confirmed; this remains a KI-022 warning rather than a clean
+  P23 browser pass.
 
 ### P23 final acceptance ledger
 
@@ -1614,22 +1629,22 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 | Master item | Current evidence | Final status |
 |---|---|---|
-| 23.1 Boot | Earlier real boot/service/Desktop evidence exists; a fresh reboot/login replay is not recorded in this P23 run | NOT FINAL-CHECKED |
+| 23.1 Boot | Packaged Desktop reached Composer after a real gateway restart; a fresh reboot/login replay is not recorded | PARTIAL / REBOOT REQUIRED |
 | 23.2 Text | Composer reached Firefox and opened it, but the same turn ended with Gemini HTTP 429 | WARNING / RE-RUN |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
-| 23.4 Local inference | Local CUDA runtime is healthy; deliberate offline final replay is not performed | NOT FINAL-CHECKED |
+| 23.4 Local inference | Direct local endpoint marker passed; deliberate offline Hafiye-agent replay is not performed | PARTIAL / OFFLINE REQUIRED |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
 | 23.6 Gemini | P22 explicit Gemini one-shot passed; current Composer route hit provider quota | WARNING / RE-RUN |
 | 23.7 Privacy | Shared policy tests pass; final no-cloud request observation is not replayed here | NOT FINAL-CHECKED |
 | 23.8 Files | Existing host-tool/fixture evidence exists; final P23 organize-and-verify sequence is not replayed here | NOT FINAL-CHECKED |
 | 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
-| 23.10 Browser | Structured and native browser evidence exists; final combined sequence is not replayed here | NOT FINAL-CHECKED |
-| 23.11 Root | P8 root-broker acceptance remains green | INHERITED / RECHECK |
+| 23.10 Browser | Structured local navigation passed; native route actions returned `ok=true`, but Firefox AT-SPI focus/title confirmation warned under KI-022 | WARNING / RECHECK |
+| 23.11 Root | Fresh `hafiye root exec id -u` returned 0; gateway EUID 1000 and rootd EUID 0 | PASS / FRESH RECHECK |
 | 23.12 Memory | P14 fresh-process project/session evidence remains green | INHERITED / RECHECK |
 | 23.13 OpenHands | P15 real fixture delegation remains green | INHERITED / RECHECK |
 | 23.14 Barge-in | P13 real stop evidence remains green; exact final phrase is not replayed here | INHERITED / RECHECK |
 | 23.15 Emergency shortcut | P13 emergency-stop evidence remains green; exact final sequence is not replayed here | INHERITED / RECHECK |
-| 23.16 Restart recovery | Targeted recovery matrix passed; final Desktop reconnect replay is not recorded here | INHERITED / RECHECK |
+| 23.16 Restart recovery | Gateway restart plus fresh packaged Desktop Composer boot passed; full recoverable-session reconnect is not recorded | PARTIAL / RECHECK |
 
 ### Exact next actions
 

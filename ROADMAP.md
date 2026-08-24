@@ -610,6 +610,10 @@ E2E Suite — is now the first incomplete phase.
       Gemini HTTP 429 and remains a documented warning.
 - [x] Restore the user's local custom/Qwen route, restart the user service, and
       verify the CUDA runtime and computer-use readiness.
+- [x] Recheck the root broker/main-process UID boundary, direct local endpoint,
+      and packaged Desktop boot after a gateway restart.
+- [x] Exercise the structured browser and native Firefox routes; retain the
+      native AT-SPI focus warning as KI-022 rather than claiming a clean pass.
 - [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
       quota is available.
 - [ ] Execute and record every remaining real-machine item 23.1 and 23.3–23.16
