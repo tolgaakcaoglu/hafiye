@@ -1616,6 +1616,10 @@ claimed as passed.
   disconnected-network Hafiye-agent test.
 - A fresh root-broker check returned UID `0`; the corresponding live gateway
   process remained EUID `1000` while `hafiye-rootd` was EUID `0`.
+- The live computer doctor also observed a separate root-owned `ydotoold` on
+  `/run/user/0/.ydotool_socket` in addition to the healthy user daemon on
+  `/run/user/1000/.ydotool_socket`. They use different sockets and readiness
+  stayed green; this host diagnostic is recorded as KI-039 and was not altered.
 - The structured browser route navigated a local page successfully. The native
   Firefox route returned successful focus/input/close operations, but Firefox
   reported no focused AT-SPI element and the final page title could not be

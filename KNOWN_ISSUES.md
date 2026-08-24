@@ -87,7 +87,10 @@ silently treated as passing.
 - Ubuntu's packaged ydotool.service is enabled and active in the current user
   session. The duplicate generated ydotoold.service was disabled/removed after
   its same-socket collision, and the root user-manager ydotoold instance was
-  disabled.
+  disabled during the P0 setup. A later host probe found a separate root-owned
+  `/run/user/0/.ydotool_socket` process again; the current user socket remains
+  healthy. That current observation is tracked as KI-039 and is not a Hafiye
+  readiness blocker.
 - sudo requires normal interactive authentication; no passwordless sudo or
   NOPASSWD sudoers rule was created.
 
@@ -534,3 +537,16 @@ silently treated as passing.
 - The same doctor run reports the workspace audit counts recorded in KI-007:
   4 findings in `web` and 3 findings in `ui-tui`. No dependency rewrite or
   `npm audit fix` was run during P23.
+
+## KI-039 — Separate root-owned ydotoold process in the host user-manager namespace
+
+- Status: HOST DIAGNOSTIC; current Hafiye computer-use readiness remains green.
+- The 2026-08-25 live probe showed the managed user daemon
+  `/usr/bin/ydotoold` as PID `13797` with socket
+  `/run/user/1000/.ydotool_socket`, plus a separate root-owned `/usr/bin/ydotoold`
+  as PID `3195645` under a root `systemd --user` manager with socket
+  `/run/user/0/.ydotool_socket`.
+- The two processes use different sockets; the required user readiness doctor
+  returned all four booleans true and `blockers=[]`. No attempt was made to
+  stop or alter the root user-manager process because it may belong to another
+  host service and would require privileged operator coordination.
