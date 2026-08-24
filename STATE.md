@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 0f45abb9c
-  (P19 Hardening source/test commit)
+- Current Hafiye source HEAD: 964fc49b5f564f25588894374ea83e81cc2f58c7
+  (P20 Packaging source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -65,7 +65,7 @@ validated against the P14 acceptance criteria.
 P15 — OpenHands coding delegate: complete. The managed official source/runtime,
 real coding delegation, gateway Task Center progress bridge, Desktop Task
 Center panel, and the master fixture E2E all pass. P16, P17, P18, and P19 are
-also complete; P20 is now the first incomplete phase.
+also complete; P20 is complete and P21 is now the first incomplete phase.
 
 P16 — Task Center: complete. The durable generic task record, restart/reconnect
 behavior, complete required Desktop fields/actions, and real Electron
@@ -81,7 +81,13 @@ gateway and the real recurring local-task acceptance passes.
 P19 — Hardening: complete. Prompt-injection and redaction boundaries, provider
 outage policy, bounded llama/voice recovery, computer-use failure contracts,
 loop/action budgets, checkpoint/config recovery, audit retention, and disk
-limits are implemented and verified. P20 is now the first incomplete phase.
+limits are implemented and verified.
+
+P20 — Packaging: complete. The real Linux Electron build is wrapped in a
+Debian package containing the Hafiye backend, launchers, user gateway unit,
+root-broker activation path, XDG entries, icons, notices, and dependency
+doctor/installer. Rootless dpkg unpack/configure and the extracted package
+doctor pass. P21 is now the first incomplete phase.
 
 ## Verified working
 
@@ -242,6 +248,11 @@ limits are implemented and verified. P20 is now the first incomplete phase.
 - Real voice doctor reports whisper CUDA/Vulkan/CPU manifests and Piper Turkish
   voice ready. The pinned computer-use-linux doctor reports all four required
   readiness booleans true and `blockers=[]`.
+- The unified P20 artifact `dist/hafiye_0.20.5_amd64.deb` was built from the
+  real Electron `linux-unpacked` output. Its package manifest keeps the
+  current Hafiye source commit, pinned Hermes commit, and baseline merge
+  separate. Extracted-package `hafiye package doctor --json` returned
+  `ok=true` with `blockers=[]`.
 
 ## Regression status
 
@@ -292,6 +303,12 @@ P18 source baseline and the four additional full-suite observations are
 timing/active-desktop diagnostics. The exact five comparison command reduced
 the current baseline to historical items 2, 3, and 5; items 1 and 4 passed.
 No P19-specific regression was found.
+
+P20's package metadata/manifest tests, root-broker handoff test, rootless
+dpkg install test, and real Electron pack passed. The exact five-ID comparison
+after the packaging changes remained `3 failed, 2 passed`, with only accepted
+historical items 2, 3, and 5 failing. No packaging-specific or new upstream
+regression was found.
 
 The P5 targeted Python matrix now passes 468 tests, alongside the Desktop
 provider tests/typecheck/build, real Secret Service round-trip, local CUDA
@@ -746,12 +763,12 @@ bugs are not being fixed by Hafiye.
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `0f45abb9c` separate in all
+   source commit `964fc49b5f564f25588894374ea83e81cc2f58c7` separate in all
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current three-ID comparison baseline; investigate any new/different ID.
-3. P19 is closed. Begin P20 — Packaging — while preserving the shared gateway
-   and Desktop business-logic boundary.
+3. P19 and P20 are closed. Begin P21 — First-run onboarding — while preserving
+   the shared gateway and Desktop business-logic boundary.
 
 ## Environment changes
 
@@ -1296,9 +1313,11 @@ P18 acceptance passed. No new or different upstream regression was found.
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
  investigate any new or different failure in later phases.
-2. Begin P20 — Packaging after preserving the P19 hardening contracts.
-3. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source/test commit `0f45abb9c` separate in all subsequent state updates.
+2. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
+ source/test commit `964fc49b5f564f25588894374ea83e81cc2f58c7` separate in all
+ subsequent state updates.
+3. Begin P21 — First-run Onboarding — against the packaged Hafiye runtime and
+ preserve the shared gateway/Desktop business-logic boundary.
 
 ## P19 execution status — complete
 
@@ -1336,4 +1355,53 @@ The P19 implementation and acceptance are recorded in source/test commit
   skipped in 847.8 seconds. The additional failures are documented in KI-034;
   the P19-focused and adjacent matrices passed.
 
-P19 acceptance passed. P20 — Packaging — is now the first incomplete phase.
+P19 acceptance passed. P20 followed and is complete; P21 — First-run
+Onboarding — is now the first incomplete phase.
+
+## P20 execution status — complete
+
+The P20 implementation and acceptance are recorded in source/test commit
+`964fc49b5f564f25588894374ea83e81cc2f58c7`. The commit identities remain
+separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `964fc49b5f564f25588894374ea83e81cc2f58c7`.
+
+### Implemented and verified
+
+- Added the Ubuntu/Debian outer package assembler at
+  `scripts/build_deb.py`. It wraps the real Electron `linux-unpacked` tree
+  with the backend source/lock metadata, stable launchers, user gateway unit,
+  per-user root-broker activation path, XDG application/autostart entries,
+  Hafiye icons, notices, and a package manifest.
+- Added the stdlib-only `hafiye package doctor` and `hafiye package install`
+  boundary. Dependency installation uses the copied lockfile and writes only
+  to the user's Hafiye Python venv; managed model/voice/CUA runtimes remain
+  first-run downloads.
+- Made the root-broker sudo handoff use its absolute module file so a package
+  install does not depend on sudo preserving `PYTHONPATH`.
+
+### P20 test record
+
+- `.venv/bin/python -m pytest -q tests/packaging/test_hafiye_deb.py tests/test_hafiye_rootd.py` — 10 passed.
+- `.venv/bin/python -m pytest -q tests/test_packaging_metadata.py` — 7 passed.
+- `.venv/bin/ruff check scripts/build_deb.py packaging/debian/dependency_doctor.py hafiye_rootd.py tests/packaging/test_hafiye_deb.py` — passed.
+- `cd apps/desktop && npm run pack` — real Electron Linux unpacked build passed; clean build stamp `964fc49b5f56`; existing npm/Vite/Babel/chunking warnings remain.
+- `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json` — real `amd64` `.deb` built; final artifact is approximately 119 MB.
+- Final artifact extract plus `hafiye package doctor --json` — `ok=true`,
+  `blockers=[]`; manifest source is
+  `964fc49b5f564f25588894374ea83e81cc2f58c7`, pinned upstream and baseline
+  merge values are distinct and correct.
+- Rootless `fakeroot dpkg --force-not-root --force-script-chrootless
+  --force-depends --unpack/--configure` of the final artifact — passed. The
+  temporary dpkg database reports expected unmet host-package dependencies;
+  this does not change the package maintainer-script result.
+- Exact five-ID upstream comparison after P20 — `3 failed, 2 passed`; only
+  historical IDs 2, 3, and 5 failed. No new/different regression was found.
+
+P20 acceptance passed. P21 — First-run Onboarding — is now the first
+incomplete phase. A privileged install on the live host was deliberately not
+run by the build validation because it would mutate `/usr` and require an
+interactive sudo password; the rootless Debian install path and extracted
+package doctor are the recorded acceptance evidence.

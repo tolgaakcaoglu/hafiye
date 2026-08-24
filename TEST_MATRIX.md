@@ -346,3 +346,21 @@ boundary, Desktop controls, and acceptance tests. The historical five-ID
 P19 is accepted. Source/test commit `0f45abb9c` contains the hardening
 boundary and tests. The historical five-ID whitelist remains intact; the
 current comparison baseline is items 2, 3, and 5 only.
+
+## P20 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P20-PY-01 | Packaging and root-broker boundaries | `.venv/bin/python -m pytest -q tests/packaging/test_hafiye_deb.py tests/test_hafiye_rootd.py` | 10 passed | PASS |
+| P20-PY-02 | Packaging metadata contract | `.venv/bin/python -m pytest -q tests/test_packaging_metadata.py` | 7 passed | PASS |
+| P20-LINT-01 | Packaging compilation, lint, and patch hygiene | `py_compile` on changed Python files; `.venv/bin/ruff check ...`; `git diff --check` | Passed | PASS |
+| P20-DESKTOP-01 | Real Electron Linux package input | `cd apps/desktop && npm run pack` | Real `linux-unpacked` output passed; clean build stamp `964fc49b5f56`; existing npm/Vite/Babel/chunking warnings | PASS WITH WARNING |
+| P20-DEB-01 | Debian artifact and commit manifest | `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; `dpkg-deb --info/--contents` | Real `amd64` package built and required paths/metadata present; approximately 119 MB | PASS |
+| P20-DOCTOR-01 | Extracted final package readiness | Extract final artifact and run `hafiye package doctor --json` | `ok=true`, `blockers=[]`; source/pinned/baseline manifest values correct | PASS |
+| P20-INSTALL-01 | Debian install semantics without live-host mutation | Rootless `fakeroot dpkg --force-not-root --force-script-chrootless --force-depends --unpack/--configure` in a temporary root | Passed; expected unmet dependency warnings in temporary dpkg database; no live host install claimed | PASS WITH DIAGNOSTIC |
+| P20-BE-01 | Exact five upstream comparison | Same five historical test IDs run after P20 | `3 failed, 2 passed`; only accepted historical IDs 2, 3, and 5 failed | ACCEPTED BASELINE UNCHANGED |
+| P20-ACCEPTANCE | Master P20 closure | Debian package, package doctor, rootless install semantics, focused tests, and baseline comparison | All required P20 evidence recorded; P21 is next | PASS |
+
+P20 is accepted. The package artifact is kept locally at
+`dist/hafiye_0.20.5_amd64.deb` and is ignored by Git; the source/test commit is
+`964fc49b5f564f25588894374ea83e81cc2f58c7`.

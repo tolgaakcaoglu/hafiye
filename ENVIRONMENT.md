@@ -382,3 +382,22 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
   permission, or logout/login change. The real doctor commands were
   non-invasive; retention deletion was covered in isolated temporary-root
   tests rather than run destructively against the live log store.
+
+## P20 Debian packaging validation (2026-08-24)
+
+- The real Electron `linux-unpacked` output was built with
+  `cd apps/desktop && npm run pack` and wrapped into
+  `/home/tolga/projects/hafiye/dist/hafiye_0.20.5_amd64.deb` by the Hafiye
+  Debian assembler. The artifact is ignored by Git and was not installed into
+  the live host filesystem.
+- The final artifact was extracted into a temporary directory and its packaged
+  `hafiye package doctor --json` returned `ok=true` with `blockers=[]`. The
+  manifest recorded source commit `964fc49b5f564f25588894374ea83e81cc2f58c7`,
+  pinned Hermes commit `f293e7206b4ddd66042329442c6afebc19a8808d`, and baseline
+  merge commit `2ac06b131a237916432503ac67bbcada6dbea39e` separately.
+- Rootless fakeroot dpkg unpack/configure passed in a temporary package root.
+  Its empty temporary dpkg database emitted expected unmet host-package
+  dependency diagnostics. The optional `cargo` doctor check remains a warning.
+- No live system package, service, sudo rule, credential, group, device
+  permission, or logout/login state was changed for P20. A privileged live-host
+  install was intentionally not claimed.

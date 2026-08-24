@@ -470,3 +470,16 @@ silently treated as passing.
   reruns; the two Windows cold-start assertions are suppressed by the active
   Desktop lifecycle ledger on this host. No P19 code path owns those tests.
 - This item must not be added to the historical five-ID regression whitelist.
+
+## KI-035 — P20 package install validation scope
+
+- Status: DIAGNOSTIC; no P20 acceptance blocker.
+- The final `.deb` was built, the extracted package doctor returned `ok=true`
+  with `blockers=[]`, and rootless fakeroot dpkg unpack/configure passed in a
+  temporary package root. The temporary dpkg database reports expected unmet
+  host-package dependencies because it contains no live host package database.
+- A privileged live-host install was not run because it would mutate `/usr`
+  and require interactive sudo. No success is claimed for that live mutation.
+- The optional `cargo` check remains a diagnostic warning only. The exact
+  accepted upstream baseline is unchanged: historical IDs 2, 3, and 5 fail;
+  IDs 1 and 4 pass; no new/different regression was found.

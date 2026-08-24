@@ -23,7 +23,7 @@ records execution status only.
 - [x] P17 Control Center
 - [x] P18 Scheduler / skills / MCP
 - [x] P19 Hardening
-- [ ] P20 Packaging
+- [x] P20 Packaging
 - [ ] P21 First-run onboarding
 - [ ] P22 CLI
 - [ ] P23 Final E2E suite
@@ -520,4 +520,25 @@ P19 is complete. Source/test commit `0f45abb9c` adds the hardening boundary and
 tests. The real hardening doctor returned `ok=true` with 12/12 checks true and
 `blockers=[]`; the exact upstream comparison reduced the current baseline to
 items 2, 3, and 5 of the historical five. No new P19-specific regression was
-found. P20 — Packaging — is now the next incomplete phase.
+found. P20 — Packaging — followed and is complete; P21 — First-run Onboarding —
+is now the next incomplete phase.
+
+## P20 execution status — complete
+
+- [x] Build the real Electron Linux output and wrap it in the Ubuntu/Debian
+      `.deb` package required by the master roadmap.
+- [x] Include the Hafiye backend, launchers, user gateway unit, explicit
+      per-user root-broker activation path, XDG autostart/desktop entries,
+      icons, notices, and dependency doctor/installer.
+- [x] Keep managed model, voice, and computer-use runtimes as first-run/setup
+      downloads rather than pretending they are statically bundled.
+- [x] Validate package metadata, manifest commit identities, extracted doctor,
+      rootless dpkg unpack/configure, and the real Electron pack.
+- [x] Run the focused packaging/rootd tests and the exact five-ID upstream
+      comparison. The comparison remains `3 failed, 2 passed`, with only
+      accepted historical IDs 2, 3, and 5 failing.
+
+P20 is accepted. Source/test commit
+`964fc49b5f564f25588894374ea83e81cc2f58c7` contains the implementation and
+tests; no Hermes upstream commit or history was changed. P21 — First-run
+Onboarding — is the first incomplete phase.

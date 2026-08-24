@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P19 Hardening source/test commit):
-  0f45abb9c
+- Current Hafiye source HEAD (P20 Packaging source/test commit):
+  964fc49b5f564f25588894374ea83e81cc2f58c7
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -489,8 +489,8 @@ P0 computer-use acceptance requires:
   records, and 22 `task.update` events; the Desktop Task Center test/build
   passed. P15, P16, and P17 are complete. P16's durable Task Center
   implementation and P17's real Control Center acceptance are recorded in the
-  current Hafiye commits; P18 is complete and P19 is the next phase. No Hermes
-  upstream commit changed.
+  current Hafiye commits; P18 and P19 are complete and P20 is the current
+  packaged phase. No Hermes upstream commit changed.
 
 ## P18 Scheduler / skills / MCP patch group
 
@@ -518,6 +518,23 @@ P0 computer-use acceptance requires:
   historical items 2, 3, and 5; items 1 and 4 passed. No upstream Hermes
   commit changed, no upstream history was rewritten, and no upstream baseline
   bug was fixed as part of P19.
+
+## P20 Packaging patch group
+
+- Hafiye source/test commit:
+  `964fc49b5f564f25588894374ea83e81cc2f58c7`.
+- The patch adds an outer Ubuntu/Debian package assembler around the real
+  Electron `linux-unpacked` output. The package contains the Hafiye backend,
+  stable launchers, the user gateway unit, explicit per-user root-broker
+  activation, XDG desktop/autostart entries, icons, notices, and a manifest
+  recording the source, pinned upstream, and baseline merge commits.
+- Managed model/voice/computer-use runtimes remain first-run downloads. The
+  package doctor and installer operate through the package boundary without a
+  second runtime or configuration store.
+- The real final artifact was inspected, extracted-package doctor returned
+  `ok=true` with `blockers=[]`, and rootless fakeroot dpkg unpack/configure
+  passed. The exact five-ID comparison remained historical IDs 2, 3, and 5
+  only. No Hermes upstream commit changed and no upstream history was rewritten.
 
 ## P17 Control Center patch group
 

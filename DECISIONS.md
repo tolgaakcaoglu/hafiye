@@ -482,3 +482,22 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   redacted/bounded, retention mutation is isolated to known audit/checkpoint
   stores, and `hafiye hardening doctor` can validate the complete boundary
   without starting a runtime. This ADR does not override the master roadmap.
+
+## ADR-0030 — Assemble one Ubuntu/Debian package around the existing runtimes
+
+- Date: 2026-08-24
+- Decision: Build the P20 `.deb` as an outer package around the existing real
+  Electron `linux-unpacked` output and the Hafiye backend source/lock metadata.
+  Install package-owned launchers and assets under `/usr/lib/hafiye`, expose
+  the user gateway vendor unit, and activate the root broker explicitly for the
+  target user rather than shipping an implicitly runnable root service. Keep
+  managed model, voice, and computer-use runtimes as first-run/setup downloads.
+- Reason: The master roadmap fixes Ubuntu/Debian and `.deb` as the primary
+  packaging target while allowing managed external runtimes to download during
+  setup. One package boundary keeps Desktop, CLI/backend, gateway, root-broker
+  activation, XDG entries, and notices together without creating a second
+  runtime or configuration store.
+- Consequence: Package doctor/install can validate and prepare the user-scoped
+  runtime after installation; a privileged live install remains a release
+  operator action and was not performed during rootless acceptance. This ADR
+  records implementation detail only and does not override the master roadmap.
