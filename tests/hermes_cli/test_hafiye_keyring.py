@@ -118,6 +118,35 @@ def test_provider_lifecycle_migrates_dotenv_to_keyring(tmp_path: Path, monkeypat
     )
 
 
+def test_default_xdg_provider_lifecycle_uses_config_root(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The default XDG config/data split must not hide saved credentials."""
+    backend = _install_fake_keyring(monkeypatch)
+    config_home = tmp_path / "config"
+    data_home = tmp_path / "data"
+    (config_home / "hafiye").mkdir(parents=True)
+    (data_home / "hafiye").mkdir(parents=True)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
+    monkeypatch.setenv("XDG_DATA_HOME", str(data_home))
+    monkeypatch.delenv("HERMES_HOME", raising=False)
+
+    from hermes_cli.credential_lifecycle import save_provider_env_credential
+
+    result = save_provider_env_credential("GEMINI_API_KEY", "xdg-gemini-secret")
+
+    assert result["secret_store"] == "linux-secret-service"
+    config_path = config_home / "hafiye" / "config.yaml"
+    data_path = data_home / "hafiye" / "config.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    ref = hafiye_keyring.secret_ref_for_env(
+        "GEMINI_API_KEY", config_home / "hafiye"
+    )
+    assert config["secrets"]["keyring"]["credentials"]["GEMINI_API_KEY"] == ref
+    assert backend.values[(hafiye_keyring.KEYRING_SERVICE, ref)] == "xdg-gemini-secret"
+    assert not data_path.exists()
+
+
 def test_provider_removal_cleans_orphaned_keyring_item(tmp_path: Path, monkeypatch) -> None:
     _install_fake_keyring(monkeypatch)
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))

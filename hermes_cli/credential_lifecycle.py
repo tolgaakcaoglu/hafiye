@@ -325,10 +325,10 @@ def _refresh_runtime_provider_secret(env_var: str, value: str | None) -> None:
                 hydrate_profile_secret_sources,
                 reset_secret_source_cache,
             )
-            from hermes_constants import get_hermes_home
+            from hermes_cli.config import get_config_path
 
             reset_secret_source_cache()
-            hydrate_profile_secret_sources(get_hermes_home())
+            hydrate_profile_secret_sources(get_config_path().parent)
             return
     except Exception:
         # The next process/startup hydration remains authoritative. The
@@ -353,9 +353,13 @@ def _save_hafiye_provider_secret(env_var: str, value: str) -> Dict[str, Any]:
         put_secret,
         secret_ref_for_env,
     )
-    from hermes_constants import get_hermes_home
+    from hermes_cli.config import get_config_path
 
-    home = get_hermes_home()
+    # Secret-source hydration uses the active config root when HERMES_HOME is
+    # unset (the normal XDG layout). Keep the reference fingerprint and
+    # config binding in that same root so a saved provider is visible to the
+    # next process as well as to the current one.
+    home = get_config_path().parent
     value = value.strip()
     if not value:
         raise ValueError("Credential value must not be empty")
@@ -416,9 +420,9 @@ def _remove_hafiye_provider_secret(env_var: str) -> Dict[str, Any]:
         remove_secret_reference,
         secret_ref_for_env,
     )
-    from hermes_constants import get_hermes_home
+    from hermes_cli.config import get_config_path
 
-    home = get_hermes_home()
+    home = get_config_path().parent
     old_dotenv = load_env().get(env_var)
     ref = secret_ref_for_env(env_var, home)
     old_keyring = get_secret(ref)
