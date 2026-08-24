@@ -3380,6 +3380,17 @@ def cmd_runtime(args):
     return 0
 
 
+def cmd_root(args):
+    """Manage the non-root Hafiye process's local privileged broker."""
+    from hafiye_rootd import RootBrokerError, root_broker_command
+
+    try:
+        return root_broker_command(args)
+    except RootBrokerError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+
 def cmd_proxy(args):
     """Local OpenAI-compatible proxy to OAuth providers."""
     # Lazy import — pulls in aiohttp, which is gated behind an extras install
@@ -11993,7 +12004,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "dump", "egress", "fallback", "gateway", "hooks", "import", "import-agent", "insights",
         "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
         "journey", "memory-graph", "learning",
-        "model", "monitoring", "pairing", "pause", "peer", "pets", "plugins", "portal", "profile",
+        "model", "monitoring", "pairing", "pause", "peer", "pets", "plugins", "portal", "profile", "root",
         "project", "proxy",
         "prompt-size",
         "resume",
@@ -13077,6 +13088,13 @@ def main():
     # Hafiye's managed local llama.cpp/GGUF runtime.  This is a separate
     # lifecycle from Hermes' upstream messaging gateway.
     build_runtime_parser(subparsers, cmd_runtime=cmd_runtime)
+
+    # Hafiye's privileged operation boundary. The agent/Desktop process stays
+    # non-root; only explicitly requested privileged operations cross the
+    # local hafiye-rootd Unix socket.
+    from hafiye_rootd import build_root_parser
+
+    build_root_parser(subparsers, cmd_root=cmd_root)
 
     # =========================================================================
     # lsp command

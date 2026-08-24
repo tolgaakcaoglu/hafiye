@@ -377,6 +377,7 @@ build-backend = "setuptools.build_meta"
 [project.scripts]
 hermes = "hermes_cli.main:main"
 hafiye = "hermes_cli.main:main"
+hafiye-rootd = "hafiye_rootd:main"
 hermes-agent = "run_agent:main"
 hermes-acp = "acp_adapter.entry:main"
 
@@ -445,6 +446,8 @@ py-modules = [
   "hermes_logging",
   "utils",
   "mcp_serve",
+  "hafiye_execution_policy",
+  "hafiye_rootd",
 ]
 
 [tool.setuptools.packages.find]
