@@ -33,6 +33,32 @@ def test_auto_backend_uses_cuda_then_vulkan_then_cpu():
         choose_backend("CUDA", environment=cpu_host, compiled=["CPU"])
 
 
+def test_qwen2_context_extension_is_explicit_and_narrow():
+    qwen_args = local_runtime._context_compatibility_args(
+        "qwen2.5-0.5b-instruct-q4",
+        Path("qwen2.5-0.5b-instruct-q4.gguf"),
+        65536,
+    )
+    assert qwen_args == [
+        "--rope-scaling",
+        "yarn",
+        "--yarn-orig-ctx",
+        "32768",
+        "--override-kv",
+        "qwen2.context_length=int:65536",
+    ]
+    assert local_runtime._context_compatibility_args(
+        "qwen2.5-0.5b-instruct-q4",
+        Path("qwen2.5-0.5b-instruct-q4.gguf"),
+        32768,
+    ) == []
+    assert local_runtime._context_compatibility_args(
+        "llama-3.2-1b-instruct-q4",
+        Path("llama-3.2-1b-instruct-q4.gguf"),
+        65536,
+    ) == []
+
+
 def test_import_model_is_checksum_registered_and_private(tmp_path: Path):
     manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
     source = tmp_path / "tiny.gguf"

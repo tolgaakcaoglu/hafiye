@@ -101,6 +101,33 @@ def _ensure_private_dir(path: Path) -> None:
         pass
 
 
+def _context_compatibility_args(model_id: str, model_path: Path, context_size: int) -> list[str]:
+    """Return llama.cpp context-extension flags for known GGUF families.
+
+    Qwen2 GGUF files commonly advertise a 32K training context even when the
+    model is intended to be served with YaRN extension.  Hermes requires a
+    64K runtime window for tool-calling sessions, so an explicit larger Hafiye
+    context must also update the Qwen2 metadata that llama-server uses for its
+    safety cap.  Keep this narrowly scoped to Qwen2 identities; other models
+    must continue to use their native metadata instead of being silently
+    extrapolated.
+    """
+    requested = int(context_size)
+    if requested <= 32768:
+        return []
+    identity = f"{model_id} {model_path.name}".lower()
+    if not re.search(r"qwen2(?:[._-]|$)", identity):
+        return []
+    return [
+        "--rope-scaling",
+        "yarn",
+        "--yarn-orig-ctx",
+        "32768",
+        "--override-kv",
+        f"qwen2.context_length=int:{requested}",
+    ]
+
+
 def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     _ensure_private_dir(path.parent)
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -655,7 +682,22 @@ class LocalRuntimeManager:
         log_stream = self.paths.server_log.open("ab")
         actual_gpu_layers = int(gpu_layers) if gpu_layers is not None else (99 if selected in GPU_BACKENDS else 0)
         device = "CUDA0" if selected == "CUDA" else ("Vulkan0" if selected == "VULKAN" else "none")
-        command = [str(binary), "--model", str(item["path"]), "--host", DEFAULT_HOST, "--port", str(port), "--ctx-size", str(int(context_size)), "--device", device, "-ngl", str(actual_gpu_layers)]
+        command = [
+            str(binary),
+            "--model",
+            str(item["path"]),
+            "--host",
+            DEFAULT_HOST,
+            "--port",
+            str(port),
+            "--ctx-size",
+            str(int(context_size)),
+            "--device",
+            device,
+            "-ngl",
+            str(actual_gpu_layers),
+            *_context_compatibility_args(model_id, Path(str(item["path"])), int(context_size)),
+        ]
         try:
             process = subprocess.Popen(command, stdout=log_stream, stderr=subprocess.STDOUT, start_new_session=True)
         except OSError as exc:
