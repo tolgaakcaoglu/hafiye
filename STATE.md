@@ -1614,6 +1614,10 @@ claimed as passed.
   returned the exact marker `P23_LOCAL_ENDPOINT_OK`. This confirms the local
   CUDA endpoint remains usable, but it is not being counted as the required
   disconnected-network Hafiye-agent test.
+- Loading the Qwen GGUF with `--context-size 65536` did not remove KI-014:
+  llama.cpp capped the model at `n_ctx=32768` because its trained context is
+  32K, and real `hafiye ask` rejected it below Hermes' 64K minimum. The server
+  was restored to the prior 4,096 context setting.
 - A fresh root-broker check returned UID `0`; the corresponding live gateway
   process remained EUID `1000` while `hafiye-rootd` was EUID `0`.
 - The live computer doctor also observed a separate root-owned `ydotoold` on

@@ -208,6 +208,12 @@ silently treated as passing.
   context below Hermes' 64K minimum agent context. This is the same fixture
   limitation, not a new CLI/runtime regression. The explicit Gemini
   `hafiye ask` path returned `P22_GEMINI_CLI_OK`.
+- A P23 recovery attempt loaded the same GGUF with `--context-size 65536`.
+  llama.cpp correctly capped the slot at the model's trained 32,768-token
+  limit; the real `hafiye ask` then rejected 32,768 against Hermes' 64K
+  minimum. The runtime was restored to its prior 4,096-token setting. A
+  compatible production GGUF/model context remains required for local-agent
+  final E2E acceptance.
 - Production model entries must advertise a context window compatible with the
   requested Hafiye agent configuration. This is a model-selection/configuration
   concern, not a reason to weaken the managed runtime contract.
