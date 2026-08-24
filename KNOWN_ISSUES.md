@@ -346,19 +346,33 @@ silently treated as passing.
   must not silently replace the prescribed openWakeWord/ONNX architecture or
   fabricate local-capture readiness.
 
-## KI-027 — OpenHands stop acceptance is not executable before P15 integration
+## KI-027 — OpenHands stop acceptance was not executable before P15 integration
 
-- Status: BLOCKER FOR P13 CLOSURE.
+- Status: RESOLVED.
 - The master P13 acceptance requires starting and stopping a real OpenHands
-  delegation. The current repository has no OpenHands V1 runtime/SDK wiring,
-  no Hafiye `coding_delegate` tool, and no live OpenHands process to exercise.
-  The generic async delegation and process-registry cancellation seams are
-  implemented and tested, but they are not evidence of the required
-  OpenHands-specific stop behavior.
-- P13 must remain incomplete until the prescribed P15 integration creates a
-  real delegation that can be started, stopped, and intentionally resumed
-  through the shared cancellation controller. This issue does not authorize a
-  substitute coding backend or a change to the master architecture.
+  delegation. The Hafiye-managed OpenHands V1 runtime and `coding_delegate`
+  path now exist in source commit
+  `dfb0d29c7ba80efadd5a517bac07aa949e517a5a`.
+- A real Gemini-backed fixture delegation edited `bug.py`, returned its result
+  and changed-file record, and the fixture test passed. A second live worker
+  was stopped by the shared cancellation controller, returned
+  `status=cancelled`, and was followed by an explicit successful resume with
+  no active worker remaining.
+- This issue no longer blocks P13. It does not authorize a substitute coding
+  backend or a change to the master architecture; the remaining full P15
+  scope, including Task Center progress exposure, is tracked as phase work.
+
+## KI-029 — OpenHands runtime bootstrap is not yet exposed by Hafiye setup
+
+- Status: FOLLOW-UP; not a P13 acceptance blocker.
+- The current host has the official OpenHands V1 packages installed in the
+  managed user runtime at `~/.local/share/hafiye/runtimes/openhands/` and the
+  runtime doctor verifies the package/source pin. The repository currently
+  provides discovery/readiness and the managed worker boundary, while the
+  user-facing install/bootstrap command remains part of the full P15 work.
+- Until that follow-up is implemented, a fresh host without the managed
+  runtime correctly hides `coding_delegate` and reports the actionable doctor
+  blocker; it must not claim coding-delegate readiness from a placeholder.
 
 ## KI-028 — Upstream generic `cua-driver` is absent on this host
 

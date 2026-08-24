@@ -16,7 +16,7 @@ records execution status only.
 - [x] P10 Browser
 - [x] P11 Local Turkish voice stack
 - [x] P12 Custom Hafiye wake word
-- [ ] P13 Barge-in + emergency stop
+- [x] P13 Barge-in + emergency stop
 - [ ] P14 Memory + project registry
 - [ ] P15 OpenHands coding delegate
 - [ ] P16 Task Center
@@ -72,7 +72,8 @@ Synthetic validation at threshold `0.6` reached accuracy `1.0`; a normal-room
 music recording produced zero detector fires, while a real Turkish “Hafiye”
 recording produced detector fires and a fresh Desktop session. The real
 Electron acceptance also detected the phrase after the Hafiye window was
-minimized. P13 — Barge-in + emergency stop is now the next incomplete phase.
+minimized. P13 — Barge-in + emergency stop followed and is now complete; P14
+is the next incomplete phase.
 
 ## P0 execution status
 
@@ -376,10 +377,17 @@ incomplete phase.
       and the real GNOME fallback trigger/cleanup.
 - [x] Run the targeted Python and Desktop tests, typecheck, production build,
       lint, compilation, and whitespace checks.
-- [ ] Start and stop a real OpenHands delegation through `coding_delegate`.
+- [x] Start and stop a real OpenHands delegation through `coding_delegate`.
 
-P13 remains incomplete. The shared cancellation implementation and all
-available real stop paths pass, but the master P13 acceptance explicitly
-requires stopping OpenHands. The repository does not yet contain the P15
-OpenHands V1/coding_delegate integration or a live OpenHands process, so KI-027
-is a real acceptance blocker. P14 must not start until this criterion passes.
+P13 is complete. The shared cancellation implementation and all available real
+stop paths pass, including the master-specific live OpenHands acceptance. The
+managed OpenHands V1 runtime and `coding_delegate` are recorded in source
+commit `dfb0d29c7ba80efadd5a517bac07aa949e517a5a`; a real Gemini-backed fixture
+delegation edited `bug.py`, returned its result/change record, and the fixture
+test returned `1 passed`. A second live worker was stopped through the shared
+controller and resumed intentionally with no active process remaining. KI-027
+is resolved. P14 — Memory + project registry is now the next incomplete phase.
+
+The OpenHands implementation is a P13 prerequisite and does not close P15 by
+itself; P15 still owns the remaining full-phase acceptance, including Task
+Center progress exposure.

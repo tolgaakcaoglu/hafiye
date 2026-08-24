@@ -349,3 +349,23 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   passwordless sudo, or systemd modification. The gateway broadcasts the stop
   event so renderer-owned TTS playback also stops when the GNOME command was
   triggered outside Electron.
+
+## ADR-0023 — Run OpenHands V1 through a managed one-shot worker
+
+- Date: 2026-08-24
+- Decision: Integrate the official OpenHands V1 SDK/runtime behind Hafiye's
+  `coding_delegate` tool, using a Hafiye-managed user runtime and a one-shot
+  worker subprocess for each local repository task. Resolve the model through
+  Hafiye's `coding` route, keep the repository path local, and register the
+  worker in Hermes' existing process registry so the shared cancellation
+  controller can stop it.
+- Reason: The master roadmap fixes OpenHands as Hafiye's coding specialist and
+  P13 requires a real delegation that the emergency-stop path can cancel. A
+  subprocess gives OpenHands its official dependency environment while keeping
+  Hafiye responsible for routing, privacy policy, secret handling, progress
+  records, and process cancellation.
+- Consequence: The worker consumes the credential at its private boundary and
+  emits only redacted progress/result metadata. The managed runtime doctor
+  hides `coding_delegate` when the official packages are absent. This records
+  implementation detail only; it does not close the full P15 phase or replace
+  the later Task Center requirement.

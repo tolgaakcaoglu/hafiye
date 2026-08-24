@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: a4cef73ba7fe339926a83cc39dbd0f9b1356c38e
-  (P13 unified cancellation/emergency-stop source commit)
+- Current Hafiye source HEAD: dfb0d29c7ba80efadd5a517bac07aa949e517a5a
+  (managed OpenHands coding delegation and P13 acceptance source commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -55,15 +55,15 @@ P12 — Custom Hafiye wake word: complete. The bundled Turkish openWakeWord
 model, persisted tuning controls, local/client capture path, synthetic and
 real-room validation, and minimized-window Desktop activation are accepted.
 
-P13 — Barge-in + emergency stop: implementation complete; acceptance is blocked
-by the missing real OpenHands delegation path required by the P13 test list
-(KI-027). Do not mark P13 complete yet.
+P13 — Barge-in + emergency stop: complete. The real OpenHands delegation
+start/stop/resume acceptance now passes; KI-027 is resolved.
 
-P14 — Memory + project registry: not started; blocked by first-incomplete-phase
-ordering until P13 acceptance is closed.
+P14 — Memory + project registry: next incomplete phase; not started.
 
-P15 — OpenHands coding delegate: not started. Its real delegation path is the
-missing prerequisite for the P13 OpenHands stop acceptance.
+P15 — OpenHands coding delegate: foundational managed runtime and
+`coding_delegate` path implemented for P13 acceptance, but the full phase is
+not closed. Task Center progress exposure and the remaining P15 acceptance
+work are still pending.
 
 ## Verified working
 
@@ -229,7 +229,14 @@ engaged the durable ESTOP sentinel, returned prompt rejection code 4091 while
 paused, and resumed successfully. Real TTS stop, process-registry kill, root
 broker block/resume, and GNOME Wayland fallback keybinding checks passed. The
 Desktop Electron and UI test subsets, typecheck, and production build also
-pass. No new or different upstream regression was found.
+pass. The managed OpenHands runtime doctor is green with official source
+commit `6d38810359827823e62a5e1043d0d78d0bafb6de` and all four required
+packages at `1.41.0`. A real Gemini-backed fixture delegation edited `bug.py`,
+returned a result/change record, and the external fixture test returned
+`1 passed in 0.00s`. A second live OpenHands worker was stopped through the
+shared controller, returned `status=cancelled`, and was followed by an
+intentional resume with no active worker remaining. No new or different
+upstream regression was found.
 
 ## Active blockers
 
@@ -245,10 +252,9 @@ The accepted upstream failures, KI-019 browser scheduling diagnostic, KI-022
 Firefox focus warning, KI-023 VS Code accessibility warning, npm audit
 warnings, missing pactl, missing vulkaninfo, optional-extra packaging
 warnings, and KI-026 are documented diagnostics. KI-025 is resolved after the
-synchronized real-microphone rerun recorded below. P13 remains blocked by
-KI-027: the repository has no real OpenHands/coding_delegate process to start
-and stop for the mandated acceptance test. The direct upstream generic
-`cua-driver` lane is unavailable on this host (KI-028), but the managed
+synchronized real-microphone rerun recorded below. KI-027 is resolved by the
+real OpenHands delegation acceptance recorded below. The direct upstream
+generic `cua-driver` lane is unavailable on this host (KI-028), but the managed
 computer-use-linux MCP provider remains accepted and is not replaced.
 
 ## Last tests and commands
@@ -642,13 +648,12 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `a4cef73ba7fe339926a83cc39dbd0f9b1356c38e` separate in all
+   source commit `dfb0d29c7ba80efadd5a517bac07aa949e517a5a` separate in all
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline; investigate any new/different ID.
-3. Keep P13 open. When the real OpenHands `coding_delegate` process exists,
-   run the required start/stop/resume E2E and only then close P13. Do not
-   advance to P14 while P13 remains incomplete.
+3. P13 is closed. Start P14 as the first incomplete phase; keep P15 open for
+   its remaining full-phase acceptance, including Task Center progress.
 
 ## Environment changes
 
@@ -870,16 +875,16 @@ P12 is accepted. The exact five historical upstream failures remain the
 `ACCEPTED_UPSTREAM_BASELINE`; the P12 targeted matrix introduced no new or
 different regression.
 
-## P13 execution status — acceptance pending
+## P13 execution status — complete
 
 The P13 source implementation is recorded in commit
-`a4cef73ba7fe339926a83cc39dbd0f9b1356c38e`. The pinned Hermes commit,
+`dfb0d29c7ba80efadd5a517bac07aa949e517a5a`. The pinned Hermes commit,
 history-preserving baseline merge, and current Hafiye source commit are kept
 separate above and here:
 
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
-- Current Hafiye source HEAD: `a4cef73ba7fe339926a83cc39dbd0f9b1356c38e`.
+- Current Hafiye source HEAD: `dfb0d29c7ba80efadd5a517bac07aa949e517a5a`.
 
 ### Implemented and verified
 
@@ -900,16 +905,27 @@ separate above and here:
   `computer-use-linux` MCP gates and cancellation tests pass; the generic
   upstream `cua-driver` path is unavailable on this host and is documented as
   KI-028 rather than substituted.
+- The managed OpenHands V1 runtime is installed under
+  `~/.local/share/hafiye/runtimes/openhands/`, with official source commit
+  `6d38810359827823e62a5e1043d0d78d0bafb6de`, package pins at `1.41.0`, and
+  doctor result `ready=true`, `blockers=[]`.
+- `coding_delegate` resolves the Hafiye `coding` route, starts an official
+  OpenHands V1 conversation in a managed worker, and tracks it in the shared
+  process registry. The worker boundary consumes the credential without
+  placing it in the command line or redacted progress records.
+- A real Gemini-backed fixture repository contained a failing test. The live
+  delegate corrected `bug.py`; an external `pytest -q` returned
+  `1 passed in 0.00s`, and the parent received the real summary and changed
+  file record.
 
-### Acceptance still pending
+### P13 acceptance
 
-- The master P13 test list requires stopping a real OpenHands delegation. The
-  repository currently has no OpenHands V1 `coding_delegate` integration or
-  live OpenHands process to start/stop. Generic async delegation/process
-  cancellation is implemented and tested, but it is not evidence for the
-  OpenHands-specific acceptance. This is KI-027 and keeps P13 incomplete.
-- P14 must not start until that acceptance test passes. Do not mark P13
-  complete based only on the already-passing cancellation seams.
+- The master P13 OpenHands-specific acceptance passed in one live Python
+  process: a long-running `coding_delegate` worker was visible in
+  `process_registry`, `CancellationController.emergency_stop(...)` killed it,
+  the delegate returned `status=cancelled`, the thread ended, and an explicit
+  `controller.resume()` returned `paused=false` with no active worker left.
+- KI-027 is resolved. P13 is complete; P14 is now the first incomplete phase.
 
 ### P13 test record
 
@@ -920,13 +936,29 @@ separate above and here:
 - `cd apps/desktop && npx vitest run --project ui src/lib/voice-stop-word.test.ts src/store/wake-word.test.ts src/app/chat/composer/controls.test.tsx src/app/chat/composer/hooks/use-voice-conversation.test.tsx src/app/chat/composer/hooks/use-voice-conversation-rearm.test.tsx` — 5 files, 58 passed.
 - `cd apps/desktop && npm run typecheck` — pass.
 - `cd apps/desktop && npm run build` — Vite, Electron bundles, native staging, and `assert-dist-built` passed; existing toolchain warnings remain.
+- `.venv/bin/python - <<'PY' ... openhands_runtime_doctor() ... PY` —
+  `ready=true`, `blockers=[]`; official OpenHands packages
+  `openhands-sdk`, `openhands-tools`, `openhands-workspace`, and
+  `openhands-agent-server` all `1.41.0`.
+- Real Gemini route through `model_tools.handle_function_call("coding_delegate", ...)`
+  against `/tmp/hafiye-openhands-e2e` — OpenHands edited the fixture's
+  `bug.py`; external `.venv/bin/python -m pytest -q` — `1 passed in 0.00s`;
+  the parent result included `status=completed`, `event_count=36`, and
+  `changed_files=["bug.py"]`.
+- Real same-process OpenHands cancellation harness — started a live worker,
+  called `tui_gateway.server._get_cancellation_controller().emergency_stop(...)`,
+  then `controller.resume()` — `status=cancelled`, `killed_processes=1`,
+  `thread_alive_after_stop=false`, `paused=false`, and no active process.
+- Real result-return rerun through the same `coding_delegate` route — parent
+  summary contained the exact fixture result `1 passed in 0.00s`.
 - `git diff --check` — pass.
 
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
    investigate any new or different failure in later phases.
-2. Keep P13 open until a real OpenHands `coding_delegate` delegation is
-   started, stopped, and resumed through the shared cancellation controller.
-3. Do not advance to P14 or mark P13 complete before KI-027 is resolved by
-   the prescribed OpenHands integration and its real acceptance test.
+2. Begin P14 — inspect Hermes memory/session-search behavior and implement the
+   deterministic project registry in the order required by the master roadmap.
+3. Keep the OpenHands runtime/coding delegate source separable while P15's
+   remaining acceptance work (including Task Center progress exposure) stays
+   open; do not mark P15 complete from the P13 prerequisite evidence alone.

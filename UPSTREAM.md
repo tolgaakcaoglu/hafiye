@@ -12,7 +12,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
 - Current Hafiye source HEAD (P13 source commit):
-  a4cef73ba7fe339926a83cc39dbd0f9b1356c38e
+  dfb0d29c7ba80efadd5a517bac07aa949e517a5a
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -422,7 +422,7 @@ P0 computer-use acceptance requires:
 ## P13 cancellation and emergency-stop validation
 
 - Hafiye source commit:
-  `a4cef73ba7fe339926a83cc39dbd0f9b1356c38e`.
+  `dfb0d29c7ba80efadd5a517bac07aa949e517a5a`.
 - Pinned Hermes upstream commit:
   `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit:
@@ -444,10 +444,39 @@ P0 computer-use acceptance requires:
   on this host. Hafiye's prescribed Linux path remains the managed pinned
   `computer-use-linux` MCP provider; this observation is KI-028, not an
   architecture substitution.
-- P13 acceptance is not closed: the master test list requires stopping a real
-  OpenHands delegation, but the repository does not yet contain its P15
-  `coding_delegate` integration or a live OpenHands process. This is recorded
-  as KI-027.
+- The master P13 acceptance now passes with a real OpenHands delegation: a
+  Gemini-backed fixture run edited `bug.py` and returned the real verification
+  result; a separate live worker was stopped through the shared controller and
+  explicitly resumed with no active process remaining. KI-027 is resolved.
+
+## OpenHands V1 managed runtime and coding delegate
+
+- Hafiye's OpenHands implementation is based on the official
+  [OpenHands software-agent SDK repository](https://github.com/OpenHands/software-agent-sdk/)
+  at source commit `6d38810359827823e62a5e1043d0d78d0bafb6de`. The current
+  managed user runtime records that source and pins
+  `openhands-sdk==1.41.0`, `openhands-tools==1.41.0`,
+  `openhands-workspace==1.41.0`, and `openhands-agent-server==1.41.0` in
+  `~/.local/share/hafiye/runtimes/openhands/manifest.json`.
+- The official V1 API path is used: Hafiye creates an OpenHands `LLM`, obtains
+  the official default agent, and runs a local `Conversation` against the
+  supplied host repository. The worker is a one-shot managed subprocess so
+  Hafiye retains route/privacy ownership, process tracking, and emergency-stop
+  control; OpenHands is not made into a second Hafiye runtime.
+- `coding_delegate` inherits Hafiye's configured `coding` route and passes the
+  local repository path to the worker. Credentials are injected only at the
+  private process boundary, consumed before OpenHands terminal subprocesses
+  are created, and omitted from command lines and progress records.
+- The worker emits redacted progress metadata and a result containing execution
+  status, summary, changed files, and event count. Its process is registered in
+  Hermes' existing process registry, so the P13 cancellation controller can
+  kill it and an explicit resume can clear the pause state.
+- Real acceptance evidence: the fixture delegation changed `bug.py`, the
+  external test returned `1 passed in 0.00s`, and a live long-running worker
+  returned `status=cancelled` after emergency stop; `resume` returned
+  `paused=false` with no active worker. The full P15 phase remains open for
+  setup/bootstrap and Task Center progress exposure; this section records the
+  P13 prerequisite rather than marking P15 complete.
 
 ## Baseline divergence
 

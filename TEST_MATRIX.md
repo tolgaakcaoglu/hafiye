@@ -227,10 +227,13 @@ It also reports blockers: []. P0 computer-use acceptance passed.
 | P13-REAL-03 | TTS/process cancellation | Real active TTS state/stop probe and registered temporary sleep process | TTS stop event/state cleanup true; process registry killed 1 process and it exited | PASS |
 | P13-REAL-04 | GNOME Wayland global emergency shortcut | Built Electron app, `gsettings`, and `ydotool key 29:1 125:1 1:1 1:0 125:0 29:0` | Electron registration false on this session; GNOME custom binding installed; real chord created ESTOP; clean exit restored `custom-keybindings` to `@as []` | PASS |
 | P13-CUA-01 | Direct upstream generic CUA smoke | `tools.computer_use.cua_backend.resolve_cua_driver_cmd()` and worker smoke | `cua-driver` not installed; managed Hafiye `computer-use-linux` MCP path remains green | WARNING; KI-028 |
-| P13-ACCEPTANCE | Master P13 closure | Required list includes stopping a real OpenHands delegation | No Hafiye OpenHands V1/`coding_delegate` process exists yet; generic cancellation is not substituted | NOT ACCEPTED; KI-027 |
+| P13-OH-01 | Managed OpenHands runtime doctor | `.venv/bin/python - <<'PY' ... openhands_runtime_doctor() ... PY` | Official source commit `6d38810359827823e62a5e1043d0d78d0bafb6de`; SDK/tools/workspace/agent-server `1.41.0`; `ready=true`, `blockers=[]` | PASS |
+| P13-OH-02 | Real coding delegation and result return | Real Gemini route through `model_tools.handle_function_call("coding_delegate", ...)` against `/tmp/hafiye-openhands-e2e`; external `.venv/bin/python -m pytest -q` | OpenHands edited `bug.py`; parent result had `status=completed`, `event_count=36`, `changed_files=["bug.py"]`; fixture test returned `1 passed in 0.00s` | PASS |
+| P13-OH-03 | Real OpenHands emergency stop/resume | Same-process live worker; `CancellationController.emergency_stop(...)`, then `controller.resume()` | Delegate returned `status=cancelled`; `killed_processes=1`; worker ended; resume returned `paused=false`; no active process remained | PASS |
+| P13-ACCEPTANCE | Master P13 closure | Required list includes stopping a real OpenHands delegation | All P13 cancellation boundaries, managed runtime, live delegation, stop, and intentional resume passed; KI-027 resolved | PASS |
 
-P13 implementation and all available real stop boundaries are verified, but
-P13 is intentionally not marked complete until the OpenHands-specific
-acceptance criterion passes. The exact five historical upstream failures remain
-the accepted regression whitelist; the P13 matrix introduced no new or
-different upstream failure.
+P13 is accepted. The exact five historical upstream failures remain the
+accepted regression whitelist; the P13 matrix introduced no new or different
+upstream failure. The OpenHands runtime/coding-delegate implementation is a
+prerequisite for P13; P15 remains open for its full phase scope, including
+Task Center progress exposure.
