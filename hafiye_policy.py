@@ -74,6 +74,7 @@ OFFLINE_NETWORK_TOOLS: frozenset[str] = frozenset(
         "send_message",
         "message_agent",
         "delegate_task",
+        "coding_delegate",
         "react_to_message",
         "drive_preview",
         "discord",

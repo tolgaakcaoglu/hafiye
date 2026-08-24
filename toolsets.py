@@ -71,7 +71,7 @@ _HERMES_CORE_TOOLS = [
     # Clarifying questions
     "clarify",
     # Code execution + delegation
-    "execute_code", "delegate_task",
+    "execute_code", "delegate_task", "coding_delegate",
     # Cronjob management
     "cronjob",
     # Home Assistant smart home control (gated on HASS_TOKEN via check_fn)
@@ -298,7 +298,7 @@ TOOLSETS = {
     
     "delegation": {
         "description": "Spawn subagents with isolated context for complex subtasks",
-        "tools": ["delegate_task"],
+        "tools": ["delegate_task", "coding_delegate"],
         "includes": []
     },
 
@@ -420,7 +420,7 @@ TOOLSETS = {
             "browser_exec",
             "todo", "memory",
             "session_search", "clarify",
-            "execute_code", "delegate_task",
+            "execute_code", "delegate_task", "coding_delegate",
         ],
         "includes": [],
         # Posture toolset: selected per-session by agent/coding_context.py,
@@ -453,7 +453,7 @@ TOOLSETS = {
             "browser_exec",
             "todo", "memory",
             "session_search",
-            "execute_code", "delegate_task",
+            "execute_code", "delegate_task", "coding_delegate",
         ],
         "includes": []
     },
@@ -486,7 +486,7 @@ TOOLSETS = {
             # Session history search
             "session_search",
             # Code execution + delegation
-            "execute_code", "delegate_task",
+            "execute_code", "delegate_task", "coding_delegate",
             # Cronjob management
             "cronjob",
             # Home Assistant smart home control (gated on HASS_TOKEN via check_fn)

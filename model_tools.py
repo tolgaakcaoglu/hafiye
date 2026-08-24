@@ -1198,6 +1198,7 @@ def handle_function_call(
     turn_id: Optional[str] = None,
     api_request_id: Optional[str] = None,
     user_task: Optional[str] = None,
+    parent_agent: Any = None,
     enabled_tools: Optional[List[str]] = None,
     skip_pre_tool_call_hook: bool = False,
     skip_tool_request_middleware: bool = False,
@@ -1337,6 +1338,7 @@ def handle_function_call(
                 turn_id=turn_id,
                 api_request_id=api_request_id,
                 user_task=user_task,
+                parent_agent=parent_agent,
                 enabled_tools=enabled_tools,
                 skip_pre_tool_call_hook=skip_pre_tool_call_hook,
                 skip_tool_request_middleware=skip_tool_request_middleware,
@@ -1568,11 +1570,16 @@ def handle_function_call(
                     )
             else:
                 def _dispatch(next_args: Dict[str, Any]) -> Any:
+                    dispatch_kwargs = {
+                        "task_id": task_id,
+                        "session_id": session_id,
+                        "user_task": user_task,
+                    }
+                    if function_name == "coding_delegate":
+                        dispatch_kwargs["parent_agent"] = parent_agent
                     return registry.dispatch(
                         function_name, next_args,
-                        task_id=task_id,
-                        session_id=session_id,
-                        user_task=user_task,
+                        **dispatch_kwargs,
                     )
             from hafiye_execution_policy import policy_approval_scope
 
