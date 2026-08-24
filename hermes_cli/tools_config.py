@@ -2315,6 +2315,21 @@ def enabled_mcp_server_names(config: dict) -> Set[str]:
         names |= portable - set(mcp_servers)
     except Exception:
         logger.debug("Failed to include portable MCP servers", exc_info=True)
+
+    # The Linux desktop controller is a Hafiye-managed MCP provider rather
+    # than a user-configured server. Include its reserved toolset name here so
+    # the already-existing platform resolver exposes the registered tools to
+    # the model without requiring an mcp_servers edit.
+    try:
+        from hafiye_computer_use import (
+            COMPUTER_USE_LINUX_MCP_SERVER,
+            managed_mcp_server_config,
+        )
+
+        if managed_mcp_server_config():
+            names.add(COMPUTER_USE_LINUX_MCP_SERVER)
+    except Exception:
+        logger.debug("Failed to include Hafiye computer-use-linux toolset", exc_info=True)
     return names
 
 

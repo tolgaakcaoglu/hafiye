@@ -73,6 +73,14 @@ class TestSummarizeCronFailureForDelivery:
 class TestPerJobToolsetMcpMerge:
     """A per-job enabled_toolsets allowlist must not silently drop MCP servers."""
 
+    @pytest.fixture(autouse=True)
+    def disable_managed_hafiye_server_for_config_tests(self, monkeypatch):
+        """Keep these upstream config-merge tests independent of the host."""
+        monkeypatch.setattr(
+            "hafiye_computer_use.managed_mcp_server_config",
+            lambda: None,
+        )
+
     CFG = {
         "mcp_servers": {
             "finnhub": {"enabled": True},

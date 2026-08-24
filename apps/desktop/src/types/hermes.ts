@@ -1149,11 +1149,13 @@ export interface ComputerUseCheck {
 export interface ComputerUseStatus {
   /** `sys.platform`: "darwin" | "win32" | "linux" | ... */
   platform: string
-  /** cua-driver has a runtime backend for this platform. */
+  /** Upstream driver name or Hafiye's managed Linux MCP backend. */
+  backend?: string
+  /** cua-driver or computer-use-linux supports this platform. */
   platform_supported: boolean
-  /** cua-driver binary resolved on PATH. */
+  /** Driver/binary resolved on PATH or in Hafiye's managed install path. */
   installed: boolean
-  /** e.g. "cua-driver 0.5.1", or null when unknown. */
+  /** Human-readable runtime/source identity, or null when unknown. */
   version: string | null
   /** Unified readiness — both TCC grants (macOS) or driver health (else). */
   ready: boolean | null
@@ -1166,6 +1168,15 @@ export interface ComputerUseStatus {
   screen_recording: boolean | null
   screen_recording_capturable: boolean | null
   source: ComputerUsePermissionSource | null
+  /** Hafiye-managed computer-use-linux readiness fields on Linux. */
+  readiness?: Record<string, boolean>
+  blockers?: string[]
+  binary?: string | null
+  source_commit?: string
+  mcp_server?: string
+  mcp_configured?: boolean
+  mcp_registered?: boolean | null
+  doctor?: Record<string, unknown>
   /** Populated when the status probe itself failed. */
   error: string | null
 }

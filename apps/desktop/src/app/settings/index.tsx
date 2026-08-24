@@ -17,6 +17,7 @@ import {
   Info,
   Keyboard,
   KeyRound,
+  Monitor,
   Package,
   RefreshCw,
   Search,
@@ -42,6 +43,7 @@ import { SKILLS_ROUTE } from '../routes'
 import { AboutSettings } from './about-settings'
 import { AppearanceSettings } from './appearance-settings'
 import { BillingSettings } from './billing'
+import { ComputerSettings } from './computer-settings'
 import { ConfigSettings } from './config-settings'
 import { SECTIONS } from './constants'
 import { GatewaySettings } from './gateway-settings'
@@ -56,6 +58,7 @@ import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 const SETTINGS_VIEWS: readonly SettingsViewId[] = [
   ...SECTIONS.map(s => `config:${s.id}` as SettingsViewId),
   'providers',
+  'computer',
   'gateway',
   // Legacy alias: the Connections page merged into Gateways. Kept in the enum
   // so saved `?tab=connections` deep links still resolve (redirected below).
@@ -226,6 +229,14 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         onSelect: () => setActiveView('providers')
       },
       {
+        active: activeView === 'computer',
+        gapBefore: true,
+        icon: Monitor,
+        id: 'computer',
+        label: 'Computer',
+        onSelect: () => setActiveView('computer')
+      },
+      {
         active: activeView === 'gateway',
         icon: Globe,
         id: 'gateway',
@@ -375,6 +386,8 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
       <AppearanceSettings />
     ) : activeView === 'about' ? (
       <AboutSettings />
+    ) : activeView === 'computer' ? (
+      <ComputerSettings />
     ) : activeView === 'gateway' || activeView === 'connections' ? (
       // 'connections' renders the unified page too so the frame before
       // the alias redirect lands doesn't flash the fallback view.

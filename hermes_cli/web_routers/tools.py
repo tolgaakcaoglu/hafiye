@@ -782,10 +782,14 @@ async def select_terminal_backend(
 async def get_computer_use_status(profile: Optional[str] = None):
     """Cross-platform Computer Use readiness for the desktop card.
 
-    See ``tools.computer_use.permissions.computer_use_status`` for the payload
-    shape. Read-only and fast (shells ``cua-driver doctor`` + macOS
-    ``permissions status``).
+    Linux uses Hafiye's managed computer-use-linux MCP provider. Other
+    platforms retain Hermes' upstream cua-driver status contract.
     """
+    if sys.platform.startswith("linux"):
+        from hafiye_computer_use import computer_use_linux_status
+
+        return await asyncio.to_thread(computer_use_linux_status)
+
     from tools.computer_use.permissions import computer_use_status
 
     def _read():

@@ -9,8 +9,8 @@ import {
   Moon,
   Palette,
   Sun,
-  Zap,
-  Wrench
+  Wrench,
+  Zap
 } from '@/lib/icons'
 import { REASONING_EFFORTS } from '@/lib/reasoning-effort'
 import type { ThemeMode } from '@/themes/context'

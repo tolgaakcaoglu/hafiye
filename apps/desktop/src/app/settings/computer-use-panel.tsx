@@ -18,7 +18,7 @@ interface ComputerUsePanelProps {
 // Per-OS one-liner shown when there's no TCC grant flow (Windows/Linux). macOS
 // drives the permission rows instead, so it has no entry here.
 const PLATFORM_NOTE: Record<string, string> = {
-  linux: 'Drives your desktop via the X11/XWayland accessibility stack — no permission prompt.',
+  linux: 'Drives your desktop through the managed computer-use-linux MCP provider using AT-SPI, GNOME Wayland targeting, and ydotool.',
   win32: 'First run may trigger a Windows SmartScreen prompt for the cua-driver UIAccess worker — allow it.'
 }
 
@@ -50,7 +50,9 @@ function PermissionRow({ granted, label, hint }: { granted: boolean | null; labe
 /**
  * Cross-platform Computer Use preflight card.
  *
- * cua-driver runs on macOS, Windows, and Linux, but readiness differs: macOS
+ * On Linux Hafiye uses the managed computer-use-linux MCP provider. On
+ * macOS/Windows the upstream cua-driver path remains available. Readiness differs:
+ * macOS
  * needs two TCC grants (Accessibility + Screen Recording) that attach to
  * cua-driver's own `com.trycua.driver` identity — not Hermes — and are
  * requested via `cua-driver permissions grant` (dialog attributed to
@@ -157,7 +159,9 @@ export function ComputerUsePanel({ onConfiguredChange }: ComputerUsePanelProps) 
   if (!status.installed) {
     return (
       <p className="px-1 text-xs text-muted-foreground">
-        Install the cua-driver backend below to drive this machine.
+        {status.backend === 'computer-use-linux'
+          ? 'Install the managed computer-use-linux backend to drive this machine.'
+          : 'Install the cua-driver backend below to drive this machine.'}
         {status.can_grant && ' Then grant Accessibility and Screen Recording here.'}
       </p>
     )

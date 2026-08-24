@@ -448,6 +448,7 @@ py-modules = [
   "mcp_serve",
   "hafiye_execution_policy",
   "hafiye_rootd",
+  "hafiye_computer_use",
 ]
 
 [tool.setuptools.packages.find]

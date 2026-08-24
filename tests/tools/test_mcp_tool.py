@@ -125,7 +125,10 @@ class TestLoadMCPConfig:
 
     def test_mcp_servers_not_dict_returns_empty(self):
         """mcp_servers set to non-dict value -> empty dict."""
-        with patch("hermes_cli.config.load_config", return_value={"mcp_servers": "invalid"}):
+        with (
+            patch("hermes_cli.config.load_config", return_value={"mcp_servers": "invalid"}),
+            patch("hafiye_computer_use.managed_mcp_server_config", return_value=None),
+        ):
             from tools.mcp_tool import _load_mcp_config
             result = _load_mcp_config()
             assert result == {}
@@ -187,9 +190,10 @@ class TestLoadMCPConfig:
         monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
         monkeypatch.setattr(plugins_mod, "_plugin_manager", None)
 
-        from tools.mcp_tool import _load_mcp_config
+        with patch("hafiye_computer_use.managed_mcp_server_config", return_value=None):
+            from tools.mcp_tool import _load_mcp_config
 
-        result = _load_mcp_config()
+            result = _load_mcp_config()
 
         [server] = result.values()
         assert server["command"] == "python"

@@ -5538,6 +5538,26 @@ def _load_mcp_config() -> Dict[str, dict]:
                 safe_servers[name] = dict(cfg)
         except Exception:
             logger.debug("Failed to load portable MCP servers", exc_info=True)
+
+        # Hafiye's Linux desktop controller is a managed, built-in MCP
+        # provider. Keep it out of user config so installation never asks the
+        # operator to hand-edit mcp_servers, while still feeding it through
+        # the same lifecycle, registration, and schema-cache paths as every
+        # other MCP server.
+        try:
+            from hafiye_computer_use import (
+                COMPUTER_USE_LINUX_MCP_SERVER,
+                managed_mcp_server_config,
+            )
+
+            managed = managed_mcp_server_config()
+            if managed and COMPUTER_USE_LINUX_MCP_SERVER not in safe_servers:
+                safe_servers[COMPUTER_USE_LINUX_MCP_SERVER] = managed
+        except Exception:
+            logger.debug(
+                "Failed to load Hafiye computer-use-linux MCP provider",
+                exc_info=True,
+            )
         return safe_servers
     except Exception as exc:
         logger.debug("Failed to load MCP config: %s", exc)
