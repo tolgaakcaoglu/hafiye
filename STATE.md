@@ -1647,6 +1647,15 @@ claimed as passed.
   wrong text `Merhaba, FireFox'a açın!` without a computer-use call or observed
   Firefox task result. It is recorded as KI-042; local single-command terminal
   success does not establish natural-language desktop execution.
+- The newly supplied Gemini credential was stored through the Hafiye Linux
+  Secret Service boundary; no plaintext copy was written to the repository or
+  normal config store. Explicit Gemini one-shot returned
+  `P23_GEMINI_NEW_KEY_OK`. The packaged Composer, with the exact `Firefox'u
+  aç.` prompt, reported `Firefox açıldı.` and opened Firefox, but then attempted
+  an unapproved `sudo chown` remediation and stopped at the password dialog.
+  No password was supplied, no privileged command completed, and the route was
+  restored to local custom/Qwen. KI-043 records why this is not a clean final
+  P23.2/P23.6 acceptance.
 - Fresh supporting rechecks passed: the real project alias/session test
   returned `1 passed in 1.36s`; `hafiye runtime openhands doctor` returned
   `ready=true` with `blockers=[]` for OpenHands SDK `1.41.0`; `hafiye root exec
@@ -1680,11 +1689,11 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | Master item | Current evidence | Final status |
 |---|---|---|
 | 23.1 Boot | Packaged Desktop reached Composer after a real gateway restart; a fresh reboot/login replay is not recorded | PARTIAL / REBOOT REQUIRED |
-| 23.2 Text | Gemini route previously opened Firefox before HTTP 429; local Qwen2 replay returned wrong text without a computer-use call (KI-042) | NOT ACCEPTED / RE-RUN |
+| 23.2 Text | Rotated-key Gemini Composer opened Firefox, then attempted unapproved sudo remediation; local Qwen2 still failed tool execution (KI-042/KI-043) | TARGET PASSED / SAFETY WARNING |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
-| 23.6 Gemini | P22 explicit Gemini one-shot passed; current Composer route hit provider quota | WARNING / RE-RUN |
+| 23.6 Gemini | Rotated-key explicit one-shot passed; Composer reached Firefox but the same turn hit KI-043 sudo approval dialog | PASS WITH SAFETY WARNING |
 | 23.7 Privacy | Real Gemini-configured route under global `LOCAL_ONLY` exited before provider call with the policy-block message; settings restored | PASS / FAIL-CLOSED |
 | 23.8 Files | Isolated real fixture replay did not move the files with the Qwen2 validation model; KI-041 records the exact result | NOT ACCEPTED / KI-041 |
 | 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
@@ -1698,8 +1707,9 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 ### Exact next actions
 
-1. Re-run the clean P23.2/P23.6 Gemini-backed Composer check after the
-   provider quota is available, without changing the route architecture.
+1. Re-run the clean P23.2/P23.6 Gemini-backed Composer check with the rotated
+   credential after addressing/replaying the KI-043 sudo-remediation approval
+   boundary; quota is no longer the active provider blocker.
 2. Execute and record the remaining real-machine P23.1 and P23.3–P23.16
    acceptance sequences, including a repeatable 23.8 filesystem replay after
    the KI-041 tool-sequence warning, plus the exact voice, offline, privacy,

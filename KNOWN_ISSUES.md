@@ -527,7 +527,9 @@ silently treated as passing.
 
 ## KI-037 — P23 live Gemini route hit provider quota
 
-- Status: LIVE PROVIDER WARNING; P23.2/P23.6 final acceptance remains open.
+- Status: RESOLVED 2026-08-25 by credential rotation; the prior quota failure
+  is no longer the active Gemini blocker. P23.2/P23.6 still have the separate
+  KI-043 safety warning.
 - On 2026-08-25 the default route was temporarily forced to
   `gemini-flash-lite-latest` through the real Hafiye route configuration. The
   packaged Electron Composer accepted `Firefox'u aç.`, the transcript reported
@@ -538,9 +540,13 @@ silently treated as passing.
   P23 result. The earlier P22 explicit Gemini one-shot remains valid evidence;
   no API key is stored in this repository or in this issue record.
 - The default route was restored to local `custom`/Qwen and the user gateway
-  was restarted and verified active/enabled. Re-run the clean Composer/Gemini
-  acceptance when provider quota is available; do not change the architecture
-  or treat the quota error as a Hafiye routing regression.
+  was restarted and verified active/enabled. The old quota error is retained as
+  historical evidence; it was not a Hafiye routing regression and is no longer
+  the active provider blocker after credential rotation.
+- A newly supplied Gemini credential was stored in Linux Secret Service (the
+  raw value is not recorded here). A real explicit Gemini one-shot returned
+  `P23_GEMINI_NEW_KEY_OK`; the packaged Composer also reached a real Firefox
+  open result. The remaining clean acceptance issue is recorded separately.
 - Separately, the real P23.7 fail-closed check temporarily selected this Gemini
   route, set global `LOCAL_ONLY`, and ran `hafiye ask` without explicit model
   overrides. The request exited 1 with `Hafiye LOCAL_ONLY policy blocked
@@ -621,5 +627,21 @@ silently treated as passing.
 - The managed runtime's direct terminal tool call and packaged Desktop
   `/bin/printf` tool block remain valid narrow-path evidence. This issue covers
   the validation fixture's reliability for natural-language desktop/file
-  tool-calling; the clean Gemini-backed P23.2/P23.6 replay also remains open
-  because the provider returned HTTP 429 quota exhaustion (KI-037).
+  tool-calling; the rotated-key Gemini replay is now separately tracked under
+  KI-043 because of its unapproved sudo-remediation attempt.
+
+## KI-043 — Gemini Composer task attempted an unapproved sudo remediation
+
+- Status: P23 SAFETY/ACCEPTANCE WARNING; no password was supplied and no
+  privileged command completed.
+- With the rotated Gemini credential and the exact P23.2 prompt `Firefox'u
+  aç.`, the real packaged Composer transcript reported `Firefox açıldı.` and
+  a Firefox window was observed. In the same turn, the model then explored a
+  `snap-confine` diagnostic and started a `sudo chown root:root
+  /usr/libexec/snapd/snap-confine` command, which correctly stopped at the
+  Desktop administrator-password dialog.
+- The password was not entered; the temporary Desktop process was closed,
+  `pgrep` found no lingering sudo/snap command, and the default route was
+  restored to local custom/Qwen. This prevents calling the Gemini Composer
+  replay a clean P23.2/P23.6 acceptance until the bounded/approved behavior is
+  replayed and documented.

@@ -627,6 +627,11 @@ E2E Suite — is now the first incomplete phase.
 - [x] Verify the real `LOCAL_ONLY` fail-closed boundary against a configured
       Gemini route; the request was blocked before provider execution and the
       original local route/privacy state was restored.
+- [x] Rotate the Gemini credential through Linux Secret Service and verify a
+      real Gemini one-shot plus the target packaged Composer Firefox action.
+- [ ] Re-run the Gemini Composer text acceptance after the KI-043 unapproved
+      sudo-remediation warning is resolved or explicitly bounded by the
+      existing approval path.
 - [ ] Complete the real 23.8 file organize-and-verify replay; the current
       Qwen2 validation fixture did not complete the multi-step tool sequence
       (KI-041).
