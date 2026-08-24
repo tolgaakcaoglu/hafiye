@@ -163,3 +163,20 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   upstream fallback reload behavior and compatibility test contracts remain
   intact. This is an implementation detail and does not override the master
   roadmap.
+
+## ADR-0013 — Bind provider Secret Service references to the active config root
+
+- Date: 2026-08-24
+- Decision: When the normal XDG split is active, Hafiye provider credential
+  save, refresh, and removal operations use `get_config_path().parent` as the
+  secret-reference root. Explicit `HERMES_HOME` continues to use its existing
+  single-root behavior.
+- Reason: Runtime secret-source hydration reads the active config root. Using
+  the data root for lifecycle writes made a newly saved provider credential
+  appear successful in the current process but disappear from the next
+  process.
+- Consequence: Linux Secret Service remains the canonical provider store,
+  config contains only keyring references, and the default-XDG regression is
+  covered by `test_default_xdg_provider_lifecycle_uses_config_root`. This ADR
+  records an implementation correction and does not override the master
+  roadmap.

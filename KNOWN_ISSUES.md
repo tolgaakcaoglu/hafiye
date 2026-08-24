@@ -19,8 +19,8 @@ silently treated as passing.
 - A later corrected post-source run temporarily measured 3,213 files with
   37,009 passed, 6 failed, and 291 skipped; the browser-control baseline test
   passed in that run.
-- The latest post-P6 full parallel run measured 3,218 files with 37,154
-  passed, 5 failed, and 244 skipped in 563.7 seconds. Four failures were
+- The latest post-P5-source-fix full parallel run measured 3,218 files with
+  37,156 passed, 4 failed, and 244 skipped in 541.8 seconds. Four failures were
   members of the original five; the original remote browser-control ID did
   not reproduce in that run.
 - A different browser-control reconnect test appeared in that run. It is
@@ -195,19 +195,19 @@ silently treated as passing.
   requested Hafiye agent configuration. This is a model-selection/configuration
   concern, not a reason to weaken the managed runtime contract.
 
-## KI-017 — P5 live Gemini credential is not configured
+## KI-017 — P5 live Gemini credential was previously unavailable
 
-- Status: P5 acceptance pending; environment prerequisite, not a provider-code
-  failure.
-- No `GEMINI_API_KEY` is present in the Hafiye Secret Service, the active
-  `.env`, or the process environment. Automated Hermes Gemini registration,
-  resolution, provider parity, and credential lifecycle tests pass.
-- No live Gemini request has been made and no Gemini success is claimed.
-  Configure the credential through the Hafiye Desktop/CLI Secret Service path,
-  then run the real test connection and update P5 acceptance records.
-- P6's explicit Gemini route and LOCAL_ONLY rejection are verified with the
-  real Hafiye policy and agent/gateway tests, but a live cloud request remains
-  intentionally unperformed until this same credential prerequisite is met.
+- Status: RESOLVED 2026-08-24; no longer a P5 blocker.
+- The live Gemini credential is now stored in the Hafiye Linux Secret Service;
+  the raw value is intentionally not recorded in this repository. `hafiye
+  status` reports Google/Gemini configured with a masked preview.
+- A real Gemini model-list request returned HTTP 200 with 50 models, and the
+  Hafiye one-shot test returned `HAFIYE_GEMINI_LIVE_OK`.
+- Investigation found that the default XDG config/data split could write
+  provider references under the data root while runtime hydration read the
+  config root. Source commit `45294d3f77a3929731ac29d89d54f5d53c70957d`
+  aligns save, refresh, and remove operations with the active config root and
+  adds regression coverage. No plaintext credential was introduced.
 
 ## KI-018 — Optional extras are not fully installable on CPython 3.13
 

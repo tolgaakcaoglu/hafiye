@@ -8,7 +8,7 @@ records execution status only.
 - [x] P2 Persistent gateway + Desktop connection
 - [x] P3 Hafiye Composer + tray + autostart
 - [x] P4 llama.cpp managed local runtime
-- [ ] P5 Providers + Gemini + remote OpenAI-compatible
+- [x] P5 Providers + Gemini + remote OpenAI-compatible
 - [x] P6 Model router + privacy modes
 - [ ] P7 Full host tools + execution policy
 - [ ] P8 Hafiye root broker
@@ -145,7 +145,7 @@ process correction is `ae24562fb9dfeeb4dd58752849b4778b2c8606e8`. The managed
 llama.cpp checkout is separately pinned to source commit
 `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`. The real runtime, Desktop API,
 and corrected full backend regression checks pass under the documented
-baseline rule. P5 is now the next incomplete phase.
+baseline rule. P7 is now the next incomplete phase.
 
 ## P5 execution status
 
@@ -164,14 +164,17 @@ baseline rule. P5 is now the next incomplete phase.
       Hafiye Desktop surface and pass its provider tests, typecheck, and build.
 - [x] Exercise Hermes Gemini registration/resolution and automated credential
       paths without inventing a second provider implementation.
-- [ ] Configure a real Gemini credential and pass the live Gemini test
+- [x] Configure a real Gemini credential and pass the live Gemini test
       connection on the host.
 
-P5 remains incomplete because the live Gemini acceptance check has not run:
-the host has no `GEMINI_API_KEY` in Secret Service, `.env`, or process
-environment. P6 was started explicitly by the user while this environment
-gate remained open; P5 is still not complete and its live Gemini acceptance
-must still be run before P5 closure.
+P5 is complete. The real host credential is stored in Linux Secret Service;
+the active Hafiye config contains only its keyring reference. The live Gemini
+model-list request returned HTTP 200 with 50 models, and the Hafiye one-shot
+call returned the required `HAFIYE_GEMINI_LIVE_OK` marker. The default-XDG
+credential lifecycle fix is recorded in source commit `45294d3f7` and covered
+by a regression test. The latest full backend comparison covered 3,218 files:
+37,156 passed, 4 failed, and 244 skipped; all four failures are members of
+the accepted upstream baseline, with no new or different Hafiye regression.
 
 ## P6 execution status
 
@@ -194,6 +197,5 @@ P6 is complete. Its routing/privacy source implementation is recorded in
 contract follow-up in `62b3d5762`. Targeted P6 tests, the affected backend
 matrix, Desktop typecheck/settings tests, and the full regression comparison
 were run. The only different full-suite failure was reproduced before P6 and
-is documented as KI-019; no Hafiye regression remains. P5 remains the first
-incomplete roadmap phase because its live Gemini credential/test connection is
-still pending; no P7 work is claimed here.
+is documented as KI-019; no Hafiye regression remains. P7 is now the next
+incomplete roadmap phase.

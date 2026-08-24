@@ -12,7 +12,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
 - Current Hafiye HEAD (latest product/source commit):
-  62b3d5762d49b1ce2872d142c8e5318239b01c5c
+  45294d3f77a3929731ac29d89d54f5d53c70957d
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -62,6 +62,8 @@ The Hafiye source history contains these separable logical groups:
   persistent gateway child process.
 - providers-secret-service: provider credential ownership, Linux Secret
   Service references, local/remote provider paths, and Desktop provider wiring.
+- providers-secret-service-xdg: bind provider Secret Service references to the
+  active config root under the default XDG config/data split.
 - routing-privacy: Hafiye route slots, task-scoped routing overrides, privacy
   modes, legal fallback filtering, and OFFLINE tool enforcement.
 - gateway-contract-follow-up: tolerate non-mapping cache fixtures and preserve
@@ -95,13 +97,12 @@ exact five test IDs were:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-After P6 source changes, the latest full run covered 3,218 files and measured
-37,154 passed, 5 failed, and 244 skipped in 563.7 seconds. Four failures were
-members of the exact five IDs above; the fifth was the different local browser
-reconnect test documented as KI-019. That failure reproduces in the P6-parent
-checkout, while the selected test passes in both checkouts, so it is not a
-Hafiye regression and is not added to the exact baseline. Hafiye does not fix
-the upstream bugs.
+After the P5 source fix, the latest full run covered 3,218 files and measured
+37,156 passed, 4 failed, and 244 skipped in 541.8 seconds. All four failures
+were members of the exact five IDs above; the accepted remote browser-control
+ID did not reproduce. No new or different Hafiye regression was found. The
+earlier local browser reconnect diagnostic is tracked as KI-019, and the
+upstream baseline bugs are not fixed by Hafiye.
 
 ## Computer-use-linux pinned source
 
@@ -215,15 +216,19 @@ P0 computer-use acceptance requires:
 - Provider boundary source commits: `c771c95318516e03450720b5f009dce4017f8600`
   and the shared provider-alias correction
   `15cbe1f6556addbaf694c36999e0c496730a1730`.
+- Default-XDG Secret Service lifecycle correction: `45294d3f77a3929731ac29d89d54f5d53c70957d`.
+  The lifecycle now writes and hydrates provider references from the active
+  config root; the change is covered by a regression test and does not alter
+  the upstream Hermes history.
 - `keyring==25.7.0` is the Hafiye provider-secret dependency. The real Linux
   Secret Service round-trip passed; Hafiye config retained only keyring refs,
   and no secret value was recorded in project documentation or test output.
 - Local CUDA llama.cpp, remote OpenAI-compatible HTTP, provider parity,
   automated Gemini, and Desktop provider/key tests pass. Desktop typecheck and
   production build pass.
-- Live Gemini test connection is pending because the host has no configured
-  `GEMINI_API_KEY`; P5 is intentionally not closed. P6 was started explicitly
-  while this environment prerequisite remained open.
+- Live Gemini model listing returned HTTP 200 with 50 models and a real Hafiye
+  one-shot returned `HAFIYE_GEMINI_LIVE_OK`; P5 is closed. The credential value
+  is not recorded here.
 
 ## P6 source validation
 
