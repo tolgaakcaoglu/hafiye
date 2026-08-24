@@ -58,6 +58,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from hermes_cli import __version__, __release_date__
 from hermes_constants import get_hafiye_state_home
+from hafiye_execution_policy import EXECUTION_POLICIES
 from hermes_cli.hafiye_keyring import SecretStoreError
 from hermes_cli.config import (
     build_cron_model_impact,
@@ -1061,6 +1062,11 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
         "type": "select",
         "description": "Hafiye inference and network privacy policy",
         "options": ["NORMAL", "LOCAL_ONLY", "OFFLINE"],
+    },
+    "hafiye.execution_policy": {
+        "type": "select",
+        "description": "Hafiye host execution policy",
+        "options": list(EXECUTION_POLICIES),
     },
     **{
         f"hafiye.route_slots.{_slot}.locality_policy": {

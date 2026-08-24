@@ -15,6 +15,7 @@ DEFAULT_CONFIG = {
     # non-empty values select that provider/model for the matching task class.
     "hafiye": {
         "privacy_mode": "NORMAL",
+        "execution_policy": "FULL_AUTONOMOUS",
         "route_slots": {
             "default": {"provider": "", "model": "", "locality_policy": "NORMAL"},
             "fast": {"provider": "", "model": "", "locality_policy": "NORMAL"},

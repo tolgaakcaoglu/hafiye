@@ -233,6 +233,7 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
 export const ENUM_OPTIONS: Record<string, string[]> = {
   'agent.image_input_mode': ['auto', 'native', 'text'],
   'approvals.mode': ['manual', 'smart', 'off'],
+  'hafiye.execution_policy': ['FULL_AUTONOMOUS', 'PRIVILEGED_CONFIRM', 'WRITE_CONFIRM', 'READ_ONLY'],
   'code_execution.mode': ['project', 'strict'],
   'context.engine': ['compressor', 'default', 'custom'],
   // '' = inherit the agent's own effort; the rest is the shared scale.
@@ -397,6 +398,7 @@ export const FIELD_LABELS: Record<string, string> = defineFieldCopy({
   },
   hafiye: {
     privacyMode: 'Privacy Mode',
+    executionPolicy: 'Execution Policy',
     routeSlots: {
       default: { provider: 'Default Route Provider', model: 'Default Route Model', localityPolicy: 'Default Route Locality Policy' },
       fast: { provider: 'Fast Route Provider', model: 'Fast Route Model', localityPolicy: 'Fast Route Locality Policy' },
@@ -578,6 +580,7 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   },
   hafiye: {
     privacyMode: 'NORMAL allows configured providers; LOCAL_ONLY and OFFLINE require a local runtime. OFFLINE also disables Hafiye-managed network tools.',
+    executionPolicy: 'Controls Hafiye host tools. FULL_AUTONOMOUS is the default; confirmation policies use the existing user approval surface, and READ_ONLY blocks mutations.',
     routeSlots: {
       default: { provider: 'Provider used for ordinary tasks. Leave blank to inherit the Hermes default.', model: 'Model used for ordinary tasks. Leave blank to inherit the Hermes default.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
       fast: { provider: 'Provider selected by a fast/quick task override.', model: 'Model selected by a fast/quick task override.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
@@ -669,6 +672,7 @@ export const SECTIONS: DesktopConfigSection[] = [
     label: 'Hafiye Routing & Privacy',
     icon: Zap,
     keys: [
+      'hafiye.execution_policy',
       'hafiye.privacy_mode',
       'hafiye.route_slots.default.provider',
       'hafiye.route_slots.default.model',

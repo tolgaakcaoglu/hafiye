@@ -382,11 +382,15 @@ def _docker_has_host_access(config: Dict[str, Any]) -> bool:
 
 
 def _check_all_guards(command: str, env_type: str,
-                      has_host_access: bool = False) -> dict:
+                      has_host_access: bool = False,
+                      policy_warning: tuple[str, str] | None = None,
+                      enforce_policy: bool = False) -> dict:
     """Delegate to consolidated guard (tirith + dangerous cmd) with CLI callback."""
     return _check_all_guards_impl(command, env_type,
                                   approval_callback=_get_approval_callback(),
-                                  has_host_access=has_host_access)
+                                  has_host_access=has_host_access,
+                                  policy_warning=policy_warning,
+                                  enforce_policy=enforce_policy)
 
 
 # Allowlist: characters that can legitimately appear in directory paths.
@@ -2684,6 +2688,30 @@ def terminal_tool(
         config = _get_env_config()
         env_type = config["env_type"]
 
+        # Hafiye policy is layered before Hermes' existing dangerous-command
+        # guard. FULL_AUTONOMOUS has no extra decision here; the normal
+        # Hermes hardline/tirith/approval checks below still apply.
+        from hafiye_execution_policy import evaluate_tool_call
+
+        policy_decision = evaluate_tool_call(
+            "terminal",
+            {"command": command, "background": background},
+        )
+        policy_warning = None
+        if policy_decision is not None and not policy_decision.allowed:
+            if policy_decision.requires_confirmation:
+                # Pass the policy finding into the same approval synthesis as
+                # the existing dangerous-command checks, so one user prompt
+                # authorizes the complete terminal operation.
+                policy_warning = policy_decision.warning
+            else:
+                return json.dumps({
+                    "output": "",
+                    "exit_code": -1,
+                    "error": policy_decision.reason,
+                    "status": "blocked",
+                }, ensure_ascii=False)
+
         # Use task_id for environment isolation. By default all subagent
         # task_ids collapse back to "default" so the top-level agent and
         # every delegate_task child share one container; only task_ids with
@@ -3034,6 +3062,8 @@ def terminal_tool(
             approval = _check_all_guards(
                 command, env_type,
                 has_host_access=_docker_has_host_access(config),
+                policy_warning=policy_warning,
+                enforce_policy=policy_warning is not None,
             )
             if not approval["approved"]:
                 # Check if this is an approval_required (gateway ask mode)

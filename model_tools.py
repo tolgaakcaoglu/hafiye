@@ -1459,6 +1459,71 @@ def handle_function_call(
                 )
                 return result
 
+        # Hafiye host execution policy is enforced at the shared dispatch
+        # boundary after request/plugin rewrites, so every caller (CLI,
+        # gateway, Desktop, and Tool Search) sees the same decision. Terminal
+        # owns its own combined policy + dangerous-command guard because it
+        # needs the actual shell command; all other host tools are gated here.
+        _hafiye_policy_granted = False
+        if function_name != "terminal":
+            from hafiye_execution_policy import evaluate_tool_call
+
+            _policy_decision = evaluate_tool_call(function_name, function_args)
+            if _policy_decision is not None and not _policy_decision.allowed:
+                _policy_guard = None
+                if _policy_decision.requires_confirmation:
+                    from tools.approval import check_all_command_guards
+
+                    _policy_guard = check_all_command_guards(
+                        _policy_decision.confirmation_command,
+                        "local",
+                        policy_warning=_policy_decision.warning,
+                        enforce_policy=True,
+                    )
+                    if _policy_guard.get("approved", False):
+                        _hafiye_policy_granted = True
+
+                if not _hafiye_policy_granted:
+                    if _policy_guard and _policy_guard.get("status") == "pending_approval":
+                        result = json.dumps({
+                            "status": "pending_approval",
+                            "approval_pending": True,
+                            "command": _policy_guard.get(
+                                "command", _policy_decision.confirmation_command
+                            ),
+                            "description": _policy_guard.get(
+                                "description", _policy_decision.reason
+                            ),
+                            "pattern_key": _policy_guard.get(
+                                "pattern_key", _policy_decision.confirmation_key
+                            ),
+                        }, ensure_ascii=False)
+                    else:
+                        _policy_message = (
+                            (_policy_guard or {}).get("message")
+                            or _policy_decision.reason
+                        )
+                        result = tool_error(_policy_message)
+                    _emit_post_tool_call_hook(
+                        function_name=function_name,
+                        function_args=function_args,
+                        result=result,
+                        task_id=task_id,
+                        session_id=session_id,
+                        tool_call_id=tool_call_id,
+                        turn_id=turn_id,
+                        api_request_id=api_request_id,
+                        duration_ms=int((time.monotonic() - _dispatch_start) * 1000),
+                        status="blocked",
+                        error_type="hafiye_execution_policy",
+                        error_message=(
+                            (_policy_guard or {}).get("message")
+                            or _policy_decision.reason
+                        ),
+                        middleware_trace=list(_tool_middleware_trace),
+                    )
+                    return result
+
         # Notify the read-loop tracker when a non-read/search tool runs,
         # so the *consecutive* counter resets (reads after other work are fine).
         if function_name not in _READ_SEARCH_TOOLS:
@@ -1509,22 +1574,25 @@ def handle_function_call(
                         session_id=session_id,
                         user_task=user_task,
                     )
-            if skip_tool_execution_middleware:
-                result = _dispatch(function_args)
-            else:
-                from hermes_cli.middleware import run_tool_execution_middleware
+            from hafiye_execution_policy import policy_approval_scope
 
-                result = run_tool_execution_middleware(
-                    function_name,
-                    function_args,
-                    _dispatch,
-                    original_args=_tool_original_args,
-                    task_id=task_id or "",
-                    session_id=session_id or "",
-                    tool_call_id=tool_call_id or "",
-                    turn_id=turn_id or "",
-                    api_request_id=api_request_id or "",
-                )
+            with policy_approval_scope(_hafiye_policy_granted):
+                if skip_tool_execution_middleware:
+                    result = _dispatch(function_args)
+                else:
+                    from hermes_cli.middleware import run_tool_execution_middleware
+
+                    result = run_tool_execution_middleware(
+                        function_name,
+                        function_args,
+                        _dispatch,
+                        original_args=_tool_original_args,
+                        task_id=task_id or "",
+                        session_id=session_id or "",
+                        tool_call_id=tool_call_id or "",
+                        turn_id=turn_id or "",
+                        api_request_id=api_request_id or "",
+                    )
         finally:
             if _approval_tokens is not None and reset_current_observability_context is not None:
                 try:

@@ -1292,16 +1292,56 @@ def execute_code(
     env_type = _env_config["env_type"]
 
     # execute_code runs arbitrary Python (subprocess/os.system/...) that never
-    # passes through terminal()/DANGEROUS_PATTERNS, so guard the whole script
-    # here before either dispatch path spawns it. Runs synchronously in the
-    # caller (tool-executor) thread, which holds the session context (#30882).
-    # A Docker sandbox with host bind mounts is no longer isolated, so its
-    # script does not get the container fast-path.
-    from tools.approval import check_execute_code_guard
-    _guard = check_execute_code_guard(
-        code, env_type,
-        has_host_access=_docker_has_host_access(_env_config),
+    # passes through terminal()/DANGEROUS_PATTERNS. Apply Hafiye's host policy
+    # first. A model_tools dispatch that already obtained this policy's user
+    # approval passes one short-lived grant into this handler; direct callers
+    # perform the same check here as a defense-in-depth boundary.
+    from hafiye_execution_policy import (
+        consume_policy_approval_grant,
+        evaluate_tool_call,
     )
+
+    _policy_granted = consume_policy_approval_grant()
+    if not _policy_granted:
+        _policy_decision = evaluate_tool_call("execute_code", {"code": code})
+        if _policy_decision is not None and not _policy_decision.allowed:
+            if _policy_decision.requires_confirmation:
+                from tools.approval import check_all_command_guards
+
+                _policy_guard = check_all_command_guards(
+                    _policy_decision.confirmation_command,
+                    env_type,
+                    has_host_access=_docker_has_host_access(_env_config),
+                    policy_warning=_policy_decision.warning,
+                    enforce_policy=True,
+                )
+                if not _policy_guard.get("approved", False):
+                    return json.dumps({
+                        "status": "error",
+                        "error": _policy_guard.get("message") or _policy_decision.reason,
+                        "tool_calls_made": 0,
+                        "duration_seconds": 0,
+                    }, ensure_ascii=False)
+                _policy_granted = True
+            else:
+                return json.dumps({
+                    "status": "error",
+                    "error": _policy_decision.reason,
+                    "tool_calls_made": 0,
+                    "duration_seconds": 0,
+                }, ensure_ascii=False)
+
+    if _policy_granted:
+        _guard = {"approved": True, "policy_approved": True}
+    else:
+        # The existing Hermes guard remains active under FULL_AUTONOMOUS and
+        # for callers that did not require an Hafiye policy confirmation.
+        from tools.approval import check_execute_code_guard
+
+        _guard = check_execute_code_guard(
+            code, env_type,
+            has_host_access=_docker_has_host_access(_env_config),
+        )
     if not _guard.get("approved", False):
         return json.dumps({
             "status": "error",
@@ -1316,7 +1356,7 @@ def execute_code(
     # poll (local _wait_for_process loop, or remote/ssh env.execute which routes
     # through the same poll loop).  A genuine post-clear interrupt re-sets the
     # bit and is still caught downstream.
-    if _guard.get("user_approved"):
+    if _guard.get("user_approved") or _guard.get("policy_approved"):
         from tools.interrupt import clear_current_thread_interrupt
         clear_current_thread_interrupt()
 

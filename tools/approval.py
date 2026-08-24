@@ -4341,7 +4341,9 @@ def _await_gateway_decision(session_key: str, notify_cb, approval_data: dict,
 
 def check_all_command_guards(command: str, env_type: str,
                              approval_callback=None,
-                             has_host_access: bool = False) -> dict:
+                             has_host_access: bool = False,
+                             policy_warning: tuple[str, str] | None = None,
+                             enforce_policy: bool = False) -> dict:
     """Run all pre-exec security checks and return a single approval decision.
 
     Gathers findings from tirith and dangerous-command detection, then
@@ -4355,7 +4357,10 @@ def check_all_command_guards(command: str, env_type: str,
     """
     # Skip isolated container backends for both checks. Docker stops skipping
     # once host paths are bind-mounted into the sandbox.
-    if _should_skip_container_guards(env_type, has_host_access=has_host_access):
+    if (
+        _should_skip_container_guards(env_type, has_host_access=has_host_access)
+        and not enforce_policy
+    ):
         return {"approved": True, "message": None}
 
     # Hardline floor: unconditional block for catastrophic commands
@@ -4390,10 +4395,13 @@ def check_all_command_guards(command: str, env_type: str,
     # --yolo or approvals.mode=off: bypass all approval prompts.
     # Gateway /yolo is session-scoped; CLI --yolo remains process-scoped.
     approval_mode = _get_approval_mode()
-    if _YOLO_MODE_FROZEN or is_current_session_yolo_enabled() or approval_mode == "off":
+    if (
+        not enforce_policy
+        and (_YOLO_MODE_FROZEN or is_current_session_yolo_enabled() or approval_mode == "off")
+    ):
         return {"approved": True, "message": None}
 
-    if _command_matches_permanent_allowlist(command):
+    if not enforce_policy and _command_matches_permanent_allowlist(command):
         return {"approved": True, "message": None}
 
     approval_callback = _resolve_cli_approval_callback(approval_callback)
@@ -4411,6 +4419,26 @@ def check_all_command_guards(command: str, env_type: str,
         # HERMES_EXEC_ASK routes through the gateway decision loop (no human
         # either here) — ignore it so single_query_mode actually takes effect.
         is_ask = False
+
+    # An explicit Hafiye confirmation policy must fail closed when no user
+    # approval surface exists.  A cron/batch worker cannot safely confirm an
+    # operation on the user's behalf.
+    if enforce_policy and not is_cli and not is_gateway and not is_ask:
+        policy_description = (
+            policy_warning[1] if policy_warning else "the selected execution policy"
+        )
+        return {
+            "approved": False,
+            "message": (
+                f"BLOCKED: {policy_description} requires an interactive user "
+                "approval surface. No approval was available, so the operation "
+                "was not executed."
+            ),
+            "pattern_key": policy_warning[0] if policy_warning else "hafiye-policy",
+            "description": policy_description,
+            "outcome": "no_approval_surface",
+            "user_consent": False,
+        }
 
     # Preserve the existing non-interactive behavior: outside CLI/gateway/ask
     # flows, we do not block on approvals and we skip external guard work.
@@ -4602,6 +4630,13 @@ def check_all_command_guards(command: str, env_type: str,
 
     session_key = get_current_session_key()
 
+    if enforce_policy and policy_warning:
+        policy_key, policy_description = policy_warning
+        if not is_approved(session_key, policy_key):
+            # Treat the policy warning like a session-scoped security finding;
+            # the approval UI never offers permanent persistence for it.
+            warnings.append((policy_key, policy_description, True))
+
     # Tirith block/warn → approvable warning with rich findings.
     # Previously, tirith "block" was a hard block with no approval prompt.
     # Now both block and warn go through the approval flow so users can
@@ -4627,7 +4662,7 @@ def check_all_command_guards(command: str, env_type: str,
     # Inspired by OpenAI Codex's Smart Approvals guardian subagent
     # (openai/codex#13860).
     smart_denied_for_owner = False
-    if approval_mode == "smart":
+    if approval_mode == "smart" and not enforce_policy:
         combined_desc_for_llm = "; ".join(desc for _, desc, _ in warnings)
         observer_payload = _prepare_smart_approval_observer(
             command=command,
