@@ -12,7 +12,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
 - Current Hafiye HEAD (latest product/source commit):
-  45294d3f77a3929731ac29d89d54f5d53c70957d
+  404197560629cde55232518c21d3d98b3cbe4988
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -69,6 +69,9 @@ The Hafiye source history contains these separable logical groups:
 - gateway-contract-follow-up: tolerate non-mapping cache fixtures and preserve
   upstream fallback-refresh call contracts while applying per-turn Hafiye
   fallback routes.
+- host-execution-policy: shared Hafiye host-tool policy classification,
+  existing Hermes approval-surface enforcement, fail-closed read-only and
+  confirmation behavior, and the real Desktop execution-policy setting.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -245,6 +248,29 @@ P0 computer-use acceptance requires:
 - The eight route slots, three privacy modes, task-scoped overrides, route
   locality policy, legal fallback filtering, and OFFLINE network-tool deny
   boundary are covered by targeted tests. No upstream commit was rewritten.
+
+## P7 source validation
+
+- Current Hafiye source commit:
+  `404197560629cde55232518c21d3d98b3cbe4988`.
+- Hermes remains the execution base: local terminal, process, and filesystem
+  tools retain their real non-root host behavior under the default
+  `FULL_AUTONOMOUS` policy. Hafiye adds the shared
+  `hafiye_execution_policy.py` classifier and config resolver, dispatch-level
+  enforcement in `model_tools.py`, combined terminal approval warnings, and
+  the `execute_code` one-shot policy grant.
+- The existing Hermes approval/guard transport remains the only confirmation
+  surface; Hafiye does not create a second prompt or bypass layer. The
+  Desktop select is backed by the existing config schema/API and uses the
+  exact four policy values.
+- P7 targeted Python tests, existing host-tool regression tests, real host
+  terminal/file/process smoke, Desktop settings tests, typecheck, and
+  production build passed. The full comparison retained only the documented
+  accepted baseline plus KI-016/KI-019 diagnostics.
+- The pinned Hermes commit
+  `f293e7206b4ddd66042329442c6afebc19a8808d` and baseline merge commit
+  `2ac06b131a237916432503ac67bbcada6dbea39e` are unchanged. No upstream
+  commit was rewritten.
 
 ## Baseline divergence
 

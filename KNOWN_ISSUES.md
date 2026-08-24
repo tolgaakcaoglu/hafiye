@@ -132,6 +132,10 @@ silently treated as passing.
   managed local model server temporarily, then restored both after completion.
   This isolates the upstream lifecycle test from the intentionally persistent
   Hafiye topology.
+- In the P7 full comparison, the service was intentionally left active for the
+  normal-host run and both cold-start tests failed as expected; stopping the
+  service and rerunning the file produced 2/2 passes. The service was started
+  again and verified active afterward.
 
 ## KI-009 — Hafiye P1 source regression
 
@@ -238,3 +242,19 @@ silently treated as passing.
   Do not add this test to `ACCEPTED_UPSTREAM_BASELINE` or fix unrelated
   upstream browser-control behavior in P6. Re-run it in isolation if it
   reproduces outside the full-file scheduling context.
+
+## KI-020 — P7 full-suite comparison diagnostics
+
+- Status: DOCUMENTED DIAGNOSTICS; no P7 acceptance blocker and no Hafiye
+  regression.
+- The P7 full backend comparison measured 3,219 files with 37,160 passed, 7
+  failed, and 244 skipped. The seven failures were the four current members
+  of `ACCEPTED_UPSTREAM_BASELINE`, the two KI-016 persistent-service
+  cold-start failures, and the KI-019 browser reconnect scheduling failure.
+- P7 source changes are limited to host-tool policy/approval boundaries and the
+  Desktop config setting; they do not modify the failing upstream browser,
+  Windows lifecycle, FTS, execution-flag, Termux, or doctor implementations.
+- The cold-start file passed after service isolation, and the browser test
+  passed on the immediate isolated retry. Future full runs must continue to
+  classify the exact failure IDs against the historical five and investigate
+  any new or different ID.

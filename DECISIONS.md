@@ -180,3 +180,20 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   covered by `test_default_xdg_provider_lifecycle_uses_config_root`. This ADR
   records an implementation correction and does not override the master
   roadmap.
+
+## ADR-0014 — Enforce Hafiye host policies at existing Hermes boundaries
+
+- Date: 2026-08-24
+- Decision: Add one shared Hafiye host-tool classifier/resolver. Terminal
+  combines policy findings with Hermes' existing command-guard approval flow;
+  the other host tools are gated at the shared `model_tools` dispatch boundary;
+  `execute_code` receives one short-lived approval scope for the same call.
+  The default remains real local-host execution under `FULL_AUTONOMOUS`.
+- Reason: Every CLI, gateway, Desktop, and direct dispatch path must observe
+  the same `FULL_AUTONOMOUS`, `PRIVILEGED_CONFIRM`, `WRITE_CONFIRM`, and
+  `READ_ONLY` behavior without creating a second approval surface or changing
+  Hermes' prompt-cache-sensitive conversation machinery.
+- Consequence: `READ_ONLY` is conservative and blocks unknown/compound host
+  mutations; confirmation policies fail closed without an interactive user
+  approval surface. P8's `hafiye-rootd` remains the later privileged-operation
+  broker and is not folded into P7.

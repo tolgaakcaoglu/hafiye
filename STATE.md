@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 45294d3f77a3929731ac29d89d54f5d53c70957d
-  (P5 Secret Service/XDG config-root correction)
+- Current Hafiye source HEAD: 404197560629cde55232518c21d3d98b3cbe4988
+  (P7 host execution policy)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -36,8 +36,10 @@ remote OpenAI-compatible validation/save, Hermes Gemini provider reuse,
 Desktop provider/key UI, Secret Service storage, and the live Gemini
 connection are verified.
 
-P6 — Model router + privacy modes: complete. P7 — Full host tools + execution
-policy is the next incomplete phase.
+P6 — Model router + privacy modes: complete.
+
+P7 — Full host tools + execution policy: complete. P8 — Hafiye root broker is
+the next incomplete phase.
 
 ## Verified working
 
@@ -116,16 +118,28 @@ policy is the next incomplete phase.
 - The native gateway, API server, one-shot CLI path, interactive CLI setup, and
   Desktop settings all use the same Hafiye route/privacy policy. The Desktop
   exposes the global privacy mode and route locality controls.
+- Hafiye host execution policy defaults to `FULL_AUTONOMOUS` and supports
+  `PRIVILEGED_CONFIRM`, `WRITE_CONFIRM`, and `READ_ONLY` through the shared
+  config/API boundary.
+- Hermes local terminal, process, and filesystem tools execute against the real
+  non-root host by default. Confirmation policies reuse Hermes' existing
+  approval surface; `READ_ONLY` blocks mutating operations.
+- The Desktop Hafiye settings surface exposes the real
+  `hafiye.execution_policy` select and persists it through the existing config
+  API; it is not a mock-only control.
+- Real dispatcher smoke passed for a host terminal command, a temporary-file
+  read, and a background process start/wait cycle.
 
 ## Regression status
 
-The latest post-P5-source-fix full backend run covered 3,218 files and reported
-37,156 passed, 4 failed, and 244 skipped in 541.8 seconds. All four failures
-are members of the original `ACCEPTED_UPSTREAM_BASELINE`; the accepted remote
-browser-control ID did not reproduce in this run. No new or different Hafiye
-regression was found. The `tests/hermes_cli/test_web_server.py` file had a
-retry-only scheduling flake during the run and passed on retry; it is retained
-as a diagnostic, not a product regression.
+The P7 full backend comparison covered 3,219 files and reported 37,160 passed,
+7 failed, and 244 skipped in 598.3 seconds. Four failures are members of the
+current `ACCEPTED_UPSTREAM_BASELINE`: Hermes state FTS, execution-flag
+detection, Termux audio detection, and Vercel doctor diagnostics. The two
+cold-start failures passed 2/2 when the persistent Hafiye service was stopped
+and are the existing KI-016 topology diagnostic. The browser reconnect test
+is the existing KI-019 scheduling diagnostic; it passed on an immediate
+isolated retry. No new Hafiye regression was found.
 
 The P5 targeted Python matrix now passes 468 tests, alongside the Desktop
 provider tests/typecheck/build, real Secret Service round-trip, local CUDA
@@ -135,10 +149,11 @@ validation pass.
 
 ## Active blockers
 
-P5 and P6 have no open acceptance blockers. The user service is active and the
-local CUDA runtime doctor is green. `loginctl` reports `Linger=no`, and a full
-reboot was not performed; GNOME's `Super+Shift+Space` conflict remains the
-existing operational warning. P7 is the next incomplete roadmap phase.
+P5, P6, and P7 have no open acceptance blockers. The user service is active
+and the local CUDA runtime doctor is green. `loginctl` reports `Linger=no`,
+and a full reboot was not performed; GNOME's `Super+Shift+Space` conflict
+remains the existing operational warning. P8 — Hafiye root broker is the next
+incomplete roadmap phase.
 
 The accepted upstream failures, KI-019 browser scheduling diagnostic, npm audit
 warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
@@ -378,6 +393,48 @@ directory:
 - `./scripts/run_tests.sh tests/gateway/test_compression_failure_session_sync.py tests/gateway/test_fallback_chain_reload.py -q`
   — 2 files, 6 passed, 0 failed after the P6 gateway contract fix.
 
+### P7 host tools and execution policy
+
+- `.venv/bin/python -m pytest -q tests/test_hafiye_execution_policy.py tests/test_model_tools.py`
+  — 31 passed, 0 failed.
+- `.venv/bin/python -m pytest -q tests/tools/test_terminal_tool.py
+  tests/tools/test_code_execution.py tests/tools/test_approval.py
+  tests/tools/test_process_registry.py tests/tools/test_file_tools.py`
+  — 285 passed, 6 skipped, 1 warning, 5 subtests passed.
+- `.venv/bin/ruff check` on all P7 changed Python files — all checks passed;
+  Python bytecode compilation and `git diff --check` also passed.
+- Runtime schema smoke — `hafiye.execution_policy` is a real select with
+  `FULL_AUTONOMOUS`, `PRIVILEGED_CONFIRM`, `WRITE_CONFIRM`, and `READ_ONLY`.
+- Real Hafiye dispatcher host smoke — terminal returned
+  `HAFIYE_P7_HOST`; a temporary file was read successfully; a background
+  process returned `HAFIYE_P7_PROCESS` and exited cleanly.
+- `cd apps/desktop && npx vitest run --project ui
+  src/app/settings/helpers.test.ts src/app/settings/settings-search.test.ts
+  src/app/settings/terminal-backend-panel.test.tsx` — 3 files, 46 passed.
+- `cd apps/desktop && npx vitest run --project ui
+  src/app/settings/gateway-settings.test.tsx
+  src/app/settings/providers-settings.test.tsx
+  src/store/session-unread-tile.test.ts
+  src/app/settings/toolset-config-panel.test.tsx
+  src/app/messaging/index.test.tsx src/app/skills/index.test.tsx`
+  — 6 files, 58 passed after the contaminated parallel run was discarded.
+- `cd apps/desktop && npm run typecheck` — renderer, Electron, and E2E
+  TypeScript checks passed.
+- `cd apps/desktop && npm run build` — Vite renderer, Electron main/preload,
+  native staging, and `assert-dist-built` passed; existing npm/Vite warnings
+  remain documented diagnostics.
+- `./scripts/run_tests.sh` — 3,219 files; 37,160 passed, 7 failed, 244
+  skipped in 598.3 seconds; four accepted baseline failures plus KI-016 and
+  KI-019 diagnostics, with no new Hafiye regression.
+- `.venv/bin/python -m pytest -q
+  tests/hermes_cli/test_update_cold_start_gateway_liveness.py` with the
+  persistent service stopped — 2 passed; the service was started again.
+- `.venv/bin/python -m pytest -q tests/gateway/test_browser_control_api.py
+  -k test_local_api_same_identity_reconnect_completes_command_started_on_old_socket`
+  — first run timed out; immediate retry passed 1/1, matching KI-019.
+- `.venv/bin/hafiye runtime doctor` after restoration — `ok=true`,
+  `blockers=[]`, selected backend `CUDA`; `hafiye-gateway.service` active.
+
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
@@ -400,14 +457,15 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Keep the verified source commit
-   `45294d3f77a3929731ac29d89d54f5d53c70957d` separate from the pinned
+1. Keep the verified P7 source commit
+   `404197560629cde55232518c21d3d98b3cbe4988` separate from the pinned
    upstream and baseline merge SHAs.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline for future phases; reduce the current
    baseline again if failures disappear, and investigate any new/different ID.
-3. P7 — Full host tools + execution policy is the next incomplete phase and
-   should begin on the next authorized implementation turn.
+3. P8 — Hafiye root broker is the next incomplete phase. Keep the main Hafiye
+   process non-root and route only explicitly privileged operations through
+   the roadmap-prescribed local `hafiye-rootd` Unix-socket boundary.
 
 ## Environment changes
 
@@ -431,6 +489,9 @@ server was restored through `.venv/bin/hafiye runtime server start
 qwen2.5-0.5b-instruct-q4 --backend AUTO --context-size 4096 --gpu-layers 99`;
 the runtime doctor then reported `ok=true`, `blockers=[]`, and selected backend
 `CUDA`.
+P7 added only the shared host execution-policy classifier/dispatch enforcement,
+the existing Hermes approval-surface integration, and the real Desktop config
+select; no system package, sudo, service, or password change was made.
 P5's live Gemini credential was saved to Linux Secret Service and hydrated from
 the canonical Hafiye config root; no plaintext credential was added to the
 repository or configuration. The provider lifecycle/XDG fix is source commit

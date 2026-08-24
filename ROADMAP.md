@@ -10,7 +10,7 @@ records execution status only.
 - [x] P4 llama.cpp managed local runtime
 - [x] P5 Providers + Gemini + remote OpenAI-compatible
 - [x] P6 Model router + privacy modes
-- [ ] P7 Full host tools + execution policy
+- [x] P7 Full host tools + execution policy
 - [ ] P8 Hafiye root broker
 - [ ] P9 Linux computer use
 - [ ] P10 Browser
@@ -146,7 +146,7 @@ process correction is `ae24562fb9dfeeb4dd58752849b4778b2c8606e8`. The managed
 llama.cpp checkout is separately pinned to source commit
 `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`. The real runtime, Desktop API,
 and corrected full backend regression checks pass under the documented
-baseline rule. P7 is now the next incomplete phase.
+baseline rule. P7 followed this phase and is closed below.
 
 ## P5 execution status
 
@@ -198,5 +198,33 @@ P6 is complete. Its routing/privacy source implementation is recorded in
 contract follow-up in `62b3d5762`. Targeted P6 tests, the affected backend
 matrix, Desktop typecheck/settings tests, and the full regression comparison
 were run. The only different full-suite failure was reproduced before P6 and
-is documented as KI-019; no Hafiye regression remains. P7 is now the next
-incomplete roadmap phase.
+is documented as KI-019; no Hafiye regression remains. P7 followed this
+phase and is now closed below.
+
+## P7 execution status
+
+- [x] Keep Hermes local terminal, process, and filesystem tools as the final
+      real-host execution environment.
+- [x] Add the binding policies `FULL_AUTONOMOUS`, `PRIVILEGED_CONFIRM`,
+      `WRITE_CONFIRM`, and `READ_ONLY`, with `FULL_AUTONOMOUS` as the default.
+- [x] Enforce the policy at the shared tool-dispatch boundary and combine
+      terminal policy findings with Hermes' existing approval/guard surface.
+- [x] Make confirmation policies fail closed when no interactive approval
+      surface exists; make `READ_ONLY` block mutating host operations.
+- [x] Expose `hafiye.execution_policy` through the real Desktop config schema
+      and settings control; the existing config API persists changes.
+- [x] Verify harmless real host terminal, file-read, and background-process
+      operations through the live Hafiye dispatcher.
+- [x] Run policy, host-tool, full backend, Desktop, typecheck, build, lint,
+      and whitespace checks and record the exact results in TEST_MATRIX.md.
+
+P7 is complete. The source implementation is recorded in commit
+`404197560629cde55232518c21d3d98b3cbe4988`. The policy/default, shared
+approval boundary, Desktop setting, real host smoke, targeted tests, and
+production build pass. The full backend comparison measured 3,219 files,
+37,160 passed, 7 failed, and 244 skipped: four are the current accepted
+upstream baseline; the two cold-start failures pass with the persistent
+Hafiye service stopped and remain KI-016 topology diagnostics; the browser
+reconnect failure is the existing KI-019 scheduling diagnostic and passed on
+an immediate isolated retry. No new Hafiye regression was found. P8 is now
+the next incomplete phase.
