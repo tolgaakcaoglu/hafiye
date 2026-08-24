@@ -186,13 +186,13 @@ The historical post-source comparison set is this exact five-failure baseline:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The latest post-P5-source-fix full run contained four members of this set; the
-remote browser-control ID did not reproduce. The current comparison baseline is
-therefore items 2–5 above, while the exact five remain the historical accepted
-whitelist. The separate local reconnect failure was observed only in the
-earlier post-P6 comparison, reproduced in the P6-parent checkout, and is
-documented as KI-019. A web-server file also had a retry-only scheduling flake
-that passed on retry; it is not a new regression.
+The latest exact comparison command contained items 2, 3, and 5; items 1 and 4
+passed. The current comparison baseline is therefore items 2, 3, and 5 above,
+while the exact five remain the historical accepted whitelist. The separate
+local reconnect failure was observed only in the earlier post-P6 comparison,
+reproduced in the P6-parent checkout, and is documented as KI-019. The P19
+canonical full-suite scheduling/environment observations are documented as
+KI-034 and are not added to the historical whitelist.
 
 Future failures within the historical five are accepted for comparison. Fewer
 failures update the current comparison baseline; any new or different failure
@@ -330,3 +330,19 @@ P18 is accepted. Source/test commit
 `fd17e6533894a568744b82454635a8e6bf02709b` contains the scheduler policy
 boundary, Desktop controls, and acceptance tests. The historical five-ID
 `ACCEPTED_UPSTREAM_BASELINE` remains unchanged.
+
+## P19 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P19-PY-01 | Hardening, loop/action budgets, runtime, voice, computer-use, browser, and retention | `.venv/bin/python -m pytest -q tests/agent/test_tool_guardrails.py tests/agent/test_stall_guards.py tests/tools/test_delegate_control_actions.py tests/hermes_cli/test_local_runtime.py tests/hermes_cli/test_voice_runtime.py tests/test_hafiye_computer_use.py tests/tools/test_hafiye_browser.py tests/test_hafiye_hardening.py` | 111 passed | PASS |
+| P19-PY-02 | Adjacent Hermes hardening/config/audit regressions | `.venv/bin/python -m pytest -q tests/tools/test_browser_hardening.py tests/tools/test_hafiye_voice_runtime_hooks.py tests/hermes_cli/test_config.py tests/hermes_cli/test_dashboard_auth_audit.py` | 104 passed | PASS |
+| P19-LINT-01 | Python quality and patch hygiene | `.venv/bin/ruff check` on all P19 source/test files; `git diff --check` | Passed | PASS |
+| P19-REAL-01 | Real hardening/runtime/voice/computer-use readiness | `.venv/bin/hafiye hardening doctor`; `.venv/bin/hafiye runtime doctor`; `.venv/bin/hafiye voice doctor`; `.venv/bin/hafiye runtime server recover --attempts 1`; pinned computer-use-linux doctor | All hardening checks true, runtime/voice `ok=true`, computer-use required booleans true, and all blockers arrays empty | PASS |
+| P19-BE-01 | Exact five upstream comparison | `.venv/bin/python -m pytest -q` with the five historical IDs | 3 failed, 2 passed; only historical IDs 2, 3, and 5 failed; IDs 1 and 4 passed | ACCEPTED BASELINE REDUCED |
+| P19-BE-02 | Canonical backend regression run | `./scripts/run_tests.sh` | 3,231 files; 37,218 passed, 16 failed, 244 skipped in 847.8s; full-suite diagnostics documented in KI-034 | PASS WITH DOCUMENTED DIAGNOSTICS |
+| P19-ACCEPTANCE | Master P19 closure | All roadmap hardening boundaries implemented, focused/adjacent matrices pass, real doctor acceptance passes, and exact baseline has no new/different failure | P20 is next; no P19-specific regression | PASS |
+
+P19 is accepted. Source/test commit `0f45abb9c` contains the hardening
+boundary and tests. The historical five-ID whitelist remains intact; the
+current comparison baseline is items 2, 3, and 5 only.

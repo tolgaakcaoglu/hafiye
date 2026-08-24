@@ -360,3 +360,25 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 - P18 changed no host service, package, credential, sudo rule, group,
   device permission, or persistent user gateway state. The current host
   remains the P0 Ubuntu/GNOME Wayland/NVIDIA CUDA/PipeWire environment.
+
+## P19 Hardening validation (2026-08-24)
+
+- The real `.venv/bin/hafiye hardening doctor` returned `ok=true`, all 12
+  checks true, and `blockers=[]`. It inspected the active Hafiye config/state
+  roots, reported a 200-action task budget, 30-day/100 MB audit retention,
+  checkpoint limits, and approximately 694 GB free on the state filesystem.
+- `.venv/bin/hafiye runtime doctor` returned `ok=true`, `blockers=[]`; the
+  active `llama-server` was healthy on `127.0.0.1:11435`, the RTX 3080/CUDA
+  build was selected under AUTO, and the saved-state recovery command returned
+  `runtime_already_ready` without restarting the healthy server.
+- `.venv/bin/hafiye voice doctor` returned `ok=true`, `blockers=[]`; whisper
+  reported CPU/CUDA/Vulkan compiled backends with AUTO selecting CUDA, and
+  Piper `1.7.0` with `tr_TR-dfki-medium` was ready.
+- The pinned `agent-sh/computer-use-linux` doctor at source commit
+  `94736dc3e0dca56acfc89752c26869fb9ed01202` returned all four required
+  readiness fields true and `blockers=[]`. Diagnostic-only xdotool/GNOME
+  screenshot/introspection gaps remain non-blocking on this Wayland host.
+- P19 made no system package, service, sudo, credential, group, device
+  permission, or logout/login change. The real doctor commands were
+  non-invasive; retention deletion was covered in isolated temporary-root
+  tests rather than run destructively against the live log store.

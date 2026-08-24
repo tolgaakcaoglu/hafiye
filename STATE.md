@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: fd17e6533894a568744b82454635a8e6bf02709b
-  (P18 Scheduler / skills / MCP source/test commit)
+- Current Hafiye source HEAD: 0f45abb9c
+  (P19 Hardening source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -64,8 +64,8 @@ validated against the P14 acceptance criteria.
 
 P15 — OpenHands coding delegate: complete. The managed official source/runtime,
 real coding delegation, gateway Task Center progress bridge, Desktop Task
-Center panel, and the master fixture E2E all pass. P16, P17, and P18 are also
-complete; P19 is now the first incomplete phase.
+Center panel, and the master fixture E2E all pass. P16, P17, P18, and P19 are
+also complete; P20 is now the first incomplete phase.
 
 P16 — Task Center: complete. The durable generic task record, restart/reconnect
 behavior, complete required Desktop fields/actions, and real Electron
@@ -76,8 +76,12 @@ config/backend boundaries, privacy selector, and Electron acceptance pass.
 
 P18 — Scheduler / skills / MCP: complete. Hermes cron/skills/MCP were reused;
 scheduled route, privacy, and enabled-toolset choices persist through the
-gateway and the real recurring local-task acceptance passes. P19 is now the
-first incomplete phase.
+gateway and the real recurring local-task acceptance passes.
+
+P19 — Hardening: complete. Prompt-injection and redaction boundaries, provider
+outage policy, bounded llama/voice recovery, computer-use failure contracts,
+loop/action budgets, checkpoint/config recovery, audit retention, and disk
+limits are implemented and verified. P20 is now the first incomplete phase.
 
 ## Verified working
 
@@ -229,6 +233,15 @@ first incomplete phase.
   failed, and queued records, showed provider/model, current step, tool,
   command, modified file, subagent state, and elapsed/cancellation surfaces,
   then cancelled a queued task through the real gateway RPC.
+- P19 hardening doctor is green on the real host: all 12 checks pass and
+  `blockers=[]`; the configured task-action cap is 200 and audit/disk floors
+  are reported from the active Hafiye config/state roots.
+- Real local runtime doctor reports the RTX 3080/CUDA llama-server healthy and
+  AUTO-selected CUDA. Bounded `runtime server recover --attempts 1` correctly
+  returned `runtime_already_ready` without restarting a healthy server.
+- Real voice doctor reports whisper CUDA/Vulkan/CPU manifests and Piper Turkish
+  voice ready. The pinned computer-use-linux doctor reports all four required
+  readiness booleans true and `blockers=[]`.
 
 ## Regression status
 
@@ -269,6 +282,16 @@ clean production build, real Electron/gateway scheduler acceptance, and two-
 tick recurring local-task acceptance passed. The P18 source/test commit
 introduced no new or different upstream failure; the historical five-ID
 whitelist and current four-ID comparison baseline are unchanged.
+
+P19's hardening matrix passed 111 focused backend tests plus 104 adjacent
+browser/voice/config/audit tests. Ruff, bytecode/patch hygiene, the real
+hardening/runtime/voice/computer-use doctors, and bounded llama recovery
+passed. The canonical full backend run completed with 37,218 passed, 16
+failed, and 244 skipped; 12 of the 16 selected failures reproduce on the
+P18 source baseline and the four additional full-suite observations are
+timing/active-desktop diagnostics. The exact five comparison command reduced
+the current baseline to historical items 2, 3, and 5; items 1 and 4 passed.
+No P19-specific regression was found.
 
 The P5 targeted Python matrix now passes 468 tests, alongside the Desktop
 provider tests/typecheck/build, real Secret Service round-trip, local CUDA
@@ -703,7 +726,7 @@ directory:
 
 The original five upstream failures were accepted before Hafiye source
 changes. The exact five IDs remain the historical accepted regression
-whitelist. The current post-P5 comparison baseline is the four IDs that
+whitelist. The current post-P19 comparison baseline is the three IDs that
 reproduced:
 
 1. tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip
@@ -712,23 +735,23 @@ reproduced:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The accepted remote browser-control ID (item 1) did not reproduce in the latest
-run, so the current baseline was reduced to items 2–5. The separate local
-reconnect scheduling failure is documented in KI-019 and is not added to the
-historical whitelist. Future failures within the historical five are classified
-against that upstream whitelist; any new or different ID is a regression to
-investigate. The upstream bugs are not being fixed by Hafiye.
+The accepted remote browser-control ID (item 1) and Termux ID (item 4) passed
+the exact comparison command after P19, so the current baseline was reduced to
+items 2, 3, and 5. The separate local reconnect scheduling failure is
+documented in KI-019 and is not added to the historical whitelist. Future
+failures within the historical five are classified against that upstream
+whitelist; any new or different ID is a regression to investigate. The upstream
+bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `fd17e6533894a568744b82454635a8e6bf02709b` separate in all
+   source commit `0f45abb9c` separate in all
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
-   current four-ID comparison baseline; investigate any new/different ID.
-3. P15, P16, P17, and P18 are closed. Start P19 — Hardening — as the first
-   incomplete phase while preserving the shared gateway and Desktop
-   business-logic boundary.
+   current three-ID comparison baseline; investigate any new/different ID.
+3. P19 is closed. Begin P20 — Packaging — while preserving the shared gateway
+   and Desktop business-logic boundary.
 
 ## Environment changes
 
@@ -1272,9 +1295,45 @@ P18 acceptance passed. No new or different upstream regression was found.
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
-   investigate any new or different failure in later phases.
-2. Begin P19 — Hardening: prompt-injection boundary, secrets redaction,
-   outage/crash recovery, loop/action budgets, config recovery, audit
-   retention, and disk limits.
+ investigate any new or different failure in later phases.
+2. Begin P20 — Packaging after preserving the P19 hardening contracts.
 3. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source/test commit separate in all subsequent state updates.
+   source/test commit `0f45abb9c` separate in all subsequent state updates.
+
+## P19 execution status — complete
+
+The P19 implementation and acceptance are recorded in source/test commit
+`0f45abb9c`. The commit identities remain separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `0f45abb9c`.
+
+### Implemented and verified
+
+- Reused Hermes prompt-injection, forced redaction, provider outage,
+  checkpoint, corrupt-config, and exact-call loop-detector primitives.
+- Added bounded llama-server recovery from saved state, whisper/Piper crash
+  retry, structured computer-use failure codes, and a 200-action default task
+  budget with atomic concurrent admission.
+- Added `hafiye hardening doctor|prune` composition for audit/checkpoint
+  retention, disk-space limits, and safe redacted diagnostics.
+
+### P19 test record
+
+- `.venv/bin/python -m pytest -q tests/agent/test_tool_guardrails.py tests/agent/test_stall_guards.py tests/tools/test_delegate_control_actions.py tests/hermes_cli/test_local_runtime.py tests/hermes_cli/test_voice_runtime.py tests/test_hafiye_computer_use.py tests/tools/test_hafiye_browser.py tests/test_hafiye_hardening.py` — 111 passed.
+- `.venv/bin/python -m pytest -q tests/tools/test_browser_hardening.py tests/tools/test_hafiye_voice_runtime_hooks.py tests/hermes_cli/test_config.py tests/hermes_cli/test_dashboard_auth_audit.py` — 104 passed.
+- `.venv/bin/ruff check` on all P19 source/test files and `git diff --check` — passed.
+- `.venv/bin/hafiye hardening doctor`, `runtime doctor`, `voice doctor`, and
+  `runtime server recover --attempts 1` — all real host checks passed; runtime
+  recovery returned `runtime_already_ready` for the healthy server.
+- Pinned computer-use-linux readiness — all required booleans true and
+  `blockers=[]`.
+- Exact five comparison command — `3 failed, 2 passed`; only historical IDs
+  2, 3, and 5 failed, so the current comparison baseline was reduced to those
+  three IDs. No new/different upstream failure was found.
+- `./scripts/run_tests.sh` — 3,231 files; 37,218 passed, 16 failed, 244
+  skipped in 847.8 seconds. The additional failures are documented in KI-034;
+  the P19-focused and adjacent matrices passed.
+
+P19 acceptance passed. P20 — Packaging — is now the first incomplete phase.

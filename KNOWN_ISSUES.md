@@ -23,10 +23,10 @@ silently treated as passing.
   37,156 passed, 4 failed, and 244 skipped in 541.8 seconds. Four failures were
   members of the original five; the original remote browser-control ID did
   not reproduce in that run.
-- The current comparison baseline is therefore the four reproduced IDs
-  (original IDs 2–5 below); the original five-ID set remains the historical
-  accepted whitelist. This reduction is recorded as a baseline update, not a
-  Hafiye regression.
+- The current exact-comparison baseline after P19 is the three reproduced IDs
+  (original IDs 2, 3, and 5 below); original IDs 1 and 4 passed. The original
+  five-ID set remains the historical accepted whitelist. This reduction is
+  recorded as a baseline update, not a Hafiye regression.
 - A different browser-control reconnect test appeared in that run. It is
   tracked separately as KI-019 after reproducing in the P6-parent checkout;
   it is not added to this exact five-ID baseline.
@@ -436,3 +436,37 @@ silently treated as passing.
   execution-ledger records. No new or different upstream regression was
   observed. The two async resource warnings in the cron matrix are existing
   scheduler/test-harness diagnostics, not Hafiye failures.
+
+## KI-033 — P19 hardening validation
+
+- Status: RESOLVED 2026-08-24; no P19 acceptance blocker.
+- Hermes' existing prompt-injection boundary, forced secret redaction,
+  provider outage classifier/backoff policy, exact-call loop detector,
+  checkpoint rollback, and corrupt-config backup/recovery remain the source of
+  truth. Hafiye adds bounded managed-runtime recovery, action-budget admission,
+  computer-use failure codes, and retention/doctor composition around them.
+- Focused hardening tests passed: 111 tests in the P19 matrix and 104 adjacent
+  browser/voice/config/audit tests. Ruff and patch hygiene passed.
+- Real `.venv/bin/hafiye hardening doctor`, `runtime doctor`, `voice doctor`,
+  `runtime server recover --attempts 1`, and the pinned computer-use-linux
+  readiness check passed. The four required computer-use readiness fields are
+  true and blockers is empty.
+- No host service, package, credential, sudo rule, group, device permission,
+  or root execution model changed during P19.
+
+## KI-034 — P19 canonical full-suite scheduling/environment diagnostics
+
+- Status: DIAGNOSTIC; not a P19 acceptance blocker.
+- `./scripts/run_tests.sh` completed 3,231 files with 37,218 passed, 16
+  failed, and 244 skipped in 847.8 seconds. The exact five comparison command
+  separately returned 3 failed/2 passed, with only historical IDs 2, 3, and 5
+  failing; IDs 1 and 4 passed.
+- Twelve of the sixteen selected full-suite failures reproduce in a clean
+  detached P18 baseline worktree (`139f5aadf`), including the existing Hermes
+  state/execution/doctor failures, venv-footgun guards, TUI toolset assertions,
+  and delegate/run-agent diagnostics. They are not introduced by P19.
+- The four additional observations are parallel/host-state diagnostics:
+  browser stale-socket detach and Termux inconclusive-audio passed in isolated
+  reruns; the two Windows cold-start assertions are suppressed by the active
+  Desktop lifecycle ledger on this host. No P19 code path owns those tests.
+- This item must not be added to the historical five-ID regression whitelist.

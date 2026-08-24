@@ -463,3 +463,22 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   the gateway toolset catalog and clearly marks custom allowlists; the
   scheduler's safety filtering still applies. This ADR records implementation
   detail only and does not override the master roadmap.
+
+## ADR-0029 — Compose P19 hardening around Hermes safety primitives
+
+- Date: 2026-08-24
+- Decision: Keep Hermes' existing prompt-injection boundaries, forced secret
+  redaction, provider error classification/backoff, exact-call loop detector,
+  checkpoint manager, and corrupt-config recovery as the implementation
+  authorities. Add only Hafiye-specific bounded runtime recovery, task action
+  admission, computer-use failure classification, and one hardening doctor/
+  retention command that reads the existing config and state roots.
+- Reason: P19 requires crash/outage recovery, loop/action limits, rollback,
+  config recovery, audit retention, and disk limits. Reusing the upstream
+  controls preserves Hermes behavior and prompt-cache/tool-surface invariants;
+  bounded Hafiye adapters provide the missing managed llama/voice/CUA and
+  operator-maintenance contracts without a parallel supervisor or config store.
+- Consequence: Recovery attempts are explicit and capped, diagnostics are
+  redacted/bounded, retention mutation is isolated to known audit/checkpoint
+  stores, and `hafiye hardening doctor` can validate the complete boundary
+  without starting a runtime. This ADR does not override the master roadmap.

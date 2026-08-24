@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P18 Scheduler / skills / MCP source/test commit):
-  fd17e6533894a568744b82454635a8e6bf02709b
+- Current Hafiye source HEAD (P19 Hardening source/test commit):
+  0f45abb9c
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -505,6 +505,19 @@ P0 computer-use acceptance requires:
   gateway-backed enabled-toolset allowlist. The two-tick local recurring-task
   acceptance and real Electron/gateway edit round-trip passed.
 - No Hermes upstream commit changed and no upstream history was rewritten.
+
+## P19 Hardening patch group
+
+- Hafiye source/test commit: `0f45abb9c`.
+- The patch composes Hermes' existing prompt-injection, redaction, outage,
+  loop-detector, checkpoint, and config-recovery primitives. It adds bounded
+  Hafiye-managed llama/voice recovery, action-budget admission, structured
+  computer-use failures, and audit/disk retention diagnostics without creating
+  a second runtime or configuration store.
+- The exact five-ID upstream comparison after the patch reproduced only
+  historical items 2, 3, and 5; items 1 and 4 passed. No upstream Hermes
+  commit changed, no upstream history was rewritten, and no upstream baseline
+  bug was fixed as part of P19.
 
 ## P17 Control Center patch group
 

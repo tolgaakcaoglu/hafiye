@@ -22,7 +22,7 @@ records execution status only.
 - [x] P16 Task Center
 - [x] P17 Control Center
 - [x] P18 Scheduler / skills / MCP
-- [ ] P19 Hardening
+- [x] P19 Hardening
 - [ ] P20 Packaging
 - [ ] P21 First-run onboarding
 - [ ] P22 CLI
@@ -499,4 +499,25 @@ P18 is complete. Source/test commit
 `fd17e6533894a568744b82454635a8e6bf02709b` adds the scheduler policy boundary,
 Desktop controls, and real acceptance tests. The two-tick local task produced
 two completed execution-ledger records. No new or different upstream
-regression was found. P19 — Hardening — is now the next incomplete phase.
+regression was found. P19 followed and is complete.
+
+## P19 execution status — complete
+
+- [x] Preserve Hermes' existing prompt-injection, redaction, provider outage,
+      loop-detector, checkpoint, and config-recovery boundaries.
+- [x] Add bounded llama-server crash recovery with saved-state reuse and safe
+      redacted diagnostics.
+- [x] Add bounded whisper/Piper crash recovery and structured computer-use
+      failure classification.
+- [x] Add a per-task action budget and retain the existing exact-call loop
+      detector.
+- [x] Add audit-log retention, checkpoint retention integration, disk-space
+      diagnostics, and a single `hafiye hardening doctor|prune` operator path.
+- [x] Run the focused backend/adjacent matrix, real runtime/voice/
+      computer-use doctors, and the canonical backend comparison.
+
+P19 is complete. Source/test commit `0f45abb9c` adds the hardening boundary and
+tests. The real hardening doctor returned `ok=true` with 12/12 checks true and
+`blockers=[]`; the exact upstream comparison reduced the current baseline to
+items 2, 3, and 5 of the historical five. No new P19-specific regression was
+found. P20 — Packaging — is now the next incomplete phase.
