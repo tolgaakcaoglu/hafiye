@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: d1c5f4c9c5254ba34844e583e5486972e33bdd6b
-  (P12 bundled Hafiye wake-word source commit)
+- Current Hafiye source HEAD: a4cef73ba7fe339926a83cc39dbd0f9b1356c38e
+  (P13 unified cancellation/emergency-stop source commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -55,7 +55,15 @@ P12 — Custom Hafiye wake word: complete. The bundled Turkish openWakeWord
 model, persisted tuning controls, local/client capture path, synthetic and
 real-room validation, and minimized-window Desktop activation are accepted.
 
-P13 — Barge-in + emergency stop: next.
+P13 — Barge-in + emergency stop: implementation complete; acceptance is blocked
+by the missing real OpenHands delegation path required by the P13 test list
+(KI-027). Do not mark P13 complete yet.
+
+P14 — Memory + project registry: not started; blocked by first-incomplete-phase
+ordering until P13 acceptance is closed.
+
+P15 — OpenHands coding delegate: not started. Its real delegation path is the
+missing prerequisite for the P13 OpenHands stop acceptance.
 
 ## Verified working
 
@@ -215,6 +223,14 @@ only P12 observations are the existing PortAudio local-capture warning and
 the CPython 3.13 openWakeWord optional-packaging warning documented in
 KI-026; Desktop client capture is verified and P12 has no acceptance blocker.
 
+P13 implementation tests pass and the process-wide stop fan-out is wired
+through the persistent gateway. The authenticated real gateway sequence
+engaged the durable ESTOP sentinel, returned prompt rejection code 4091 while
+paused, and resumed successfully. Real TTS stop, process-registry kill, root
+broker block/resume, and GNOME Wayland fallback keybinding checks passed. The
+Desktop Electron and UI test subsets, typecheck, and production build also
+pass. No new or different upstream regression was found.
+
 ## Active blockers
 
 P5, P6, P7, P8, P9, P11, and P12 have no open acceptance blockers. The user service and
@@ -229,7 +245,11 @@ The accepted upstream failures, KI-019 browser scheduling diagnostic, KI-022
 Firefox focus warning, KI-023 VS Code accessibility warning, npm audit
 warnings, missing pactl, missing vulkaninfo, optional-extra packaging
 warnings, and KI-026 are documented diagnostics. KI-025 is resolved after the
-synchronized real-microphone rerun recorded below.
+synchronized real-microphone rerun recorded below. P13 remains blocked by
+KI-027: the repository has no real OpenHands/coding_delegate process to start
+and stop for the mandated acceptance test. The direct upstream generic
+`cua-driver` lane is unavailable on this host (KI-028), but the managed
+computer-use-linux MCP provider remains accepted and is not replaced.
 
 ## Last tests and commands
 
@@ -621,15 +641,14 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Keep the verified P10 source commit
-   `5d2354095562d149ff54e58d664c1b042cf50c3e` separate from the pinned
-   upstream and baseline merge SHAs.
+1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
+   source commit `a4cef73ba7fe339926a83cc39dbd0f9b1356c38e` separate in all
+   state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
-   current four-ID comparison baseline for future phases; reduce the current
-   baseline again if failures disappear, and investigate any new/different ID.
-3. Start P11 — Local Turkish voice stack. Preserve the P8 root-broker
-   boundary and keep the P9 managed MCP provider and P10 browser routing
-   enabled; the main Hafiye process remains non-root.
+   current four-ID comparison baseline; investigate any new/different ID.
+3. Keep P13 open. When the real OpenHands `coding_delegate` process exists,
+   run the required start/stop/resume E2E and only then close P13. Do not
+   advance to P14 while P13 remains incomplete.
 
 ## Environment changes
 
@@ -733,7 +752,7 @@ The commit identities remain separate and are recorded here explicitly:
 
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
-- Current Hafiye source HEAD: `6f2b982159a37d9fb73d460c19279ea06d06efa0`.
+- P11 Hafiye source commit: `6f2b982159a37d9fb73d460c19279ea06d06efa0`.
 
 ### Verified working
 
@@ -793,7 +812,7 @@ The commit identities remain separate and are recorded here explicitly:
 
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
-- Current Hafiye source HEAD: `d1c5f4c9c5254ba34844e583e5486972e33bdd6b`.
+- P12 Hafiye source commit: `d1c5f4c9c5254ba34844e583e5486972e33bdd6b`.
 
 ### Verified working
 
@@ -851,12 +870,63 @@ P12 is accepted. The exact five historical upstream failures remain the
 `ACCEPTED_UPSTREAM_BASELINE`; the P12 targeted matrix introduced no new or
 different regression.
 
+## P13 execution status — acceptance pending
+
+The P13 source implementation is recorded in commit
+`a4cef73ba7fe339926a83cc39dbd0f9b1356c38e`. The pinned Hermes commit,
+history-preserving baseline merge, and current Hafiye source commit are kept
+separate above and here:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source HEAD: `a4cef73ba7fe339926a83cc39dbd0f9b1356c38e`.
+
+### Implemented and verified
+
+- One gateway-owned `CancellationController` now fans out emergency stop to
+  TTS, managed desktop-action backends, active gateway sessions, async
+  delegations, registered processes, and the durable ESTOP/root-RPC gate.
+- Desktop GUI/tray/Composer stop, the Turkish `Hafiye dur` voice path, CLI
+  `emergency-stop`, and `Ctrl+Super+Escape` converge on the same stop RPC.
+- Electron global shortcut registration is attempted first. On this real
+  GNOME Wayland session Electron reported the accelerator unavailable, so a
+  private GNOME custom keybinding fallback was installed, triggered with real
+  `ydotool`, created the ESTOP sentinel, and cleaned itself up on exit without
+  disturbing unrelated bindings.
+- The authenticated persistent-gateway smoke engaged pause, rejected a new
+  prompt with code `4091`, and resumed intentionally. The root broker blocked
+  a new privileged request while the sentinel existed and resumed afterward.
+- Real TTS stop and process-registry kill smokes passed. Managed
+  `computer-use-linux` MCP gates and cancellation tests pass; the generic
+  upstream `cua-driver` path is unavailable on this host and is documented as
+  KI-028 rather than substituted.
+
+### Acceptance still pending
+
+- The master P13 test list requires stopping a real OpenHands delegation. The
+  repository currently has no OpenHands V1 `coding_delegate` integration or
+  live OpenHands process to start/stop. Generic async delegation/process
+  cancellation is implemented and tested, but it is not evidence for the
+  OpenHands-specific acceptance. This is KI-027 and keeps P13 incomplete.
+- P14 must not start until that acceptance test passes. Do not mark P13
+  complete based only on the already-passing cancellation seams.
+
+### P13 test record
+
+- `.venv/bin/python -m pytest -q tests/test_estop.py tests/test_hafiye_rootd.py tests/tools/test_mcp_tool.py tests/tools/test_computer_use.py tests/tui_gateway/test_protocol.py` — 298 passed, 1 known coroutine warning.
+- `.venv/bin/python -m py_compile ...` over all changed P13 Python files — pass.
+- `.venv/bin/ruff check ...` over all changed P13 Python files — `All checks passed!`.
+- `cd apps/desktop && npx vitest run --project electron electron/emergency-stop-shortcut.test.ts electron/gnome-emergency-stop.test.ts electron/stream-throttle.test.ts` — 3 files, 11 passed.
+- `cd apps/desktop && npx vitest run --project ui src/lib/voice-stop-word.test.ts src/store/wake-word.test.ts src/app/chat/composer/controls.test.tsx src/app/chat/composer/hooks/use-voice-conversation.test.tsx src/app/chat/composer/hooks/use-voice-conversation-rearm.test.tsx` — 5 files, 58 passed.
+- `cd apps/desktop && npm run typecheck` — pass.
+- `cd apps/desktop && npm run build` — Vite, Electron bundles, native staging, and `assert-dist-built` passed; existing toolchain warnings remain.
+- `git diff --check` — pass.
+
 ## Exact next actions
 
-1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source HEAD separate in every subsequent update.
-2. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
+1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
    investigate any new or different failure in later phases.
-3. Begin P13 — Barge-in + emergency stop, keeping the P8 root-broker boundary,
-   P9 managed MCP provider, P10 browser routing, P11 voice stack, and P12
-   client wake capture enabled.
+2. Keep P13 open until a real OpenHands `coding_delegate` delegation is
+   started, stopped, and resumed through the shared cancellation controller.
+3. Do not advance to P14 or mark P13 complete before KI-027 is resolved by
+   the prescribed OpenHands integration and its real acceptance test.

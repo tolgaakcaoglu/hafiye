@@ -210,3 +210,27 @@ all of these as true:
 - can_query_windows
 
 It also reports blockers: []. P0 computer-use acceptance passed.
+
+## P13 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P13-PY-01 | Unified cancellation, root gate, managed MCP/computer-use gate, gateway protocol | `.venv/bin/python -m pytest -q tests/test_estop.py tests/test_hafiye_rootd.py tests/tools/test_mcp_tool.py tests/tools/test_computer_use.py tests/tui_gateway/test_protocol.py` | 298 passed; 1 known `vision_analyze_tool` coroutine warning | PASS |
+| P13-PY-02 | Async delegation, process registry, TTS and streaming cancellation regression set | `.venv/bin/python -m pytest -q tests/tools/test_async_delegation.py tests/tools/test_delegate_control_actions.py tests/tools/test_process_registry.py tests/tools/test_tts_streaming.py tests/gateway/test_streaming_tts_consumer.py tests/gateway/test_tts_media_routing.py` | 197 passed, 4 skipped, 2 existing async warnings | PASS WITH WARNING |
+| P13-LINT-01 | Changed Python compile/lint/patch hygiene | `.venv/bin/python -m py_compile ...`; `.venv/bin/ruff check ...`; `git diff --check` | Compilation passed; Ruff `All checks passed!`; no whitespace errors | PASS |
+| P13-D-01 | Desktop emergency shortcut, GNOME fallback, existing stream-throttle behavior | `cd apps/desktop && npx vitest run --project electron electron/emergency-stop-shortcut.test.ts electron/gnome-emergency-stop.test.ts electron/stream-throttle.test.ts` | 3 files; 11 passed | PASS |
+| P13-D-02 | Desktop voice stop and existing voice/wake/composer regressions | `cd apps/desktop && npx vitest run --project ui src/lib/voice-stop-word.test.ts src/store/wake-word.test.ts src/app/chat/composer/controls.test.tsx src/app/chat/composer/hooks/use-voice-conversation.test.tsx src/app/chat/composer/hooks/use-voice-conversation-rearm.test.tsx` | 5 files; 58 passed | PASS |
+| P13-D-03 | Desktop TypeScript boundary | `cd apps/desktop && npm run typecheck` | Renderer, Electron, and E2E typechecks passed | PASS |
+| P13-D-04 | Desktop production package | `cd apps/desktop && npm run build` | Vite, Electron main/preload bundle, native staging, and `assert-dist-built` passed; existing Vite/Babel/chunking warnings remain | PASS WITH WARNING |
+| P13-REAL-01 | Persistent gateway stop/pause/resume | Authenticated WebSocket `emergency.stop`, `prompt.submit`, `emergency.resume` against `127.0.0.1:9120` | Stop returned `paused=true`; new prompt returned code `4091` with `paused=true`; resume returned `disengaged=true`, `paused=false`; ESTOP cleared | PASS |
+| P13-REAL-02 | Root broker emergency gate | Real non-root broker client with `/home/tolga/.local/share/hafiye/ESTOP` toggled | UID 0 before stop; new privileged op rejected with `code=emergency_stop`; UID 0 after resume | PASS |
+| P13-REAL-03 | TTS/process cancellation | Real active TTS state/stop probe and registered temporary sleep process | TTS stop event/state cleanup true; process registry killed 1 process and it exited | PASS |
+| P13-REAL-04 | GNOME Wayland global emergency shortcut | Built Electron app, `gsettings`, and `ydotool key 29:1 125:1 1:1 1:0 125:0 29:0` | Electron registration false on this session; GNOME custom binding installed; real chord created ESTOP; clean exit restored `custom-keybindings` to `@as []` | PASS |
+| P13-CUA-01 | Direct upstream generic CUA smoke | `tools.computer_use.cua_backend.resolve_cua_driver_cmd()` and worker smoke | `cua-driver` not installed; managed Hafiye `computer-use-linux` MCP path remains green | WARNING; KI-028 |
+| P13-ACCEPTANCE | Master P13 closure | Required list includes stopping a real OpenHands delegation | No Hafiye OpenHands V1/`coding_delegate` process exists yet; generic cancellation is not substituted | NOT ACCEPTED; KI-027 |
+
+P13 implementation and all available real stop boundaries are verified, but
+P13 is intentionally not marked complete until the OpenHands-specific
+acceptance criterion passes. The exact five historical upstream failures remain
+the accepted regression whitelist; the P13 matrix introduced no new or
+different upstream failure.

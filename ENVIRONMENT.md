@@ -255,3 +255,37 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
   that client path and does not claim local PortAudio readiness. No sudo,
   system package, systemd, group, device-permission, or password change was
   required for P12.
+
+## P13 cancellation and emergency-stop validation (2026-08-24)
+
+- The active session remains Ubuntu GNOME 50.1 on Wayland with
+  `XDG_CURRENT_DESKTOP=ubuntu:GNOME`, `DESKTOP_SESSION=ubuntu`,
+  `WAYLAND_DISPLAY=wayland-0`, and user D-Bus available.
+- `hafiye-gateway.service` was restarted and remained active on loopback. The
+  authenticated WebSocket sequence `emergency.stop → prompt.submit →
+  emergency.resume` returned `paused=true`, prompt error code `4091`, and a
+  successful resumed state. The ESTOP file was removed after the intentional
+  resume.
+- `hafiye-rootd.service` remains active as root with the explicit ESTOP path
+  `/home/tolga/.local/share/hafiye/ESTOP`. A real root-broker request returned
+  UID 0 before the stop, was rejected with `code=emergency_stop` while the
+  sentinel existed, and returned UID 0 after resume. The main gateway remains
+  non-root.
+- A real TTS pipeline smoke observed an active playback state, then confirmed
+  the stop event and state cleanup. A real registered sleep process was killed
+  by the process-registry emergency-stop path.
+- Electron's `globalShortcut` could not register `Control+Super+Escape` in
+  this Wayland session. Hafiye therefore installed the private GNOME custom
+  keybinding at
+  `/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/hafiye-emergency-stop/`.
+  The binding was observed through `gsettings`, a real `ydotool` chord created
+  the temporary HERMES_HOME ESTOP sentinel, and clean Electron shutdown
+  restored `custom-keybindings` to `@as []`. Existing custom bindings were
+  preserved.
+- The generic upstream `cua-driver` executable is absent. This is a warning
+  for the upstream generic lane only; the managed pinned
+  `computer-use-linux` MCP path remains the accepted Linux implementation and
+  its P0/P9 readiness and real GNOME E2E remain green.
+- No sudo, passwordless sudo, NOPASSWD rule, system package, group, or device
+  permission change was performed for P13. The current host ESTOP sentinel is
+  clear after validation.

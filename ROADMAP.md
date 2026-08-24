@@ -360,3 +360,26 @@ and 7 deselected with no failure. KI-022 remains a measured Firefox AT-SPI
 warning only; there is no P10 blocker or new/different regression. P11 is
 complete and P12 — Custom Hafiye wake word is now complete; P13 is the next
 incomplete phase.
+
+## P13 execution status
+
+- [x] Add one gateway-owned cancellation controller for TTS, desktop actions,
+      active sessions, delegations, registered processes, and the durable
+      emergency-stop/root-RPC gate.
+- [x] Route Desktop Stop, Composer Stop, tray Stop, Turkish `Hafiye dur`, CLI
+      `emergency-stop`, and `Ctrl+Super+Escape` through the shared mechanism.
+- [x] Add Electron global-shortcut registration and the real GNOME Wayland
+      custom-keybinding fallback used when Electron cannot register the global
+      accelerator on this host.
+- [x] Verify pause/new-work rejection/resume, TTS interruption, desktop-action
+      cancellation seams, long-task/process cancellation, root-broker blocking,
+      and the real GNOME fallback trigger/cleanup.
+- [x] Run the targeted Python and Desktop tests, typecheck, production build,
+      lint, compilation, and whitespace checks.
+- [ ] Start and stop a real OpenHands delegation through `coding_delegate`.
+
+P13 remains incomplete. The shared cancellation implementation and all
+available real stop paths pass, but the master P13 acceptance explicitly
+requires stopping OpenHands. The repository does not yet contain the P15
+OpenHands V1/coding_delegate integration or a live OpenHands process, so KI-027
+is a real acceptance blocker. P14 must not start until this criterion passes.

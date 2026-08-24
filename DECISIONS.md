@@ -312,3 +312,40 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   minimized-window acceptance is recorded in TEST_MATRIX.md; no permanent
   global disable-throttling setting is introduced. This ADR records an
   implementation detail and does not override the master roadmap.
+
+## ADR-0021 — Centralize process-wide cancellation at the gateway
+
+- Date: 2026-08-24
+- Decision: Route Desktop Stop, Composer Stop, tray Stop, the Turkish voice
+  stop phrase, CLI `emergency-stop`, and the global accelerator to one
+  gateway-owned `CancellationController`. The controller engages the durable
+  ESTOP sentinel, cuts TTS, stops managed desktop actions, interrupts active
+  sessions and delegations, kills registered cancellable processes, and makes
+  the root broker reject new privileged calls. `emergency.resume` is an
+  intentional explicit transition out of the paused state.
+- Reason: P13 requires one cancellation mechanism across all user surfaces and
+  requires cancellation to cross the TTS, desktop, long-task, subagent, and
+  privileged-operation boundaries. Keeping the orchestration in the gateway
+  avoids independent partial-stop implementations.
+- Consequence: Normal `session.interrupt` shares the same session-level cleanup
+  seam, while process-wide emergency stop uses the durable sentinel and global
+  fan-out. The generic upstream CUA path is left untouched; Hafiye's managed
+  Linux MCP provider is gated at its own boundary.
+
+## ADR-0022 — Use a GNOME custom-keybinding fallback on Wayland
+
+- Date: 2026-08-24
+- Decision: Electron `globalShortcut` remains the first registration path for
+  the mandated `Ctrl+Super+Escape`. If the real GNOME Wayland session rejects
+  it, install one reserved GNOME user custom keybinding that invokes the local
+  Hafiye CLI, which then uses the authenticated persistent-gateway stop RPC.
+  Preserve unrelated custom bindings and remove only the Hafiye-owned entry on
+  clean shutdown.
+- Reason: Electron global accelerators are unavailable in this host's native
+  Wayland session, but P13 requires a real global keyboard stop. GNOME's
+  existing user-level keybinding service supplies that compositor-level path
+  without a second cancellation protocol or privileged system change.
+- Consequence: The fallback is session/user scoped and requires no sudo,
+  passwordless sudo, or systemd modification. The gateway broadcasts the stop
+  event so renderer-owned TTS playback also stops when the GNOME command was
+  triggered outside Electron.

@@ -345,3 +345,28 @@ silently treated as passing.
 - Future packaging work may add a compatible optional dependency path, but P12
   must not silently replace the prescribed openWakeWord/ONNX architecture or
   fabricate local-capture readiness.
+
+## KI-027 — OpenHands stop acceptance is not executable before P15 integration
+
+- Status: BLOCKER FOR P13 CLOSURE.
+- The master P13 acceptance requires starting and stopping a real OpenHands
+  delegation. The current repository has no OpenHands V1 runtime/SDK wiring,
+  no Hafiye `coding_delegate` tool, and no live OpenHands process to exercise.
+  The generic async delegation and process-registry cancellation seams are
+  implemented and tested, but they are not evidence of the required
+  OpenHands-specific stop behavior.
+- P13 must remain incomplete until the prescribed P15 integration creates a
+  real delegation that can be started, stopped, and intentionally resumed
+  through the shared cancellation controller. This issue does not authorize a
+  substitute coding backend or a change to the master architecture.
+
+## KI-028 — Upstream generic `cua-driver` is absent on this host
+
+- Status: MANAGED WARNING; not a Hafiye Linux computer-use blocker.
+- A real direct upstream `tools.computer_use` smoke reported that the generic
+  `cua-driver` executable is not installed. That path is separate from Hafiye's
+  accepted managed `agent-sh/computer-use-linux` MCP provider, whose pinned
+  source doctor, 18-tool discovery, and real GNOME Wayland E2E are green.
+- Hafiye did not install an unrelated generic CUA binary or replace the
+  prescribed Linux provider. Revisit this warning only if a later phase
+  explicitly requires the upstream generic lane.

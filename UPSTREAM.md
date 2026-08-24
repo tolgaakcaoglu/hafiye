@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P12 source commit):
-  d1c5f4c9c5254ba34844e583e5486972e33bdd6b
+- Current Hafiye source HEAD (P13 source commit):
+  a4cef73ba7fe339926a83cc39dbd0f9b1356c38e
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -86,6 +86,9 @@ The Hafiye source history contains these separable logical groups:
 - hafiye-wakeword: official openWakeWord training checkout, reproducible
   Turkish Piper-based `hafiye.onnx` export, default wake configuration,
   Desktop wake settings, and minimized-window client capture.
+- cancellation-emergency-stop: one gateway-owned cancellation controller,
+  durable ESTOP/root-RPC gating, Desktop/voice/tray/CLI stop surfaces, and
+  GNOME Wayland global-keybinding fallback.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -415,6 +418,36 @@ P0 computer-use acceptance requires:
   are documented as KI-026. The official source checkout with ONNX runtime and
   Desktop client capture are the accepted host path; no unrelated alternative
   wake implementation was introduced.
+
+## P13 cancellation and emergency-stop validation
+
+- Hafiye source commit:
+  `a4cef73ba7fe339926a83cc39dbd0f9b1356c38e`.
+- Pinned Hermes upstream commit:
+  `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit:
+  `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- No Hermes upstream commit was rewritten or amended. P13 is a separable
+  Hafiye patch group on top of the preserved baseline.
+- The gateway controller fans out to TTS, managed computer-use sessions,
+  active gateway sessions, async delegations, registered processes, and the
+  durable ESTOP sentinel. The root broker rejects new privileged calls while
+  the sentinel exists; `emergency.resume` deliberately clears that pause.
+- Desktop native/tray/Composer, voice stop phrase, CLI, and the mandated
+  `Ctrl+Super+Escape` surface use the same authenticated stop RPC. Electron
+  global shortcut registration is attempted first. On this GNOME Wayland
+  host, the real Electron registration was unavailable, so the implementation
+  used a private GNOME custom keybinding that invoked the Hafiye CLI and was
+  verified with real `ydotool` input. Existing custom bindings were preserved
+  and the Hafiye binding was removed on clean shutdown.
+- The generic upstream `cua-driver` path remains untouched and was not ready
+  on this host. Hafiye's prescribed Linux path remains the managed pinned
+  `computer-use-linux` MCP provider; this observation is KI-028, not an
+  architecture substitution.
+- P13 acceptance is not closed: the master test list requires stopping a real
+  OpenHands delegation, but the repository does not yet contain its P15
+  `coding_delegate` integration or a live OpenHands process. This is recorded
+  as KI-027.
 
 ## Baseline divergence
 
