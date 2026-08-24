@@ -136,6 +136,24 @@ KI-023 are warnings only.
 | P10-REAL-02 | Native existing-browser operation through managed computer-use-linux | Inline Python `discover_mcp_tools()` plus `model_tools.handle_function_call("browser_native", ...)` on the real GNOME Wayland session | Existing Firefox window targeted; exact-window focus, temporary-tab navigation, focused title marker, and `blockers=[]` verified; temporary tab closed | PASS WITH KI-022 WARNING |
 | P10-REAL-03 | Native browser cleanup | Inline `browser_native windows` query after P10-REAL-02 | No `Hafiye P10 Native` marker window remained; 2 Firefox windows remained | PASS |
 
+## P11 acceptance
+
+| ID | Boundary | Command | Result | Status |
+|---|---|---|---|---|
+| P11-PY-01 | Managed voice runtime, STT/TTS hooks, and existing voice regressions | `.venv/bin/python -m pytest -q tests/hermes_cli/test_voice_runtime.py tests/tools/test_hafiye_voice_runtime_hooks.py tests/tools/test_transcription.py tests/tools/test_transcription_command_providers.py tests/tools/test_transcription_tools.py tests/tools/test_tts_piper.py tests/hermes_cli/test_voice_wrapper.py tests/test_voice_max_recording_seconds.py` | 131 passed in 6.19s | PASS |
+| P11-LINT-01 | Voice Python lint, compile, and patch hygiene | `.venv/bin/ruff check` on changed voice files; `.venv/bin/python -m py_compile` on changed voice files; `git diff --check` | Ruff, bytecode compilation, and whitespace checks passed | PASS |
+| P11-REAL-01 | Managed whisper/Piper readiness | `.venv/bin/python -m hermes_cli.voice_runtime doctor` | `ok=true`, `blockers=[]`; RTX 3080/CUDA selected; whisper CPU/CUDA/VULKAN compiled; Piper 1.7.0 and `tr_TR-dfki-medium` ready | PASS |
+| P11-REAL-02 | Real Turkish Piper synthesis and playback | `.venv/bin/python -m hermes_cli.voice_runtime piper-speak ...`; `tools.tts_tool.text_to_speech_tool(...)`; `pw-play` | Direct Piper WAV, Hermes TTS audio, and real playback completed | PASS |
+| P11-D-01 | Desktop voice settings and microphone-device unit tests | `cd apps/desktop && npm run test:ui -- src/app/settings/voice-provider-fields.test.ts src/app/settings/voice-field-visible.test.ts src/app/settings/helpers.test.ts src/lib/voice-input-device.test.ts` | 4 files; 50 passed | PASS |
+| P11-D-02 | Desktop typecheck and production build | `cd apps/desktop && npm run typecheck && npm run build` | Typecheck, Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing toolchain warnings remain | PASS WITH WARNING |
+| P11-D-03 | Real Electron boot and voice settings smoke | `npx playwright test e2e/boot.spec.ts --reporter=line`; `npx playwright test e2e/voice-settings.spec.ts --reporter=line` | Boot 5/5 passed; voice settings 1/1 passed; managed Piper list and preview returned real WAV data | PASS |
+| P11-REAL-03 | Real Turkish microphone → correct text | `timeout --signal=INT 10s pw-record --target 37 --rate 16000 --channels 1 --format s16 --container wav ...`; managed CUDA whisper STT | Capture completed, but transcript was incorrect/repetitive; exact evidence is KI-025 | FAIL / P11 BLOCKER |
+
+P11 remains open because the master-roadmap test requires correct text from a
+real Turkish microphone. The same five historical upstream failures remain the
+`ACCEPTED_UPSTREAM_BASELINE`; no new/different upstream failure was found in
+the P11 targeted matrix.
+
 ## Historical ACCEPTED_UPSTREAM_BASELINE and current comparison baseline
 
 The historical post-source comparison set is this exact five-failure baseline:

@@ -194,3 +194,26 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
   were not inspected.
 - No sudo, system package, systemd, group, device-permission, or password
   change was required for P10.
+
+## P11 local Turkish voice validation (2026-08-24)
+
+- The user installed the missing Vulkan shader build prerequisites
+  `glslc`, `spirv-tools`, and `spirv-headers` through the visible terminal.
+- Managed whisper.cpp source: `~/.local/share/hafiye/runtimes/whisper.cpp/source`;
+  source commit `c122757fddf358397bb7f33b6ac3aab24a5bca04`.
+- Real binaries: `build-cpu/bin/whisper-cli`, `build-cuda/bin/whisper-cli`, and
+  `build-vulkan/bin/whisper-cli`; model:
+  `models/ggml-base.bin`. The managed doctor reported all three compiled and
+  selected CUDA for `AUTO` on the NVIDIA GeForce RTX 3080.
+- Managed Piper runtime: `~/.local/share/hafiye/runtimes/piper/`, Python
+  `venv/bin/python`, package `piper-tts==1.7.0`, installed voice
+  `voices/tr_TR-dfki-medium.onnx` with its JSON metadata.
+- `.venv/bin/python -m hermes_cli.voice_runtime doctor` returned `ok=true`,
+  `blockers=[]`, and no warnings.
+- The current PipeWire source used for the real capture was node 37,
+  `Trust GXT 232 Microphone Mono`. A final `pw-record` capture at 16 kHz,
+  mono, signed 16-bit WAV lasted 9.982 seconds and measured mean volume
+  `-15.5 dB`; CUDA transcription did not recover the prompted Turkish sentence.
+  This is recorded as KI-025 and keeps P11 open.
+- Direct Piper synthesis, the Hafiye TTS tool, and `pw-play` completed real
+  Turkish audio playback. No cloud STT/TTS was used for this acceptance.

@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P10 source commit):
-  5d2354095562d149ff54e58d664c1b042cf50c3e
+- Current Hafiye source HEAD (P11 source commit):
+  6f2b982159a37d9fb73d460c19279ea06d06efa0
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -79,6 +79,10 @@ The Hafiye source history contains these separable logical groups:
   routing through the managed computer-use-linux MCP provider.
 - structured-browser-download: current official agent-browser download
   command, absolute destination validation, and user-cache Chromium discovery.
+- voice-local-stack: managed whisper.cpp source/build/model runtime with
+  CUDA→Vulkan→CPU selection, Hermes local-STT command routing, managed Piper
+  process boundary, Turkish voice API/preview, and Desktop microphone/voice
+  settings.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -359,6 +363,25 @@ P0 computer-use acceptance requires:
   `f293e7206b4ddd66042329442c6afebc19a8808d` and baseline merge commit
   `2ac06b131a237916432503ac67bbcada6dbea39e` are unchanged. No upstream
   Hermes commit was rewritten.
+
+## P11 voice-local-stack validation
+
+- Hafiye source commit: `6f2b982159a37d9fb73d460c19279ea06d06efa0`.
+- The Hermes upstream pin `f293e7206b4ddd66042329442c6afebc19a8808d` and
+  history-preserving baseline merge `2ac06b131a237916432503ac67bbcada6dbea39e`
+  are unchanged; no upstream Hermes commit was rewritten.
+- The managed whisper.cpp checkout is from
+  `https://github.com/ggml-org/whisper.cpp.git` at source commit
+  `c122757fddf358397bb7f33b6ac3aab24a5bca04`. Separate CPU, CUDA, and Vulkan
+  builds are published under the Hafiye runtime root and selected by the
+  fixed CUDA→Vulkan→CPU policy.
+- Piper remains an external managed process, not a linked Hafiye library.
+  `piper-tts==1.7.0` and `tr_TR-dfki-medium` are installed under the Hafiye
+  runtime root. The public voice-list response strips local runtime paths.
+- The Hafiye patch uses Hermes' custom local-STT command hook and existing TTS
+  boundary; it does not mass-rename Hermes modules or copy unrelated upstream
+  code. Real runtime doctor, Piper synthesis, and Desktop settings smoke pass;
+  real microphone-to-correct-Turkish-text remains open as KI-025.
 
 ## Baseline divergence
 

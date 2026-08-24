@@ -28,6 +28,27 @@ records execution status only.
 - [ ] P22 CLI
 - [ ] P23 Final E2E suite
 
+## P11 execution status
+
+- [x] Build/install managed whisper.cpp with CUDA primary and Vulkan/CPU
+      fallback; configure the Turkish local-STT command hook.
+- [x] Install managed external Piper with `tr_TR-dfki-medium` and expose the
+      real voice-list/preview API and Desktop controls.
+- [x] Remove the Desktop microphone path's hard-coded OpenAI transcription
+      behavior; route recording through the configured Hafiye backend.
+- [x] Add persistent microphone selection, OS-default fallback, and hotplug
+      handling for push-to-talk, continuous capture, and wake capture paths.
+- [x] Run the managed doctor, targeted backend tests, Desktop UI/typecheck/build,
+      and real Electron voice settings smoke tests.
+- [ ] Speak Turkish into the real microphone and obtain the correct text.
+- [x] Verify a Turkish Hafiye response is synthesized through the real managed
+      Piper process.
+
+P11 is not complete. The runtime and Piper speech acceptance pass, but the
+real microphone capture produced incorrect CUDA whisper.cpp transcription in
+the final smoke (`KI-025`). Do not start P12 or mark this phase complete until
+the microphone sentence is transcribed correctly.
+
 ## P0 execution status
 
 - [x] Preserve upstream Git history and establish the Hafiye development branch.

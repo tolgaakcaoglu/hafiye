@@ -254,3 +254,23 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   secret/metadata safety checks. Structured downloads require an absolute
   destination path. This is an implementation detail and does not override
   the master roadmap.
+
+## ADR-0018 — Keep voice runtimes external and device selection renderer-local
+
+- Date: 2026-08-24
+- Decision: Manage whisper.cpp and Piper beneath the Hafiye runtime data root.
+  Invoke Piper through its separate process/CLI boundary, route local STT
+  through Hermes' custom command hook, and persist the selected microphone
+  `deviceId` in the Desktop renderer's Hafiye voice settings store. The
+  backend's public Piper voice-list response omits filesystem paths.
+- Reason: P11 requires whisper.cpp/Piper as the fixed local voice machinery and
+  explicitly keeps Piper outside Hafiye application libraries. Physical input
+  device IDs belong to the host renderer that owns `getUserMedia`; stripping
+  runtime paths prevents local filesystem details from becoming a public API
+  contract.
+- Consequence: Push-to-talk, continuous capture, and wake capture share one
+  selected-device stream helper with OS-default fallback and hotplug handling.
+  The managed runtime doctor and real speech acceptance remain independent: a
+  green runtime doctor does not count as successful microphone transcription.
+  This ADR records implementation details and does not override the master
+  roadmap.

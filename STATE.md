@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 5d2354095562d149ff54e58d664c1b042cf50c3e
-  (P10 browser routing/download integration; source commit)
+- Current Hafiye source HEAD: 6f2b982159a37d9fb73d460c19279ea06d06efa0
+  (P11 managed Turkish voice stack source commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -45,8 +45,11 @@ P8 — Hafiye root broker: complete.
 
 P9 — Linux computer use: complete.
 
-P10 — Browser: complete. P11 — Local Turkish voice stack is the next
-incomplete phase.
+P10 — Browser: complete.
+
+P11 — Local Turkish voice stack: in progress. The managed runtimes, backend
+hook, Desktop settings, and Piper speech path are implemented and tested. The
+real-microphone Turkish speech acceptance remains open as KI-025.
 
 ## Verified working
 
@@ -193,7 +196,8 @@ are documented.
 
 ## Active blockers
 
-P5, P6, P7, P8, and P9 have no open acceptance blockers. The user service and
+P5, P6, P7, P8, P9, and the non-microphone portions of P11 have no open
+acceptance blockers. The user service and
 `hafiye-rootd.service` are active
 and the local CUDA runtime doctor is green. `loginctl` reports `Linger=no`,
 and a full reboot was not performed; GNOME's `Super+Shift+Space` conflict
@@ -204,7 +208,8 @@ packaged source entrypoint and is recorded as resolved KI-021.
 The accepted upstream failures, KI-019 browser scheduling diagnostic, KI-022
 Firefox focus warning, KI-023 VS Code accessibility warning, npm audit
 warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
-warnings are documented diagnostics. They are not silently treated as passes.
+warnings are documented diagnostics. KI-025 is the active P11 acceptance
+blocker; it is not silently treated as a pass.
 
 ## Last tests and commands
 
@@ -693,3 +698,65 @@ repository or configuration. The provider lifecycle/XDG fix is source commit
   above. The only different full-suite failure was reproduced in the
   P6-parent checkout and is tracked as KI-019; no Hafiye source regression was
   found.
+
+## P11 execution status — in progress
+
+The commit identities remain separate and are recorded here explicitly:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source HEAD: `6f2b982159a37d9fb73d460c19279ea06d06efa0`.
+
+### Verified working
+
+- Managed whisper.cpp source checkout/builds are installed under
+  `~/.local/share/hafiye/runtimes/whisper.cpp/` at source commit
+  `c122757fddf358397bb7f33b6ac3aab24a5bca04`.
+- CPU, CUDA, and Vulkan `whisper-cli` builds exist; the real doctor selected
+  CUDA under the binding `AUTO` policy on the RTX 3080.
+- The Turkish `tr_TR-dfki-medium` Piper voice is installed in the separate
+  managed runtime under `~/.local/share/hafiye/runtimes/piper/` using
+  `piper-tts==1.7.0`.
+- The managed STT hook, managed Piper process boundary, real Piper preview
+  API, microphone-device persistence/hotplug path, and Desktop Voice settings
+  controls are implemented.
+
+### Acceptance and blocker
+
+- Real voice doctor returned `ok: true`, `blockers: []`, with CUDA selected,
+  all three whisper backends compiled, and the Turkish Piper voice ready.
+- Direct Piper synthesis and the Hermes TTS path both produced Turkish WAV/MP3
+  audio; `pw-play` completed the real playback smoke.
+- The real microphone acceptance is not met yet. The final capture used
+  `pw-record --target 37 --rate 16000 --channels 1 --format s16 --container wav`
+  for the `Trust GXT 232 Microphone Mono` source. CUDA whisper.cpp returned
+  repeated/nonsensical text rather than the prompted Turkish sentence; see
+  KI-025. No new or different upstream regression was observed.
+
+### P11 test record
+
+- `.venv/bin/python -m pytest -q tests/hermes_cli/test_voice_runtime.py tests/tools/test_hafiye_voice_runtime_hooks.py tests/tools/test_transcription.py tests/tools/test_transcription_command_providers.py tests/tools/test_transcription_tools.py tests/tools/test_tts_piper.py tests/hermes_cli/test_voice_wrapper.py tests/test_voice_max_recording_seconds.py`
+  — 131 passed in 6.19s.
+- `.venv/bin/python -m hermes_cli.voice_runtime doctor`
+  — `ok: true`, `blockers: []`, expected/selected `CUDA`, whisper
+  `CPU/CUDA/VULKAN`, Piper `1.7.0`, `tr_TR-dfki-medium` ready.
+- `cd apps/desktop && npm run test:ui -- src/app/settings/voice-provider-fields.test.ts src/app/settings/voice-field-visible.test.ts src/app/settings/helpers.test.ts src/lib/voice-input-device.test.ts`
+  — 4 files, 50 passed.
+- `cd apps/desktop && npm run typecheck` — passed.
+- `cd apps/desktop && npm run build` — Vite, Electron bundles, native staging,
+  and `assert-dist-built` passed; existing npm/Vite/Babel warnings remain.
+- `cd apps/desktop && npx playwright test e2e/boot.spec.ts --reporter=line`
+  — 5 passed; `npx playwright test e2e/voice-settings.spec.ts --reporter=line`
+  — 1 passed in the real Electron path.
+- The first combined boot+voice run had one parallel boot-readiness timeout;
+  isolated reruns passed, so it is recorded as a test-topology observation,
+  not a source regression.
+- Ruff, Python bytecode compilation, and `git diff --check` passed.
+
+### Exact next action
+
+Repeat the real microphone smoke with a synchronized spoken Turkish sentence
+inside the capture window, inspect the resulting transcript, and only then
+close P11. If the transcript is correct, update this record and proceed to P12;
+otherwise keep KI-025 open and investigate capture/input routing without
+changing the prescribed whisper.cpp/Piper architecture.
