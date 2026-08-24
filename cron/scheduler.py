@@ -453,6 +453,49 @@ def _resolve_cron_enabled_toolsets(job: dict, cfg: dict) -> list[str] | None:
         return None
 
 
+def _resolve_cron_hafiye_route(
+    job: dict,
+    cfg: dict,
+    *,
+    model: str,
+    base_url: str = "",
+) -> dict:
+    """Resolve the persisted Hafiye route/policy for one scheduled run.
+
+    Cron jobs are detached from an interactive conversation, so the selected
+    route slot is stable for the whole job and natural-language task overrides
+    are deliberately not applied.  A per-job privacy override can strengthen
+    the installation/slot policy but can never weaken it.
+    """
+    from hafiye_policy import (
+        PRIVACY_MODES,
+        normalize_privacy_mode,
+        resolve_hafiye_route,
+    )
+
+    route = resolve_hafiye_route(
+        cfg or {},
+        provider=str(job.get("provider") or "").strip(),
+        model=model,
+        base_url=base_url,
+        slot=str(job.get("route") or "default").strip() or "default",
+        task_text="",
+    )
+    effective_mode = normalize_privacy_mode(route.privacy_mode)
+    override = job.get("privacy_mode")
+    if override:
+        override_mode = normalize_privacy_mode(override)
+        rank = {name: index for index, name in enumerate(PRIVACY_MODES)}
+        effective_mode = max(
+            (effective_mode, override_mode),
+            key=lambda name: rank.get(name, 0),
+        )
+
+    resolved = route.as_dict()
+    resolved["privacy_mode"] = effective_mode
+    return resolved
+
+
 def _resolve_job_reasoning_config(job: dict, cfg: dict, model: str) -> dict | None:
     """Resolve the effective reasoning config for a cron run.
 
@@ -5634,6 +5677,19 @@ def run_job(
         except Exception as e:
             logger.warning("Job '%s': failed to load config.yaml, using defaults: %s", job_id, e)
 
+        # Resolve the selected Hafiye route before the model/provider
+        # fail-fast below.  A route slot may supply the model itself, and a
+        # LOCAL_ONLY/OFFLINE policy must be carried into the actual AIAgent
+        # construction rather than being treated as dashboard-only metadata.
+        hafiye_route = _resolve_cron_hafiye_route(
+            job,
+            _cfg if isinstance(_cfg, dict) else {},
+            model=str(model or ""),
+            base_url=str(job.get("base_url") or ""),
+        )
+        if hafiye_route.get("model"):
+            model = str(hafiye_route["model"])
+
         # Fail fast if no model resolved from job / env / config.yaml: an empty
         # model otherwise reaches the provider as an opaque 400 (#23979).
         if not (isinstance(model, str) and model.strip()):
@@ -5787,7 +5843,7 @@ def run_job(
             else ""
         )
         primary_provider_for_drift = (
-            str(job.get("provider") or "").strip().lower()
+            str(hafiye_route.get("provider") or job.get("provider") or "").strip().lower()
             or configured_provider_for_drift
             or None
         )
@@ -5801,7 +5857,12 @@ def run_job(
                 # Per-job user pin wins; otherwise the cron-fleet default
                 # provider (cron.model_provider); otherwise resolve from
                 # persisted global config.
-                "requested": job.get("provider") or _cron_default_provider or None,
+                "requested": (
+                    hafiye_route.get("provider")
+                    or job.get("provider")
+                    or _cron_default_provider
+                    or None
+                ),
                 # Derive provider-specific api_mode from the model this job
                 # will actually run (per-job pin > env > config default), not
                 # the stale persisted default — mirrors the fallback path
@@ -5977,7 +6038,21 @@ def run_job(
                     f"config is pinned or restored. See #44585."
                 )
 
-        fallback_model = get_fallback_chain(_cfg) or None
+        try:
+            from hafiye_policy import filter_fallback_chain
+
+            fallback_entries = list(hafiye_route.get("fallback_providers") or [])
+            if not fallback_entries:
+                fallback_entries = get_fallback_chain(_cfg)
+            fallback_model = filter_fallback_chain(
+                fallback_entries,
+                hafiye_route.get("privacy_mode", "NORMAL"),
+            ) or None
+        except Exception:
+            # Preserve Hermes' existing fallback behavior if the optional
+            # Hafiye policy module is unavailable during an upstream-only
+            # partial checkout.
+            fallback_model = get_fallback_chain(_cfg) or None
         credential_pool = None
         runtime_provider = str(runtime.get("provider") or "").strip().lower()
         if runtime_provider:
@@ -6053,6 +6128,9 @@ def run_job(
             platform="cron",
             session_id=_cron_session_id,
             session_db=_session_db,
+            hafiye_privacy_mode=hafiye_route.get("privacy_mode", "NORMAL"),
+            hafiye_route_slot=hafiye_route.get("slot", "default"),
+            hafiye_route=hafiye_route,
         )
         
         # Run the agent with an *inactivity*-based timeout: the job can run

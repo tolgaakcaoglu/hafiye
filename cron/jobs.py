@@ -1727,6 +1727,49 @@ def _normalize_reasoning_effort(value: Any) -> Optional[str]:
     return text
 
 
+def _normalize_hafiye_route(value: Any) -> Optional[str]:
+    """Normalize a scheduled job's Hafiye route slot.
+
+    The empty value means "use the default route" for backwards-compatible
+    records.  Persisted non-empty values must be real Hafiye route slots so a
+    detached scheduler cannot fail later because of a typo in a dashboard
+    payload.
+    """
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if not text:
+        return None
+    from hafiye_policy import ROUTE_SLOTS
+
+    if text not in ROUTE_SLOTS:
+        raise ValueError(
+            f"Invalid Hafiye route {value!r}. Valid routes: {', '.join(ROUTE_SLOTS)}."
+        )
+    return text
+
+
+def _normalize_hafiye_privacy_mode(value: Any) -> Optional[str]:
+    """Normalize a per-job Hafiye privacy override.
+
+    ``None``/empty clears the override and lets the installation/route policy
+    apply.  Invalid values are rejected at the persistence boundary rather
+    than silently becoming NORMAL.
+    """
+    if value is None:
+        return None
+    text = str(value).strip().upper().replace("-", "_").replace(" ", "_")
+    if not text:
+        return None
+    from hafiye_policy import PRIVACY_MODES
+
+    if text not in PRIVACY_MODES:
+        raise ValueError(
+            f"Invalid Hafiye privacy_mode {value!r}. Valid modes: {', '.join(PRIVACY_MODES)}."
+        )
+    return text
+
+
 def _compute_provider_model_snapshots(
     *,
     provider: Any,
@@ -1827,6 +1870,8 @@ def create_job(
     script: Optional[str] = None,
     context_from: Optional[Union[str, List[str]]] = None,
     enabled_toolsets: Optional[List[str]] = None,
+    route: Optional[str] = None,
+    privacy_mode: Optional[str] = None,
     workdir: Optional[str] = None,
     no_agent: bool = False,
     attach_to_session: Optional[bool] = None,
@@ -1864,6 +1909,10 @@ def create_job(
                           When set, only tools from these toolsets are loaded, reducing
                           token overhead. When omitted, all default tools are loaded.
                           Ignored when ``no_agent=True``.
+        route: Optional Hafiye route slot (default, fast, reasoning, coding,
+              vision, long_context, memory_aux, compression_aux).
+        privacy_mode: Optional per-job Hafiye privacy override. Empty/None
+                      inherits the installation and route policy.
         workdir: Optional absolute path.  When set, the job runs as if launched
                 from that directory: AGENTS.md / CLAUDE.md / .cursorrules from
                 that directory are injected into the system prompt, and the
@@ -1929,6 +1978,8 @@ def create_job(
     normalized_script = normalized_script or None
     normalized_toolsets = [str(t).strip() for t in enabled_toolsets if str(t).strip()] if enabled_toolsets else None
     normalized_toolsets = normalized_toolsets or None
+    normalized_route = _normalize_hafiye_route(route)
+    normalized_privacy_mode = _normalize_hafiye_privacy_mode(privacy_mode)
     normalized_workdir = _normalize_workdir(workdir)
     normalized_no_agent = bool(no_agent)
     normalized_attach = attach_to_session if isinstance(attach_to_session, bool) else None
@@ -2037,6 +2088,12 @@ def create_job(
         "enabled_toolsets": normalized_toolsets,
         "workdir": normalized_workdir,
     }
+    # These are conditional for byte-compatible legacy records: absent means
+    # the scheduler uses the normal Hafiye default route/policy.
+    if normalized_route is not None:
+        job["route"] = normalized_route
+    if normalized_privacy_mode is not None:
+        job["privacy_mode"] = normalized_privacy_mode
     # Only persist attach_to_session when explicitly set, so existing jobs and
     # the common case stay byte-identical (absent key => fall back to the
     # global cron.mirror_delivery config, default off).
@@ -2159,6 +2216,13 @@ def update_job(job_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]
             if "reasoning_effort" in updates:
                 updates["reasoning_effort"] = _normalize_reasoning_effort(
                     updates["reasoning_effort"]
+                )
+
+            if "route" in updates:
+                updates["route"] = _normalize_hafiye_route(updates["route"])
+            if "privacy_mode" in updates:
+                updates["privacy_mode"] = _normalize_hafiye_privacy_mode(
+                    updates["privacy_mode"]
                 )
 
             previous_inference_axes = _normalized_inference_axes(job)

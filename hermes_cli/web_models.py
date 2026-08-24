@@ -390,6 +390,8 @@ class CronJobCreate(BaseModel):
     script: Optional[str] = None
     context_from: Optional[Any] = None
     enabled_toolsets: Optional[List[str]] = None
+    route: Optional[str] = None
+    privacy_mode: Optional[str] = None
     workdir: Optional[str] = None
     no_agent: bool = False
 

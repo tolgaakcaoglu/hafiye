@@ -63,7 +63,17 @@ describe('cronEditorUpdates', () => {
   it('omits prompt when saving a script-only job with an empty prompt', () => {
     expect(
       cronEditorUpdates(
-        { deliver: 'local', model: '', name: 'Weekly', prompt: '', provider: '', schedule: '0 9 * * 1' },
+        {
+          deliver: 'local',
+          enabledToolsets: null,
+          model: '',
+          name: 'Weekly',
+          privacyMode: '',
+          prompt: '',
+          provider: '',
+          route: 'default',
+          schedule: '0 9 * * 1'
+        },
         { scriptOnlyJob: true }
       )
     ).toEqual({
@@ -76,7 +86,17 @@ describe('cronEditorUpdates', () => {
   it('includes prompt when the user typed one on a script-only job', () => {
     expect(
       cronEditorUpdates(
-        { deliver: 'email', model: '', name: 'Weekly', prompt: 'note', provider: '', schedule: '0 9 * * 1' },
+        {
+          deliver: 'email',
+          enabledToolsets: null,
+          model: '',
+          name: 'Weekly',
+          privacyMode: '',
+          prompt: 'note',
+          provider: '',
+          route: 'default',
+          schedule: '0 9 * * 1'
+        },
         { scriptOnlyJob: true }
       ).prompt
     ).toBe('note')
@@ -86,10 +106,13 @@ describe('cronEditorUpdates', () => {
     const updates = cronEditorUpdates(
       {
         deliver: 'local',
+        enabledToolsets: ['terminal'],
         model: 'claude-sonnet-4',
         name: 'Daily',
+        privacyMode: 'LOCAL_ONLY',
         prompt: 'go',
         provider: 'anthropic',
+        route: 'coding',
         schedule: '0 9 * * *'
       },
       { scriptOnlyJob: false }
@@ -101,7 +124,17 @@ describe('cronEditorUpdates', () => {
 
   it('clears a previous pin when the override is reset to default', () => {
     const updates = cronEditorUpdates(
-      { deliver: 'local', model: '', name: 'Daily', prompt: 'go', provider: '', schedule: '0 9 * * *' },
+      {
+        deliver: 'local',
+        enabledToolsets: null,
+        model: '',
+        name: 'Daily',
+        privacyMode: '',
+        prompt: 'go',
+        provider: '',
+        route: 'default',
+        schedule: '0 9 * * *'
+      },
       { scriptOnlyJob: false }
     )
 
@@ -111,7 +144,17 @@ describe('cronEditorUpdates', () => {
 
   it('never touches model fields on script-only jobs', () => {
     const updates = cronEditorUpdates(
-      { deliver: 'local', model: 'x', name: 'Weekly', prompt: '', provider: 'y', schedule: '0 9 * * 1' },
+      {
+        deliver: 'local',
+        enabledToolsets: ['terminal'],
+        model: 'x',
+        name: 'Weekly',
+        privacyMode: 'OFFLINE',
+        prompt: '',
+        provider: 'y',
+        route: 'fast',
+        schedule: '0 9 * * 1'
+      },
       { scriptOnlyJob: true }
     )
 

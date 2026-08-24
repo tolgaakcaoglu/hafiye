@@ -36,6 +36,12 @@ export function validateCronEditor(input: CronEditorValidationInput): CronEditor
 
 export interface CronEditorSaveValues {
   deliver: string
+  /** Selected Hafiye route slot. */
+  route: string
+  /** Empty = inherit the installation/route privacy policy. */
+  privacyMode: string
+  /** Null = inherit the cron platform's enabled toolsets. */
+  enabledToolsets: null | string[]
   /** Per-job model override ('' = follow the global default at fire time). */
   model: string
   name: string
@@ -87,8 +93,11 @@ export function cronEditorUpdates(values: CronEditorSaveValues, options: { scrip
   // write both axes so resetting to "default" clears a previous pin (the
   // backend normalizes null/'' to "no override").
   if (!options.scriptOnlyJob) {
+    updates.enabled_toolsets = values.enabledToolsets
     updates.model = values.model.trim() || null
+    updates.privacy_mode = values.privacyMode || null
     updates.provider = values.provider.trim() || null
+    updates.route = values.route || null
   }
 
   return updates

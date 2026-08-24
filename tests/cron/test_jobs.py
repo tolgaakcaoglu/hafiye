@@ -839,6 +839,34 @@ class TestEnabledToolsets:
         assert job["enabled_toolsets"] == ["web", "terminal"]
 
 
+class TestHafiyeScheduledPolicy:
+    def test_route_and_privacy_mode_round_trip(self, tmp_cron_dir):
+        job = create_job(
+            prompt="run locally",
+            schedule="every 1h",
+            route="coding",
+            privacy_mode="local-only",
+        )
+        assert job["route"] == "coding"
+        assert job["privacy_mode"] == "LOCAL_ONLY"
+
+        updated = update_job(
+            job["id"],
+            {"route": "fast", "privacy_mode": "OFFLINE"},
+        )
+        assert updated["route"] == "fast"
+        assert updated["privacy_mode"] == "OFFLINE"
+        assert get_job(job["id"])["privacy_mode"] == "OFFLINE"
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [("route", "not-a-route"), ("privacy_mode", "PUBLIC")],
+    )
+    def test_invalid_policy_value_is_rejected(self, tmp_cron_dir, field, value):
+        with pytest.raises(ValueError):
+            create_job(prompt="invalid", schedule="every 1h", **{field: value})
+
+
 class TestMarkJobRunConcurrency:
     """Regression tests for concurrent parallel job state writes.
 

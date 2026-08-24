@@ -866,6 +866,7 @@ export interface AnalyticsTotals {
 export interface CronJob {
   deliver?: null | string
   enabled: boolean
+  enabled_toolsets?: null | string[]
   id: string
   last_error?: null | string
   last_run_at?: null | string
@@ -873,8 +874,10 @@ export interface CronJob {
   name?: null | string
   next_run_at?: null | string
   no_agent?: boolean
+  privacy_mode?: null | string
   prompt?: null | string
   provider?: null | string
+  route?: null | string
   schedule?: CronJobSchedule
   schedule_display?: null | string
   script?: null | string
@@ -883,10 +886,13 @@ export interface CronJob {
 
 export interface CronJobCreatePayload {
   deliver?: string
+  enabled_toolsets?: null | string[]
   model?: string
   name?: string
+  privacy_mode?: null | string
   prompt: string
   provider?: string
+  route?: string
   schedule: string
 }
 
@@ -899,10 +905,13 @@ export interface CronJobSchedule {
 export interface CronJobUpdates {
   deliver?: string
   enabled?: boolean
+  enabled_toolsets?: null | string[]
   model?: null | string
   name?: string
+  privacy_mode?: null | string
   prompt?: string
   provider?: null | string
+  route?: null | string
   schedule?: string
 }
 

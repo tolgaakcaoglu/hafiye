@@ -38,6 +38,7 @@ import {
   getAutomationBlueprints,
   getCronDeliveryTargets,
   getCronJobRuns,
+  getToolsets,
   instantiateAutomationBlueprint,
   pauseCronJob,
   resumeCronJob,
@@ -93,6 +94,26 @@ const MODEL_DEFAULT_VALUE = '__default__'
 // "Start from" default: the manual editor (blank cron). Any other value is a
 // blueprint key. Blueprint keys never collide with this sentinel.
 const CUSTOM_TEMPLATE = 'custom'
+
+const HAFIYE_ROUTE_OPTIONS = [
+  { label: 'Default', value: 'default' },
+  { label: 'Fast', value: 'fast' },
+  { label: 'Reasoning', value: 'reasoning' },
+  { label: 'Coding', value: 'coding' },
+  { label: 'Vision', value: 'vision' },
+  { label: 'Long context', value: 'long_context' },
+  { label: 'Memory auxiliary', value: 'memory_aux' },
+  { label: 'Compression auxiliary', value: 'compression_aux' }
+] as const
+
+const HAFIYE_PRIVACY_DEFAULT = '__configured__'
+
+const HAFIYE_PRIVACY_OPTIONS = [
+  { label: 'Configured / route policy', value: HAFIYE_PRIVACY_DEFAULT },
+  { label: 'Normal', value: 'NORMAL' },
+  { label: 'Local only', value: 'LOCAL_ONLY' },
+  { label: 'Offline', value: 'OFFLINE' }
+] as const
 
 function cronProfileForScope(scope: string): string {
   return scope === ALL_PROFILES ? 'all' : scope
@@ -560,7 +581,10 @@ export function CronView({ onClose, onOpenSession, setStatusbarItemGroup: _setSt
         stale
       } = await mutateAndRefreshCronJobs(profile, () =>
         createCronJob({
+          enabled_toolsets: values.enabledToolsets,
+          privacy_mode: values.privacyMode || null,
           prompt: values.prompt,
+          route: values.route || 'default',
           schedule: values.schedule,
           name: values.name || undefined,
           deliver: values.deliver || DEFAULT_DELIVER,
@@ -1037,6 +1061,10 @@ function CronEditorDialog({
   const [schedule, setSchedule] = useState('')
   const [schedulePreset, setSchedulePreset] = useState('daily')
   const [deliver, setDeliver] = useState(DEFAULT_DELIVER)
+  const [route, setRoute] = useState('default')
+  const [privacyMode, setPrivacyMode] = useState(HAFIYE_PRIVACY_DEFAULT)
+  const [toolsetsMode, setToolsetsMode] = useState<'custom' | 'default'>('default')
+  const [selectedToolsets, setSelectedToolsets] = useState<string[]>([])
   // Per-job model override, encoded as `${providerSlug}:${model}` (split on the
   // first ':' when saving). MODEL_DEFAULT_VALUE = follow the global default.
   const [modelChoice, setModelChoice] = useState(MODEL_DEFAULT_VALUE)
@@ -1074,6 +1102,12 @@ function CronEditorDialog({
     enabled: open && !scriptOnlyJob && !isBlueprint
   })
 
+  const toolsetsQuery = useQuery({
+    queryKey: ['cron-toolsets'],
+    queryFn: () => getToolsets(),
+    enabled: open && !scriptOnlyJob && !isBlueprint
+  })
+
   // Single source of truth for where a cron can deliver (local + configured
   // gateways) — same endpoint the dashboard uses, so no dialog offers a platform
   // that isn't connected. Shared by the manual editor and the blueprint form.
@@ -1093,6 +1127,15 @@ function CronEditorDialog({
     setSchedule(initial ? jobScheduleExpr(initial) : (SCHEDULE_OPTIONS[0].expr ?? ''))
     setSchedulePreset(initial ? scheduleOptionForExpr(jobScheduleExpr(initial)).value : 'daily')
     setDeliver(initial ? jobDeliver(initial) : DEFAULT_DELIVER)
+    setRoute(initial && asText(initial.route).trim() ? asText(initial.route).trim() : 'default')
+    setPrivacyMode(
+      initial && asText(initial.privacy_mode).trim()
+        ? asText(initial.privacy_mode).trim().toUpperCase()
+        : HAFIYE_PRIVACY_DEFAULT
+    )
+    const storedToolsets = initial?.enabled_toolsets?.filter(value => typeof value === 'string' && value.trim()) ?? []
+    setToolsetsMode(storedToolsets.length > 0 ? 'custom' : 'default')
+    setSelectedToolsets(storedToolsets)
     setModelChoice(initial && jobModel(initial) ? `${jobProvider(initial)}:${jobModel(initial)}` : MODEL_DEFAULT_VALUE)
     setSlotValues({})
     setTemplateChoice(editor.mode === 'create' ? (editor.blueprintKey ?? CUSTOM_TEMPLATE) : CUSTOM_TEMPLATE)
@@ -1124,6 +1167,22 @@ function CronEditorDialog({
   }
 
   const scheduleHint = scheduleSummary(selectedScheduleOption, schedule, c)
+
+  const toolsetOptions = useMemo(() => {
+    const byName = new Map<string, { label: string; name: string }>()
+
+    for (const toolset of toolsetsQuery.data ?? []) {
+      byName.set(toolset.name, { label: toolset.label || toolset.name, name: toolset.name })
+    }
+
+    for (const name of selectedToolsets) {
+      if (!byName.has(name)) {
+        byName.set(name, { label: name, name })
+      }
+    }
+
+    return [...byName.values()].sort((a, b) => a.label.localeCompare(b.label))
+  }, [selectedToolsets, toolsetsQuery.data])
 
   // Configured providers with at least one available model — mirrors the chat
   // model picker's gate so only actually-selectable models are offered.
@@ -1171,10 +1230,13 @@ function CronEditorDialog({
     try {
       await onSave({
         deliver,
+        enabledToolsets: toolsetsMode === 'custom' ? selectedToolsets : null,
         model: overrideModel,
         name: name.trim(),
+        privacyMode: privacyMode === HAFIYE_PRIVACY_DEFAULT ? '' : privacyMode,
         prompt: prompt.trim(),
         provider: overrideProvider,
+        route,
         schedule: schedule.trim()
       })
     } catch (err) {
@@ -1366,6 +1428,91 @@ function CronEditorDialog({
               </Field>
             )}
 
+            {!scriptOnlyJob && (
+              <div className="grid items-start gap-4 sm:grid-cols-2">
+                <Field htmlFor="cron-route" label="Hafiye route">
+                  <Select onValueChange={setRoute} value={route}>
+                    <SelectTrigger className="h-9 rounded-md" id="cron-route">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HAFIYE_ROUTE_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldHint>Choose the stable route slot used by every recurring run.</FieldHint>
+                </Field>
+
+                <Field htmlFor="cron-privacy-mode" label="Privacy mode">
+                  <Select onValueChange={setPrivacyMode} value={privacyMode}>
+                    <SelectTrigger className="h-9 rounded-md" id="cron-privacy-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HAFIYE_PRIVACY_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FieldHint>Local-only and offline policies are enforced at run time.</FieldHint>
+                </Field>
+              </div>
+            )}
+
+            {!scriptOnlyJob && (
+              <Field label="Enabled tools">
+                <label className="flex items-center gap-2 text-sm" htmlFor="cron-toolsets-default">
+                  <Checkbox
+                    checked={toolsetsMode === 'default'}
+                    id="cron-toolsets-default"
+                    onCheckedChange={checked => setToolsetsMode(checked === true ? 'default' : 'custom')}
+                  />
+                  <span>Use gateway defaults</span>
+                </label>
+                {toolsetsMode === 'custom' && (
+                  <div className="mt-2 grid max-h-40 gap-2 overflow-y-auto rounded-md border border-(--ui-stroke-secondary) p-2 sm:grid-cols-2">
+                    {toolsetOptions.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">No toolsets were returned by the gateway.</span>
+                    ) : (
+                      toolsetOptions.map(toolset => {
+                        const checkboxId = `cron-toolset-${toolset.name}`
+                        const checked = selectedToolsets.includes(toolset.name)
+
+                        return (
+                          <label className="flex items-center gap-2 text-xs" htmlFor={checkboxId} key={toolset.name}>
+                            <Checkbox
+                              checked={checked}
+                              id={checkboxId}
+                              onCheckedChange={next =>
+                                setSelectedToolsets(current =>
+                                  next === true
+                                    ? current.includes(toolset.name)
+                                      ? current
+                                      : [...current, toolset.name]
+                                    : current.filter(name => name !== toolset.name)
+                                )
+                              }
+                            />
+                            <span className="truncate" title={toolset.name}>
+                              {toolset.label}
+                            </span>
+                          </label>
+                        )
+                      })
+                    )}
+                  </div>
+                )}
+                <FieldHint>
+                  Custom mode stores an explicit toolset allowlist; the scheduler still applies its safety denylist.
+                </FieldHint>
+              </Field>
+            )}
+
             {schedulePreset === 'custom' ? (
               <Field htmlFor="cron-schedule" label={c.customScheduleLabel}>
                 <Input
@@ -1417,12 +1564,15 @@ type EditorState =
 
 interface EditorValues {
   deliver: string
+  enabledToolsets: null | string[]
   /** Per-job model override ('' = follow the global default). */
   model: string
   name: string
+  privacyMode: string
   prompt: string
   /** Provider slug for the model override ('' = none). */
   provider: string
+  route: string
   schedule: string
 }
 

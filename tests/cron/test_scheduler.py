@@ -15,6 +15,7 @@ from cron.scheduler import (
     _deliver_result,
     _merge_mcp_into_per_job_toolsets,
     _resolve_cron_enabled_toolsets,
+    _resolve_cron_hafiye_route,
     _resolve_delivery_target,
     _resolve_origin,
     _send_media_via_adapter,
@@ -142,6 +143,38 @@ class TestPerJobToolsetMcpMerge:
         ):
             result = _resolve_cron_enabled_toolsets(job, {})
         assert result == ["file", "memory", "web"]
+
+
+class TestHafiyeScheduledPolicy:
+    def test_route_slot_supplies_model_and_privacy_override(self):
+        cfg = {
+            "hafiye": {
+                "privacy_mode": "NORMAL",
+                "route_slots": {
+                    "coding": {
+                        "provider": "local",
+                        "model": "local-coder",
+                    }
+                },
+            }
+        }
+        resolved = _resolve_cron_hafiye_route(
+            {"route": "coding", "privacy_mode": "LOCAL_ONLY"},
+            cfg,
+            model="global-model",
+        )
+        assert resolved["slot"] == "coding"
+        assert resolved["provider"] == "local"
+        assert resolved["model"] == "local-coder"
+        assert resolved["privacy_mode"] == "LOCAL_ONLY"
+
+    def test_per_job_privacy_cannot_weaken_global_offline_policy(self):
+        resolved = _resolve_cron_hafiye_route(
+            {"route": "default", "privacy_mode": "NORMAL"},
+            {"hafiye": {"privacy_mode": "OFFLINE"}},
+            model="local-model",
+        )
+        assert resolved["privacy_mode"] == "OFFLINE"
 
 
 class TestResolveOrigin:
@@ -670,6 +703,26 @@ class TestRunJobSessionPersistence:
         kwargs = mock_agent_cls.call_args.kwargs
         assert kwargs["skip_memory"] is False
         assert "memory" in (kwargs["enabled_toolsets"] or [])
+
+    def test_run_job_passes_hafiye_route_and_privacy_policy(self, tmp_path):
+        job = {
+            "id": "hafiye-policy-job",
+            "name": "policy",
+            "prompt": "hello",
+            "model": "local-model",
+            "provider": "local",
+            "route": "coding",
+            "privacy_mode": "LOCAL_ONLY",
+            "enabled_toolsets": ["file", "terminal"],
+        }
+        with self._run_job_patches(tmp_path) as (fake_db, mock_agent_cls):
+            run_job(job)
+
+        kwargs = mock_agent_cls.call_args.kwargs
+        assert kwargs["hafiye_route_slot"] == "coding"
+        assert kwargs["hafiye_privacy_mode"] == "LOCAL_ONLY"
+        assert kwargs["hafiye_route"]["slot"] == "coding"
+        assert {"file", "terminal"}.issubset(set(kwargs["enabled_toolsets"] or []))
         assert "file" in (kwargs["enabled_toolsets"] or [])
         assert "memory" not in kwargs["disabled_toolsets"]
 

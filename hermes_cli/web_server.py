@@ -13155,7 +13155,7 @@ def _normalize_dashboard_cron_updates(
     """
     normalized = dict(updates or {})
 
-    for key in ("model", "provider", "workdir"):
+    for key in ("model", "provider", "route", "privacy_mode", "workdir"):
         if key in normalized:
             normalized[key] = _cron_optional_text(normalized[key])
     if "script" in normalized:
@@ -13523,6 +13523,8 @@ def _create_cron_job_sync(body: CronJobCreate, profile: Optional[str] = None):
             script=script,
             context_from=context_from,
             enabled_toolsets=_cron_string_list(body.enabled_toolsets),
+            route=_cron_optional_text(body.route),
+            privacy_mode=_cron_optional_text(body.privacy_mode),
             workdir=_cron_optional_text(body.workdir),
             no_agent=no_agent,
         )
