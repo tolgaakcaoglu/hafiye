@@ -613,8 +613,10 @@ E2E Suite — is now the first incomplete phase.
       verify the CUDA runtime and computer-use readiness.
 - [x] Recheck the root broker/main-process UID boundary, direct local endpoint,
       and packaged Desktop boot after a gateway restart.
-- [x] Exercise the structured browser and native Firefox routes; retain the
-      native AT-SPI focus warning as KI-022 rather than claiming a clean pass.
+- [x] Exercise the structured browser and native Firefox routes; the real
+      native screenshot verified the P23.10 fixture UI and the prior browser
+      tab was restored. Retain the host's root-only AT-SPI focus warning as
+      KI-022, without treating it as a failed UI-task acceptance.
 - [x] Probe two pinned 64K-capable GGUF candidates; restore the original
       Qwen/CUDA runtime after recording their historical KI-040 diagnostics
       (one CUDA OOM, one non-terminating agent response).

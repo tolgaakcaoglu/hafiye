@@ -1690,10 +1690,12 @@ claimed as passed.
   `/run/user/1000/.ydotool_socket`. They use different sockets and readiness
   stayed green; this host diagnostic is recorded as KI-039 and was not altered.
 - The structured browser route navigated a local page successfully. The native
-  Firefox route returned successful focus/input/close operations, but Firefox
-  reported no focused AT-SPI element and the final page title could not be
-  independently confirmed; this remains a KI-022 warning rather than a clean
-  P23 browser pass.
+  Firefox route then targeted an exact existing Wayland window, navigated it to
+  a local fixture, and returned successful activation/key/type/navigation
+  steps. The real native screenshot showed the fixture title and
+  `P23_NATIVE_BROWSER_OK`; the window was then restored to its prior Kick tab.
+  Firefox still exposes only a root AT-SPI node in this host path, so KI-022 is
+  retained as a diagnostic even though the required P23.10 UI task passed.
 
 ### P23 final acceptance ledger
 
@@ -1711,7 +1713,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.7 Privacy | Real Gemini-configured route under global `LOCAL_ONLY` exited before provider call with the policy-block message; settings restored | PASS / FAIL-CLOSED |
 | 23.8 Files | Authenticated Gemini fixture replay performed and verified the required moves and final paths; KI-041 retains the earlier local-Qwen warning | PASS / GEMINI ROUTE |
 | 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
-| 23.10 Browser | Structured local navigation passed; native route actions returned `ok=true`, but Firefox AT-SPI focus/title confirmation warned under KI-022 | WARNING / RECHECK |
+| 23.10 Browser | Structured local navigation passed; native managed route navigated a real Wayland Firefox window, screenshot verified the fixture title/marker, and the original tab was restored | PASS / KI-022 AT-SPI DIAGNOSTIC |
 | 23.11 Root | Fresh `hafiye root exec id -u` returned 0; gateway EUID 1000 and rootd EUID 0 | PASS / FRESH RECHECK |
 | 23.12 Memory | Fresh `test_project_alias_and_session_context_survive_fresh_process` returned `1 passed in 1.36s` | PASS / FRESH PROCESS |
 | 23.13 OpenHands | Fresh managed doctor plus Gemini-backed `coding_delegate` fixture; Task Center `COMPLETED`, 28 progress events, `bug.py` changed, independent `pytest -q` returned `1 passed` | PASS |
