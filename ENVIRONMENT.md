@@ -289,3 +289,25 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 - No sudo, passwordless sudo, NOPASSWD rule, system package, group, or device
   permission change was performed for P13. The current host ESTOP sentinel is
   clear after validation.
+
+## P15 OpenHands managed runtime validation (2026-08-24)
+
+- Official source repository: `https://github.com/OpenHands/software-agent-sdk/`.
+- Managed source checkout:
+  `/home/tolga/.local/share/hafiye/runtimes/openhands/source`.
+- Pinned source commit:
+  `6d38810359827823e62a5e1043d0d78d0bafb6de`.
+- Managed Python:
+  `/home/tolga/.local/share/hafiye/runtimes/openhands/venv/bin/python`,
+  Python `3.13.15`.
+- Exact managed package pins: `openhands-sdk==1.41.0`,
+  `openhands-tools==1.41.0`, `openhands-workspace==1.41.0`, and
+  `openhands-agent-server==1.41.0`.
+- The real command `.venv/bin/hafiye runtime openhands install` completed
+  successfully without sudo. A subsequent
+  `.venv/bin/hafiye runtime openhands doctor` returned `ready=true` and
+  `blockers=[]`; the manifest is under
+  `/home/tolga/.local/share/hafiye/runtimes/openhands/manifest.json`.
+- No API key or other credential is recorded in this environment document.
+- P15 Task Center progress is process-local. Durable generic task history is
+  intentionally deferred to P16.

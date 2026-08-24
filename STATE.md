@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 831405dcec4abcba033d8ccc18308804868ecb1f
-  (P14 project-registry acceptance coverage source/test commit)
+- Current Hafiye source HEAD: 54b4ee49569267b21e10b357acdde427a8a844ff
+  (P15 OpenHands bootstrap and Task Center bridge source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -62,10 +62,13 @@ P14 — Memory + project registry: complete. The pinned Hermes project registry,
 session-search path, gateway project RPCs, and Desktop project browser were
 validated against the P14 acceptance criteria.
 
-P15 — OpenHands coding delegate: foundational managed runtime and
-`coding_delegate` path implemented for P13 acceptance, but the full phase is
-not closed. It is the next incomplete phase; Task Center progress exposure,
-bootstrap/setup, and the remaining P15 acceptance work are still pending.
+P15 — OpenHands coding delegate: complete. The managed official source/runtime,
+real coding delegation, gateway Task Center progress bridge, Desktop Task
+Center panel, and the master fixture E2E all pass. P16 is now the first
+incomplete phase.
+
+P16 — Task Center: not started. P16 owns the complete generic/durable Task
+Center surface beyond the P15 coding-delegate bridge.
 
 ## Verified working
 
@@ -196,6 +199,18 @@ bootstrap/setup, and the remaining P15 acceptance work are still pending.
   the project picker, renamed a project through `projects.update`, deleted it
   through the destructive confirmation, and preserved the repository folder.
   The acceptance used the live gateway and passed 1/1.
+- The user-scoped OpenHands runtime is installed under
+  `~/.local/share/hafiye/runtimes/openhands/`: official source commit
+  `6d38810359827823e62a5e1043d0d78d0bafb6de`, all four managed packages pinned
+  to `1.41.0`, and `hafiye runtime openhands doctor` reports `ready=true` with
+  `blockers=[]`.
+- A real natural-language Hafiye Gemini run identified a coding task, invoked
+  `coding_delegate`, had OpenHands edit a failing fixture's `bug.py`, and
+  returned the actual changed-file and `pytest -q` result (`1 passed`).
+- The real gateway Task Center boundary exposed the worker as `RUNNING`, then
+  `COMPLETED`, with 18 progress records and 22 `task.update` events. The
+  Desktop Task Center panel consumes the same RPC/event contract and its
+  focused UI test passes.
 
 ## Regression status
 
@@ -213,6 +228,12 @@ Electron project acceptance, E2E typecheck, and production build passed. The
 P14 source/test commit introduced no new or different upstream failure; the
 historical five-ID whitelist and current four-ID comparison baseline are
 unchanged.
+
+P15's targeted Python matrix, Desktop Task Center test, typecheck, production
+build, lint, compile, real OpenHands doctor, natural-language fixture E2E, and
+gateway Task Center RPC/event smoke passed. The P15 source/test commit
+introduced no new or different upstream failure; the historical five-ID
+whitelist and current four-ID comparison baseline are unchanged.
 
 The P5 targeted Python matrix now passes 468 tests, alongside the Desktop
 provider tests/typecheck/build, real Secret Service round-trip, local CUDA
@@ -666,13 +687,13 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `831405dcec4abcba033d8ccc18308804868ecb1f` separate in all
+   source commit `54b4ee49569267b21e10b357acdde427a8a844ff` separate in all
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline; investigate any new/different ID.
-3. P14 is closed. Start P15 as the first incomplete phase; keep its full
-   acceptance open, including OpenHands bootstrap/setup and Task Center
-   progress exposure.
+3. P15 is closed. Start P16 as the first incomplete phase: implement the
+   complete generic/durable Task Center while preserving the shared gateway
+   and Desktop business-logic boundary.
 
 ## Environment changes
 
@@ -730,6 +751,14 @@ P14 required no sudo, system-package, service, device-permission, or credential
 changes. Desktop acceptance sandboxes explicitly disabled the normal
 persistent-gateway preference so each test used its isolated `HERMES_HOME`;
 the host `hafiye-gateway.service` was not modified.
+P15 added a user-scoped official OpenHands source checkout and managed virtual
+environment under `~/.local/share/hafiye/runtimes/openhands/`. The checkout is
+pinned to source commit
+`6d38810359827823e62a5e1043d0d78d0bafb6de`; the SDK, tools, workspace, and
+agent-server packages are each pinned to `1.41.0`. The install/doctor flow
+required no sudo, system package, service, device-permission, or password
+change. Task Center records are process-local in P15; durable generic task
+history is explicitly deferred to P16.
 
 ### P4 source validation
 
@@ -948,8 +977,8 @@ separate above and here:
   `process_registry`, `CancellationController.emergency_stop(...)` killed it,
   the delegate returned `status=cancelled`, the thread ended, and an explicit
   `controller.resume()` returned `paused=false` with no active worker left.
-- KI-027 is resolved. P13 is complete; P14 is also complete and P15 is now the
-  first incomplete phase.
+- KI-027 is resolved. P13 and P14 are complete; P15 is also complete and P16
+  is now the first incomplete phase.
 
 ### P13 test record
 
@@ -1007,12 +1036,70 @@ context recall, and real Desktop browse/search/rename/delete behavior. No new
 or different regression was found; the accepted historical five-ID whitelist
 and current four-ID comparison baseline are unchanged.
 
+## P15 execution status — complete
+
+The P15 source/test commit is
+`54b4ee49569267b21e10b357acdde427a8a844ff`. The pinned Hermes commit, the
+history-preserving baseline merge, and the current Hafiye source commit remain
+separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `54b4ee49569267b21e10b357acdde427a8a844ff`.
+
+### Implemented and verified
+
+- `hafiye runtime openhands install` performs an idempotent user-scoped
+  checkout of the official OpenHands Software Agent SDK at source commit
+  `6d38810359827823e62a5e1043d0d78d0bafb6de`, installs the exact `1.41.0`
+  pins for `openhands-sdk`, `openhands-tools`, `openhands-workspace`, and
+  `openhands-agent-server`, and writes a runtime manifest.
+- `hafiye runtime openhands doctor` verifies the managed Python, package
+  versions, manifest, and detached source checkout. On the actual host it
+  returned `ready=true` and `blockers=[]` after the install.
+- `coding_delegate` uses the Hafiye `coding` route, local repository paths,
+  the official OpenHands V1 worker, and Hermes process tracking. It records
+  safe lifecycle/progress/tool/file-change/result metadata without exposing
+  credentials or private chain-of-thought.
+- The shared process-local `TaskCenterRegistry` exposes coding task lifecycle,
+  current step, provider/model/route/privacy, progress events, commands,
+  tools, changed files, result/error, elapsed timestamps, and cancellation.
+  Gateway `tasks.list`/`tasks.cancel` RPCs and global `task.update` events are
+  wired to the Desktop Task Center panel in Command Center → Maintenance.
+- A real natural-language Hafiye Gemini run against a fresh fixture identified
+  the coding task, delegated to OpenHands, changed only `bug.py`, and returned
+  the actual `pytest -q` result; the external fixture verification returned
+  `1 passed in 0.00s`.
+- A real gateway integration smoke observed `RUNNING` through `tasks.list`,
+  received the final `COMPLETED` record with 18 progress events and
+  `file_changes=["bug.py"]`, and captured 22 `task.update` events. The
+  Desktop component test and production build passed against this contract.
+
+### P15 test record
+
+- `.venv/bin/pytest -q tests/hermes_cli/test_openhands_runtime.py tests/tools/test_task_center.py tests/tools/test_coding_delegate.py tests/tui_gateway/test_tasks_rpc.py` — 10 passed in 1.87s.
+- `cd apps/desktop && npm run test:ui -- src/app/command-center/task-center.test.tsx` — 1 passed.
+- `cd apps/desktop && npm run typecheck` — passed.
+- `cd apps/desktop && npx eslint src/app/command-center/task-center.tsx src/app/command-center/maintenance.tsx` — passed.
+- `cd apps/desktop && npm run build` — Vite, Electron main/preload bundles,
+  native staging, and `assert-dist-built` passed; existing toolchain warnings
+  remain.
+- Ruff, `py_compile`, and `git diff --check` passed on all P15 changed files.
+- The real OpenHands doctor returned `ready=true`, `blockers=[]`; the real
+  natural-language Hafiye fixture E2E and gateway Task Center RPC/event smoke
+  both passed with external fixture `pytest -q` returning `1 passed`.
+
+P15 acceptance passed. No new or different upstream regression was found.
+The in-memory Task Center registry is intentionally the P15 bridge; P16 owns
+durable generic task history and the complete Task Center product surface.
+
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
    investigate any new or different failure in later phases.
-2. Begin P15 — complete the prescribed OpenHands coding-delegate phase,
-   including managed bootstrap/setup and Task Center progress exposure.
-3. Keep the Pinned Hermes commit, baseline merge commit, and current Hafiye
-   source/test commit separate; do not mark P15 complete from the P13
-   prerequisite evidence alone.
+2. Begin P16 — implement the complete generic/durable Task Center, including
+   current/queued/completed/failed states, provider/model, tools, commands,
+   modified files, subagent state, cancellation, elapsed time, and restart/
+   reconnect behavior without exposing private chain-of-thought.
+3. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
+   source/test commit separate in all subsequent state updates.

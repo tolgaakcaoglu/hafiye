@@ -366,9 +366,10 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   records, and process cancellation.
 - Consequence: The worker consumes the credential at its private boundary and
   emits only redacted progress/result metadata. The managed runtime doctor
-  hides `coding_delegate` when the official packages are absent. This records
-  implementation detail only; it does not close the full P15 phase or replace
-  the later Task Center requirement.
+  hides `coding_delegate` when the official packages are absent. The later P15
+  Task Center bridge extends this boundary without changing the decision to
+  keep OpenHands behind Hafiye delegation. This records implementation detail
+  only and does not override the master roadmap.
 
 ## ADR-0024 — Reuse Hermes project registry and session search
 
@@ -387,3 +388,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   acceptance is verified with a fresh-process path/recall test plus real
   Electron browse/search/edit/delete coverage. This ADR records an
   implementation detail and does not override the master roadmap.
+
+## ADR-0025 — Bridge delegated coding progress through the shared Task Center
+
+- Date: 2026-08-24
+- Decision: Keep P15 coding-task records in a shared process-local
+  `TaskCenterRegistry`. The coding delegate emits only safe lifecycle,
+  current-step, progress, tool, command, changed-file, result, and error
+  summaries. The gateway exposes `tasks.list`/`tasks.cancel` and broadcasts
+  `task.update`; Desktop renders the same records in the Task Center panel.
+- Reason: P15 requires real OpenHands progress and result visibility while the
+  Hafiye gateway remains the single backend/business-logic boundary. Reusing
+  Hermes process registration preserves cancellation and emergency-stop
+  ownership, and redacted summaries prevent private chain-of-thought from
+  entering the user-facing task surface.
+- Consequence: P15 provides the real coding-delegate bridge but does not claim
+  durable generic task history. Persistence, complete task categories, and the
+  full Task Center product surface remain P16 work; this ADR does not override
+  the master roadmap.

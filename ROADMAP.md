@@ -18,7 +18,7 @@ records execution status only.
 - [x] P12 Custom Hafiye wake word
 - [x] P13 Barge-in + emergency stop
 - [x] P14 Memory + project registry
-- [ ] P15 OpenHands coding delegate
+- [x] P15 OpenHands coding delegate
 - [ ] P16 Task Center
 - [ ] P17 Control Center
 - [ ] P18 Scheduler / skills / MCP
@@ -387,11 +387,10 @@ delegation edited `bug.py`, returned its result/change record, and the fixture
 test returned `1 passed`. A second live worker was stopped through the shared
 controller and resumed intentionally with no active process remaining. KI-027
 is resolved. P14 — Memory + project registry followed and is now complete;
-P15 is the next incomplete phase.
+P15 followed and is complete; P16 is the next incomplete phase.
 
-The OpenHands implementation is a P13 prerequisite and does not close P15 by
-itself; P15 still owns the remaining full-phase acceptance, including Task
-Center progress exposure.
+The OpenHands implementation was a P13 prerequisite. The complete P15
+bootstrap, delegation, and Task Center progress acceptance is recorded below.
 
 ## P14 execution status
 
@@ -411,5 +410,28 @@ already supplied the runtime behavior; Hafiye source/test commit
 `831405dcec4abcba033d8ccc18308804868ecb1f` adds the acceptance coverage and
 isolated Desktop E2E wiring. The fresh-process memory/path E2E and real
 Electron project acceptance passed, with no new or different regression.
-P15 remains open for the full OpenHands coding-delegate scope, including
-managed bootstrap/setup and Task Center progress exposure.
+
+## P15 execution status — complete
+
+- [x] Pin and bootstrap the official OpenHands V1 source/runtime in a
+      user-scoped Hafiye runtime with exact package versions.
+- [x] Add `hafiye runtime openhands install` and `doctor`, including exact
+      source checkout and package readiness verification.
+- [x] Run `coding_delegate` through Hafiye's `coding` route against a local
+      repository path and preserve process/emergency-stop ownership.
+- [x] Record safe coding-task lifecycle/progress/tool/command/file-change and
+      result metadata in the shared Task Center bridge.
+- [x] Expose `tasks.list`, `tasks.cancel`, and `task.update` through the
+      gateway and render the real Task Center panel in Desktop.
+- [x] Pass the real natural-language fixture E2E: identify, delegate, edit,
+      verify, return result, and report result.
+- [x] Run the P15 Python/Desktop tests, typecheck, build, lint, compile, and
+      whitespace checks.
+
+P15 is complete. Source/test commit
+`54b4ee49569267b21e10b357acdde427a8a844ff` added the managed bootstrap and
+Task Center bridge. The real Hafiye fixture E2E changed `bug.py` and returned
+`pytest -q` result `1 passed`; the real gateway smoke observed `RUNNING`, final
+`COMPLETED`, 18 progress records, and 22 `task.update` events. No new or
+different upstream regression was found. P16 remains unchecked and owns the
+complete generic/durable Task Center product surface.

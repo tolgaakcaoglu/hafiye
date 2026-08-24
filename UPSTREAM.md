@@ -11,8 +11,9 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P14 acceptance source/test commit):
-  831405dcec4abcba033d8ccc18308804868ecb1f
+- Current Hafiye source HEAD (P15 OpenHands bootstrap and Task Center bridge
+  source/test commit):
+  54b4ee49569267b21e10b357acdde427a8a844ff
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -471,12 +472,24 @@ P0 computer-use acceptance requires:
   status, summary, changed files, and event count. Its process is registered in
   Hermes' existing process registry, so the P13 cancellation controller can
   kill it and an explicit resume can clear the pause state.
-- Real acceptance evidence: the fixture delegation changed `bug.py`, the
-  external test returned `1 passed in 0.00s`, and a live long-running worker
-  returned `status=cancelled` after emergency stop; `resume` returned
-  `paused=false` with no active worker. The full P15 phase remains open for
-  setup/bootstrap and Task Center progress exposure; this section records the
-  P13 prerequisite rather than marking P15 complete.
+- The managed checkout is materialized at
+  `~/.local/share/hafiye/runtimes/openhands/source` by
+  `hafiye runtime openhands install`; source pinning and package pinning are
+  verified separately by `hafiye runtime openhands doctor`. The source
+  checkout is not used as an unpinned replacement for the exact managed
+  package set.
+- P15 adds a shared process-local `TaskCenterRegistry` that receives safe
+  coding lifecycle/progress/tool/command/file-change/result summaries. The
+  gateway exposes `tasks.list` and `tasks.cancel`, broadcasts `task.update`,
+  and the Desktop Maintenance Task Center panel consumes the same contract.
+  Private OpenHands transcript/reasoning is not persisted or displayed.
+- Real P15 acceptance evidence: a natural-language Hafiye Gemini fixture run
+  identified the coding task, delegated to OpenHands, changed `bug.py`, and
+  returned the external `pytest -q` result `1 passed in 0.00s`. A separate
+  real gateway smoke observed `RUNNING`, final `COMPLETED`, 18 progress
+  records, and 22 `task.update` events; the Desktop Task Center test/build
+  passed. P15 is complete. P16 remains for durable generic task history and
+  the complete Task Center product surface.
 
 ## P14 memory and project registry validation
 

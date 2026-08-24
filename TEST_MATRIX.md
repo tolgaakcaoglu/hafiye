@@ -234,9 +234,9 @@ It also reports blockers: []. P0 computer-use acceptance passed.
 
 P13 is accepted. The exact five historical upstream failures remain the
 accepted regression whitelist; the P13 matrix introduced no new or different
-upstream failure. The OpenHands runtime/coding-delegate implementation is a
-prerequisite for P13; P15 remains open for its full phase scope, including
-Task Center progress exposure.
+upstream failure. The OpenHands runtime/coding-delegate implementation was a
+P13 prerequisite; its full coding-delegate and Task Center progress acceptance
+is recorded under P15 below.
 
 ## P14 acceptance
 
@@ -252,5 +252,26 @@ Task Center progress exposure.
 
 P14 is accepted. The project registry and session-search behavior use the
 pin-preserved Hermes implementation; Hafiye's acceptance source/test commit
-is `831405dcec4abcba033d8ccc18308804868ecb1f`. P15 remains open for the full
-OpenHands coding-delegate acceptance, including Task Center progress exposure.
+is `831405dcec4abcba033d8ccc18308804868ecb1f`. P15 followed and is now
+complete.
+
+## P15 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P15-PY-01 | OpenHands runtime, Task Center registry/RPC, and coding delegate | `.venv/bin/pytest -q tests/hermes_cli/test_openhands_runtime.py tests/tools/test_task_center.py tests/tools/test_coding_delegate.py tests/tui_gateway/test_tasks_rpc.py` | 10 passed in 1.87s | PASS |
+| P15-D-01 | Desktop Task Center panel | `cd apps/desktop && npm run test:ui -- src/app/command-center/task-center.test.tsx` | 1 passed | PASS |
+| P15-D-02 | Desktop type boundary | `cd apps/desktop && npm run typecheck` | Passed | PASS |
+| P15-D-03 | Desktop Task Center lint | `cd apps/desktop && npx eslint src/app/command-center/task-center.tsx src/app/command-center/maintenance.tsx` | Passed | PASS |
+| P15-D-04 | Desktop production package | `cd apps/desktop && npm run build` | Vite, Electron main/preload, native staging, and `assert-dist-built` passed; existing toolchain warnings remain | PASS WITH WARNING |
+| P15-LINT-01 | Python lint, compile, and patch hygiene | `.venv/bin/ruff check` on changed P15 Python files; `.venv/bin/python -m py_compile` on changed P15 Python files; `git diff --check` | Ruff passed, compilation passed, no whitespace errors | PASS |
+| P15-REAL-01 | Managed OpenHands readiness | `.venv/bin/hafiye runtime openhands install`; `.venv/bin/hafiye runtime openhands doctor` | Official source `6d38810359827823e62a5e1043d0d78d0bafb6de`; all four packages `1.41.0`; `ready=true`; `blockers=[]` | PASS |
+| P15-REAL-02 | Master natural-language coding E2E | Real Gemini-backed Hafiye one-shot against a fresh failing-test fixture; external `pytest -q` | Hafiye identified/delegated; OpenHands changed `bug.py`; external fixture verification returned `1 passed in 0.00s`; result and changed files returned | PASS |
+| P15-REAL-03 | Gateway Task Center progress boundary | Real Gemini-backed worker plus live `tasks.list` and `task.update` capture | `RUNNING` observed; final `COMPLETED`; 18 progress events; 22 `task.update` events; `file_changes=["bug.py"]`; external `pytest -q` returned `1 passed` | PASS |
+| P15-ACCEPTANCE | Master P15 closure | Real identify → delegate → edit → verify → return → report flow, runtime doctor, and Task Center exposure | All P15 criteria passed; no new/different upstream regression; P16 remains for durable generic Task Center | PASS |
+
+P15 is accepted. The source/test commit is
+`54b4ee49569267b21e10b357acdde427a8a844ff`; the pinned Hermes commit and
+baseline merge commit are unchanged. The five historical
+`ACCEPTED_UPSTREAM_BASELINE` failures remain the regression whitelist, and no
+new/different failure was found in the P15 matrix.

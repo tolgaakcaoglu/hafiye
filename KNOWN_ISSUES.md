@@ -358,21 +358,25 @@ silently treated as passing.
   was stopped by the shared cancellation controller, returned
   `status=cancelled`, and was followed by an explicit successful resume with
   no active worker remaining.
-- This issue no longer blocks P13. It does not authorize a substitute coding
-  backend or a change to the master architecture; the remaining full P15
-  scope, including Task Center progress exposure, is tracked as phase work.
+- This issue no longer blocks P13 or P15. It does not authorize a substitute
+  coding backend or a change to the master architecture. The real P15 Task
+  Center progress bridge is accepted; durable generic task history remains
+  explicitly scoped to P16.
 
 ## KI-029 — OpenHands runtime bootstrap is not yet exposed by Hafiye setup
 
-- Status: FOLLOW-UP; not a P13 acceptance blocker.
-- The current host has the official OpenHands V1 packages installed in the
-  managed user runtime at `~/.local/share/hafiye/runtimes/openhands/` and the
-  runtime doctor verifies the package/source pin. The repository currently
-  provides discovery/readiness and the managed worker boundary, while the
-  user-facing install/bootstrap command remains part of the full P15 work.
-- Until that follow-up is implemented, a fresh host without the managed
-  runtime correctly hides `coding_delegate` and reports the actionable doctor
-  blocker; it must not claim coding-delegate readiness from a placeholder.
+- Status: RESOLVED 2026-08-24.
+- `hafiye runtime openhands install` now performs a user-scoped official
+  OpenHands source checkout at exact commit
+  `6d38810359827823e62a5e1043d0d78d0bafb6de`, installs the exact
+  `openhands-sdk`, `openhands-tools`, `openhands-workspace`, and
+  `openhands-agent-server` `1.41.0` pins, and writes a manifest.
+- `hafiye runtime openhands doctor` verifies the source, packages, managed
+  Python, and manifest. On the actual host it returned `ready=true` with
+  `blockers=[]`. A fresh runtime still reports actionable blockers until the
+  install command runs; readiness is not fabricated.
+- The remaining durable generic Task Center work belongs to P16 and is not a
+  P15 blocker.
 
 ## KI-028 — Upstream generic `cua-driver` is absent on this host
 
