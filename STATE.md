@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 54b4ee49569267b21e10b357acdde427a8a844ff
-  (P15 OpenHands bootstrap and Task Center bridge source/test commit)
+- Current Hafiye source HEAD: f93d9183544581636c6af5b619d62d221040391d
+  (P16 Task Center persistence and Desktop acceptance source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -67,8 +67,9 @@ real coding delegation, gateway Task Center progress bridge, Desktop Task
 Center panel, and the master fixture E2E all pass. P16 is now the first
 incomplete phase.
 
-P16 — Task Center: not started. P16 owns the complete generic/durable Task
-Center surface beyond the P15 coding-delegate bridge.
+P16 — Task Center: complete. The durable generic task record, restart/reconnect
+behavior, complete required Desktop fields/actions, and real Electron
+acceptance pass. P17 is now the first incomplete phase.
 
 ## Verified working
 
@@ -211,6 +212,15 @@ Center surface beyond the P15 coding-delegate bridge.
   `COMPLETED`, with 18 progress records and 22 `task.update` events. The
   Desktop Task Center panel consumes the same RPC/event contract and its
   focused UI test passes.
+- Task Center records persist in the user-scoped SQLite WAL database at
+  `~/.local/state/hafiye/task_center.db` (or the active explicit HERMES_HOME
+  root). Completed history survives a new gateway process; in-flight worker
+  records are marked failed with an explicit gateway-restart reason, while
+  unstarted `QUEUED` work remains queued.
+- The real Electron Task Center acceptance rendered persisted completed,
+  failed, and queued records, showed provider/model, current step, tool,
+  command, modified file, subagent state, and elapsed/cancellation surfaces,
+  then cancelled a queued task through the real gateway RPC.
 
 ## Regression status
 
@@ -232,6 +242,12 @@ unchanged.
 P15's targeted Python matrix, Desktop Task Center test, typecheck, production
 build, lint, compile, real OpenHands doctor, natural-language fixture E2E, and
 gateway Task Center RPC/event smoke passed. The P15 source/test commit
+introduced no new or different upstream failure; the historical five-ID
+whitelist and current four-ID comparison baseline are unchanged.
+
+P16's durable Task Center Python/RPC matrix, separate-process restart smoke,
+Desktop component test, E2E typecheck, typecheck, lint, production build, and
+real Electron + gateway acceptance passed. The P16 source/test commits
 introduced no new or different upstream failure; the historical five-ID
 whitelist and current four-ID comparison baseline are unchanged.
 
@@ -691,9 +707,8 @@ investigate. The upstream bugs are not being fixed by Hafiye.
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline; investigate any new/different ID.
-3. P15 is closed. Start P16 as the first incomplete phase: implement the
-   complete generic/durable Task Center while preserving the shared gateway
-   and Desktop business-logic boundary.
+3. P15 and P16 are closed. Start P17 as the first incomplete phase while
+   preserving the shared gateway and Desktop business-logic boundary.
 
 ## Environment changes
 
@@ -759,6 +774,10 @@ agent-server packages are each pinned to `1.41.0`. The install/doctor flow
 required no sudo, system package, service, device-permission, or password
 change. Task Center records are process-local in P15; durable generic task
 history is explicitly deferred to P16.
+P16 added the user-scoped Task Center SQLite WAL store at
+`~/.local/state/hafiye/task_center.db`, plus restart recovery and the real
+Desktop acceptance path. This required no sudo, system package, service,
+device-permission, credential, or password change.
 
 ### P4 source validation
 
@@ -1093,13 +1112,60 @@ P15 acceptance passed. No new or different upstream regression was found.
 The in-memory Task Center registry is intentionally the P15 bridge; P16 owns
 durable generic task history and the complete Task Center product surface.
 
+## P16 execution status — complete
+
+The P16 implementation is recorded in source commit
+`c72c94418` and the queued-state recovery fix plus real Desktop acceptance are
+recorded in source/test commit
+`f93d9183544581636c6af5b619d62d221040391d`. The commit identities remain
+separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `f93d9183544581636c6af5b619d62d221040391d`.
+
+### Implemented and verified
+
+- Task Center records now persist the master task model and safe history in
+  `task_center.db` under the Hafiye XDG state root, with SQLite WAL and
+  thread-safe writes shared by worker/gateway/UI paths.
+- Completed, failed, and queued records survive a new gateway process. Only
+  in-flight worker states (`PLANNING`, `RUNNING`, `WAITING`, `PAUSED`, and
+  `CANCELLING`) are recovered as explicit failures after a restart; `QUEUED`
+  work remains queued because no worker has started.
+- The record and Desktop surface show current/queued/completed/failed states,
+  current step, provider/model/route/privacy, tools, commands, modified files,
+  subagent state, elapsed time, result/error, and real cancellation. No
+  transcript or private chain-of-thought is persisted or displayed.
+- A separate-process gateway RPC smoke returned persisted completed history
+  and verified restart recovery with marker `P16_TASK_CENTER_RESTART_OK`.
+- A real Electron + gateway E2E rendered all persisted state categories and
+  cancelled the queued record through `tasks.cancel`; it passed 1/1.
+
+### P16 test record
+
+- `.venv/bin/pytest -q tests/hermes_cli/test_openhands_runtime.py tests/tools/test_task_center.py tests/tools/test_coding_delegate.py tests/tui_gateway/test_tasks_rpc.py` — 12 passed.
+- `.venv/bin/pytest -q tests/tools/test_task_center.py tests/tui_gateway/test_tasks_rpc.py` — 6 passed.
+- Separate-process gateway/RPC smoke — completed record survived, in-flight
+  record became `FAILED / INTERRUPTED_BY_GATEWAY_RESTART`, queued behavior was
+  preserved, and `P16_TASK_CENTER_RESTART_OK` was emitted.
+- `cd apps/desktop && npm run test:ui -- src/app/command-center/task-center.test.tsx` — 1 passed.
+- `cd apps/desktop && ../../node_modules/.bin/tsc -p tsconfig.e2e.json --noEmit` — passed.
+- `cd apps/desktop && npm run typecheck` — passed.
+- `cd apps/desktop && npx eslint src/app/command-center/task-center.tsx src/app/command-center/maintenance.tsx` — passed.
+- `cd apps/desktop && npm run build` — clean build stamp at `f93d91835445`,
+  Vite/Electron bundles, native staging, and `assert-dist-built` passed;
+  existing Vite/Babel/chunking warnings remain.
+- `cd apps/desktop && npx playwright test e2e/p16-task-center.spec.ts --reporter=list` — real Electron plus real gateway, 1 passed in 9.2s.
+- Ruff, `py_compile`, and `git diff --check` passed on P16 changes.
+
+P16 acceptance passed. No new or different upstream regression was found.
+P17 is now the first incomplete phase.
+
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
    investigate any new or different failure in later phases.
-2. Begin P16 — implement the complete generic/durable Task Center, including
-   current/queued/completed/failed states, provider/model, tools, commands,
-   modified files, subagent state, cancellation, elapsed time, and restart/
-   reconnect behavior without exposing private chain-of-thought.
+2. Begin P17 — Control Center.
 3. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
    source/test commit separate in all subsequent state updates.

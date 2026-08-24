@@ -11,9 +11,9 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P15 OpenHands bootstrap and Task Center bridge
-  source/test commit):
-  54b4ee49569267b21e10b357acdde427a8a844ff
+- Current Hafiye source HEAD (P16 Task Center persistence and Desktop
+  acceptance source/test commit):
+  f93d9183544581636c6af5b619d62d221040391d
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -488,8 +488,9 @@ P0 computer-use acceptance requires:
   returned the external `pytest -q` result `1 passed in 0.00s`. A separate
   real gateway smoke observed `RUNNING`, final `COMPLETED`, 18 progress
   records, and 22 `task.update` events; the Desktop Task Center test/build
-  passed. P15 is complete. P16 remains for durable generic task history and
-  the complete Task Center product surface.
+  passed. P15 and P16 are complete. P16's durable Task Center implementation
+  and real Desktop acceptance are recorded in the current Hafiye commits;
+  P17 is the next phase. No Hermes upstream commit changed.
 
 ## P14 memory and project registry validation
 

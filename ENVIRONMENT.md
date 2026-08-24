@@ -311,3 +311,19 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 - No API key or other credential is recorded in this environment document.
 - P15 Task Center progress is process-local. Durable generic task history is
   intentionally deferred to P16.
+
+## P16 Task Center persistence validation (2026-08-24)
+
+- Task Center durable state is stored at
+  `/home/tolga/.local/state/hafiye/task_center.db` on the normal XDG
+  installation. Explicit `HERMES_HOME` test sandboxes use that root for
+  isolation.
+- The database uses SQLite WAL and is owned by the non-root Hafiye process;
+  no sudo, system package, systemd, group, device-permission, or password
+  change was required.
+- The persisted record contains task metadata and redacted operator history
+  only. It does not contain API keys, OpenHands transcripts, workspace output,
+  or private chain-of-thought.
+- A real separate-process gateway/RPC smoke and a real Electron + gateway E2E
+  verified completed/failed/queued display, queued cancellation, and restart
+  recovery on this host's Linux Desktop environment.

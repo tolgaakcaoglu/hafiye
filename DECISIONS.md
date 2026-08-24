@@ -406,3 +406,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   durable generic task history. Persistence, complete task categories, and the
   full Task Center product surface remain P16 work; this ADR does not override
   the master roadmap.
+
+## ADR-0026 — Persist Task Center records in the Hafiye state root
+
+- Date: 2026-08-24
+- Decision: Store the shared Task Center registry in
+  `task_center.db` under Hafiye's XDG state root, using SQLite WAL and a
+  thread-safe process-local cache. Persist only the master task fields and
+  redacted operator metadata. On a new gateway process, keep `QUEUED` work
+  queued and convert in-flight worker states to explicit
+  `FAILED / INTERRUPTED_BY_GATEWAY_RESTART` records.
+- Reason: P16 requires completed/failed history and restart/reconnect behavior
+  while CLI, gateway, and Desktop continue to use one business-logic boundary.
+  A small local state database provides that persistence without making
+  OpenHands a second runtime or exposing its transcript.
+- Consequence: Task Center history is user-scoped and survives Desktop or
+  gateway reconnects. Actual worker resumption is not inferred after process
+  loss; future scheduling/resume semantics remain subject to the roadmap's
+  later phases. This ADR does not override the master roadmap.

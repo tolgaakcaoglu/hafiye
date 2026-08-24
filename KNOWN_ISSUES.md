@@ -400,3 +400,14 @@ silently treated as passing.
   package when it is not installed at the repository root.
 - The final real Electron P14 run passed 1/1 with no product error banner; the
   host persistent service remained outside the sandbox and was not changed.
+
+## KI-030 — Task Center durable state and restart behavior
+
+- Status: RESOLVED 2026-08-24; no P16 acceptance blocker.
+- Task Center uses user-scoped SQLite WAL at
+  `~/.local/state/hafiye/task_center.db`.
+- Completed and failed history survives the gateway process boundary; active
+  in-flight worker states are explicitly failed on restart; `QUEUED` work
+  remains queued.
+- Real separate-process RPC smoke and real Electron plus gateway E2E pass.
+  No secrets, transcript, or private chain-of-thought are stored or shown.

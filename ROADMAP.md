@@ -19,7 +19,7 @@ records execution status only.
 - [x] P13 Barge-in + emergency stop
 - [x] P14 Memory + project registry
 - [x] P15 OpenHands coding delegate
-- [ ] P16 Task Center
+- [x] P16 Task Center
 - [ ] P17 Control Center
 - [ ] P18 Scheduler / skills / MCP
 - [ ] P19 Hardening
@@ -433,5 +433,28 @@ P15 is complete. Source/test commit
 Task Center bridge. The real Hafiye fixture E2E changed `bug.py` and returned
 `pytest -q` result `1 passed`; the real gateway smoke observed `RUNNING`, final
 `COMPLETED`, 18 progress records, and 22 `task.update` events. No new or
-different upstream regression was found. P16 remains unchecked and owns the
-complete generic/durable Task Center product surface.
+different upstream regression was found. P16 followed and is now complete;
+its durable Task Center acceptance is recorded below.
+
+## P16 execution status — complete
+
+- [x] Persist the master Task Center record and safe progress history in the
+      Hafiye XDG state root with thread-safe SQLite WAL writes.
+- [x] Preserve completed/failed history across a new gateway process and
+      recover in-flight worker states explicitly after restart; retain queued
+      work as `QUEUED`.
+- [x] Show current/queued/completed/failed states, current step, provider,
+      model, route/privacy, tools, commands, modified files, subagent state,
+      elapsed time, result/error, and cancellation in Desktop.
+- [x] Keep transcript/private chain-of-thought out of persistence and UI.
+- [x] Run the focused Python/RPC/UI/typecheck/lint/build checks and a real
+      Electron + gateway acceptance against persisted records.
+
+P16 is complete. The implementation commit is `c72c94418`; the queued-state
+recovery fix and real Desktop acceptance are in
+`f93d9183544581636c6af5b619d62d221040391d`. The real Electron acceptance
+rendered completed, failed, and queued tasks and cancelled a queued task via
+the real gateway. The separate-process restart smoke preserved completed
+history, failed stale in-flight work honestly, and retained queued work. No
+new or different upstream regression was found. P17 remains unchecked and is
+the next incomplete phase.

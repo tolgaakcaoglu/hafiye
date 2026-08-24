@@ -268,10 +268,29 @@ complete.
 | P15-REAL-01 | Managed OpenHands readiness | `.venv/bin/hafiye runtime openhands install`; `.venv/bin/hafiye runtime openhands doctor` | Official source `6d38810359827823e62a5e1043d0d78d0bafb6de`; all four packages `1.41.0`; `ready=true`; `blockers=[]` | PASS |
 | P15-REAL-02 | Master natural-language coding E2E | Real Gemini-backed Hafiye one-shot against a fresh failing-test fixture; external `pytest -q` | Hafiye identified/delegated; OpenHands changed `bug.py`; external fixture verification returned `1 passed in 0.00s`; result and changed files returned | PASS |
 | P15-REAL-03 | Gateway Task Center progress boundary | Real Gemini-backed worker plus live `tasks.list` and `task.update` capture | `RUNNING` observed; final `COMPLETED`; 18 progress events; 22 `task.update` events; `file_changes=["bug.py"]`; external `pytest -q` returned `1 passed` | PASS |
-| P15-ACCEPTANCE | Master P15 closure | Real identify → delegate → edit → verify → return → report flow, runtime doctor, and Task Center exposure | All P15 criteria passed; no new/different upstream regression; P16 remains for durable generic Task Center | PASS |
+| P15-ACCEPTANCE | Master P15 closure | Real identify → delegate → edit → verify → return → report flow, runtime doctor, and Task Center exposure | All P15 criteria passed; no new/different upstream regression; P16 followed and is recorded below | PASS |
 
 P15 is accepted. The source/test commit is
 `54b4ee49569267b21e10b357acdde427a8a844ff`; the pinned Hermes commit and
 baseline merge commit are unchanged. The five historical
 `ACCEPTED_UPSTREAM_BASELINE` failures remain the regression whitelist, and no
 new/different failure was found in the P15 matrix.
+
+## P16 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P16-PY-01 | Durable Task Center registry, restart recovery, coding delegate, and gateway RPC | `.venv/bin/pytest -q tests/hermes_cli/test_openhands_runtime.py tests/tools/test_task_center.py tests/tools/test_coding_delegate.py tests/tui_gateway/test_tasks_rpc.py` | 12 passed | PASS |
+| P16-PY-02 | Separate-process persistence and gateway RPC reconnect | Two Python processes with isolated `HERMES_HOME`; second imported real `tui_gateway.server` and called `tasks.list` | Completed history survived; in-flight task became `FAILED / INTERRUPTED_BY_GATEWAY_RESTART`; queued task remained queued; marker `P16_TASK_CENTER_RESTART_OK` | PASS |
+| P16-D-01 | Task Center component states, metadata, progress, and cancellation | `cd apps/desktop && npm run test:ui -- src/app/command-center/task-center.test.tsx` | 1 passed | PASS |
+| P16-D-02 | Desktop renderer/Electron/E2E type boundaries | `cd apps/desktop && npm run typecheck`; `../../node_modules/.bin/tsc -p tsconfig.e2e.json --noEmit` | Passed | PASS |
+| P16-D-03 | Task Center lint and Python hygiene | `cd apps/desktop && npx eslint src/app/command-center/task-center.tsx src/app/command-center/maintenance.tsx`; Ruff, `py_compile`, and `git diff --check` on P16 changes | Passed | PASS |
+| P16-D-04 | Clean Desktop production package | `cd apps/desktop && npm run build` | Clean build stamp `f93d91835445`; Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing Vite/Babel/chunking warnings remain | PASS WITH WARNING |
+| P16-REAL-01 | Real Desktop Task Center and gateway state/cancel flow | `cd apps/desktop && npx playwright test e2e/p16-task-center.spec.ts --reporter=list` | Real Electron + real gateway rendered completed/failed/queued records and cancelled queued work via `tasks.cancel`; 1 passed in 9.2s | PASS |
+| P16-ACCEPTANCE | Master P16 closure | Required state categories, task metadata/actions, no private chain-of-thought, persistence, restart/reconnect, and real Desktop acceptance | All criteria passed; no new/different upstream regression; P17 is next | PASS |
+
+P16 is accepted. Source implementation commit `c72c94418` introduced the
+durable registry and complete Task Center surface; source/test commit
+`f93d9183544581636c6af5b619d62d221040391d` contains the queued-state recovery
+fix and real Desktop acceptance. The historical five
+`ACCEPTED_UPSTREAM_BASELINE` failures remain unchanged.
