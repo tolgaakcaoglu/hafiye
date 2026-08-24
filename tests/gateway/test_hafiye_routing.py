@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from gateway.run import GatewayRunner
 
 
@@ -38,6 +40,37 @@ def _runtime(provider: str = "custom", base_url: str = "http://127.0.0.1:8080/v1
         "credential_pool": None,
         "max_tokens": None,
     }
+
+
+def test_gateway_reads_normal_hafiye_config_from_xdg_config_root(tmp_path, monkeypatch):
+    """Native gateway route resolution shares the Hafiye CLI config root."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    (config_home / "hafiye").mkdir()
+    (config_home / "hafiye" / "config.yaml").write_text(
+        """model:
+  default: local-model
+  provider: custom
+hafiye:
+  route_slots:
+    default:
+      provider: gemini
+      model: gemini-flash-lite-latest
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("HERMES_HOME", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(config_home))
+
+    import gateway.run as gateway_run
+    from hermes_constants import get_hermes_home
+
+    monkeypatch.setattr(gateway_run, "_hermes_home", get_hermes_home())
+
+    loaded = gateway_run._load_gateway_config()
+
+    assert loaded["hafiye"]["route_slots"]["default"]["provider"] == "gemini"
+    assert gateway_run._gateway_config_home() == Path(config_home) / "hafiye"
 
 
 def test_native_gateway_resolves_task_route_before_agent_creation(monkeypatch):

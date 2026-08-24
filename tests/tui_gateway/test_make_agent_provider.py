@@ -60,6 +60,77 @@ def test_make_agent_passes_resolved_provider():
         assert call_kwargs.kwargs["api_mode"] == "anthropic_messages"
 
 
+def test_make_agent_applies_hafiye_default_route_before_desktop_chat(
+    monkeypatch,
+):
+    """Electron/TUI agent creation must honor the shared Hafiye route slot."""
+    local_runtime = {
+        "provider": "custom",
+        "base_url": "http://127.0.0.1:11435/v1",
+        "api_key": "local-key",
+        "api_mode": "chat_completions",
+        "command": None,
+        "args": None,
+        "credential_pool": None,
+    }
+    gemini_runtime = {
+        "provider": "gemini",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "api_key": "gemini-key",
+        "api_mode": "chat_completions",
+        "command": None,
+        "args": None,
+        "credential_pool": None,
+    }
+    cfg = {
+        "model": {
+            "default": "qwen-local",
+            "provider": "custom",
+            "base_url": local_runtime["base_url"],
+        },
+        "hafiye": {
+            "route_slots": {
+                "default": {
+                    "provider": "gemini",
+                    "model": "gemini-flash-lite-latest",
+                }
+            }
+        },
+    }
+
+    def resolve_runtime_provider(*, requested=None, **_kwargs):
+        if requested == "gemini":
+            return gemini_runtime
+        return local_runtime
+
+    monkeypatch.setattr("tui_gateway.server._load_cfg", lambda: cfg)
+    monkeypatch.setattr(
+        "tui_gateway.server._resolve_startup_runtime",
+        lambda: ("qwen-local", "custom"),
+    )
+    monkeypatch.setattr(
+        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        resolve_runtime_provider,
+    )
+    with (
+        patch("tui_gateway.server._get_db", return_value=MagicMock()),
+        patch("tui_gateway.server._load_reasoning_config", return_value=None),
+        patch("tui_gateway.server._load_service_tier", return_value=None),
+        patch("tui_gateway.server._load_enabled_toolsets", return_value=None),
+        patch("run_agent.AIAgent") as mock_agent,
+    ):
+        from tui_gateway.server import _make_agent
+
+        _make_agent("sid-route", "key-route")
+
+    call_kwargs = mock_agent.call_args.kwargs
+    assert call_kwargs["model"] == "gemini-flash-lite-latest"
+    assert call_kwargs["provider"] == "gemini"
+    assert call_kwargs["hafiye_route_slot"] == "default"
+    assert call_kwargs["hafiye_privacy_mode"] == "NORMAL"
+    assert call_kwargs["hafiye_route"]["source"] == "config"
+
+
 def test_probe_config_health_flags_null_sections():
     """Bare YAML keys (`agent:` with no value) parse as None and silently
     drop nested settings; probe must surface them so users can fix."""

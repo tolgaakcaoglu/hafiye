@@ -7083,6 +7083,54 @@ def _resolve_runtime_with_fallback(
         raise
 
 
+def _resolve_hafiye_agent_runtime(
+    cfg: dict,
+    *,
+    model: str,
+    runtime: dict,
+) -> tuple[str, dict, dict, list[dict]]:
+    """Apply the configured Hafiye route before building a Desktop agent.
+
+    The TUI gateway is the backend used by the Electron Desktop chat.  It
+    has its own agent factory rather than going through ``gateway.run`` or
+    the classic CLI, so route slots and privacy must be resolved at this
+    boundary as well.  Keep the provider credentials in Hermes'
+    ``runtime_provider`` resolver; this helper only selects the prescribed
+    Hafiye route and returns the metadata needed by the agent policy.
+    """
+    from hafiye_policy import resolve_hafiye_route
+
+    route = resolve_hafiye_route(
+        cfg,
+        provider=runtime.get("provider") or "",
+        model=model,
+        base_url=runtime.get("base_url") or "",
+    )
+    current_provider = str(runtime.get("provider") or "").strip()
+    if route.provider and (
+        route.provider != current_provider
+        or (route.model and route.model != model)
+    ):
+        resolution = _resolve_runtime_with_fallback(
+            {
+                "requested": route.provider,
+                "target_model": route.model or model,
+            }
+        )
+        runtime = resolution.runtime
+        if resolution.used_fallback:
+            if not resolution.selected_model:
+                raise RuntimeError("Auth fallback resolved without a model")
+            model = resolution.selected_model
+        else:
+            model = route.model or model
+    elif route.model:
+        model = route.model
+
+    fallback = list(route.fallback_providers) or (_load_fallback_model() or [])
+    return model, runtime, route.as_dict(), fallback
+
+
 def _make_agent(
     sid: str,
     key: str,
@@ -7221,6 +7269,11 @@ def _make_agent(
             if not resolution.selected_model:
                 raise RuntimeError("Auth fallback resolved without a model")
             model = resolution.selected_model
+    model, runtime, hafiye_route, fallback_model = _resolve_hafiye_agent_runtime(
+        cfg,
+        model=model,
+        runtime=runtime,
+    )
     _pr = _load_provider_routing()
     return AIAgent(
         model=model,
@@ -7266,7 +7319,10 @@ def _make_agent(
         pass_session_id=is_truthy_value(os.environ.get("HERMES_TUI_PASS_SESSION_ID")),
         skip_context_files=is_truthy_value(os.environ.get("HERMES_IGNORE_RULES")),
         skip_memory=is_truthy_value(os.environ.get("HERMES_IGNORE_RULES")),
-        fallback_model=_load_fallback_model(),
+        fallback_model=fallback_model,
+        hafiye_privacy_mode=hafiye_route.get("privacy_mode", "NORMAL"),
+        hafiye_route_slot=hafiye_route.get("slot", "default"),
+        hafiye_route=hafiye_route,
         **_agent_cbs(sid),
     )
 

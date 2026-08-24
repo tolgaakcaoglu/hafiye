@@ -2078,6 +2078,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Resolve Hermes home directory (respects HERMES_HOME override)
 from hermes_constants import (
     get_config_path,
+    get_hafiye_config_home,
     get_env_path,
     get_hafiye_state_home,
     get_hermes_home,
@@ -3680,7 +3681,20 @@ def _gateway_config_home() -> Path:
     override = get_hermes_home_override()
     if override:
         return Path(override)
-    return _hermes_home
+    # Hafiye's normal installation separates the user config root from the
+    # legacy Hermes data root.  The gateway still keeps ``_hermes_home`` for
+    # upstream-compatible state/session paths, but behavioral config must be
+    # read from the same XDG config path used by the CLI and Desktop.  Keep
+    # explicit HERMES_HOME/profile scopes single-root, and retain the
+    # monkeypatched-home behavior used by gateway tests.
+    if os.environ.get("HERMES_HOME", "").strip():
+        return _hermes_home
+    try:
+        if _hermes_home != get_hermes_home():
+            return _hermes_home
+    except Exception:
+        return _hermes_home
+    return get_hafiye_config_home()
 
 
 def _load_gateway_config(config_path: "Path | None" = None) -> dict:
