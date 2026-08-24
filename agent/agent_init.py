@@ -589,6 +589,10 @@ def init_agent(
     checkpoint_max_file_size_mb: int = 10,
     pass_session_id: bool = False,
     requested_provider: str = None,
+    hafiye_privacy_mode: str = None,
+    hafiye_route_slot: str = "default",
+    hafiye_task_text: str = None,
+    hafiye_route: Dict[str, Any] = None,
 ):
     """
     Initialize the AI Agent.
@@ -767,6 +771,62 @@ def init_agent(
                 agent._credential_pool = None
         except Exception:
             agent._credential_pool = None
+
+    # Hafiye policy is resolved after Hermes has normalized the active
+    # provider identity but before any provider client or tool surface can be
+    # used. Entrypoints may pass a pre-resolved route; direct AIAgent callers
+    # still receive the installation-wide privacy policy from config.yaml.
+    try:
+        from hafiye_policy import (
+            enforce_runtime_policy,
+            normalize_privacy_mode,
+            resolve_hafiye_route,
+        )
+        from hermes_cli.config import load_config_readonly as _load_hafiye_cfg
+
+        _hafiye_cfg = _load_hafiye_cfg() or {}
+        _hafiye_route = dict(hafiye_route or {})
+        if _hafiye_route:
+            _hafiye_mode = normalize_privacy_mode(
+                hafiye_privacy_mode or _hafiye_route.get("privacy_mode")
+            )
+            agent._hafiye_route = _hafiye_route
+        else:
+            _hafiye_resolved = resolve_hafiye_route(
+                _hafiye_cfg,
+                provider=agent.provider,
+                model=agent.model,
+                base_url=agent.base_url,
+                slot=hafiye_route_slot,
+                task_text=hafiye_task_text,
+            )
+            _hafiye_mode = normalize_privacy_mode(
+                hafiye_privacy_mode or _hafiye_resolved.privacy_mode
+            )
+            agent._hafiye_route = _hafiye_resolved.as_dict()
+        agent.hafiye_privacy_mode = _hafiye_mode
+        agent.hafiye_route_slot = str(
+            agent._hafiye_route.get("slot") or hafiye_route_slot or "default"
+        )
+        enforce_runtime_policy(
+            _hafiye_mode,
+            provider=agent.provider,
+            base_url=(
+                agent.base_url
+                or (
+                    _hafiye_cfg.get("model", {}).get("base_url", "")
+                    if isinstance(_hafiye_cfg.get("model"), dict)
+                    else ""
+                )
+            ),
+            model=agent.model,
+        )
+    except ImportError:
+        # The policy module is part of the Hafiye checkout; this defensive
+        # branch keeps upstream-only imports usable during partial rebases.
+        agent.hafiye_privacy_mode = "NORMAL"
+        agent.hafiye_route_slot = hafiye_route_slot or "default"
+        agent._hafiye_route = {}
 
     # Eagerly warm the transport cache so import errors surface at init,
     # not mid-conversation.  Also validates the api_mode is registered.
@@ -1548,6 +1608,20 @@ def init_agent(
         agent._fallback_chain = [fallback_model]
     else:
         agent._fallback_chain = []
+    if getattr(agent, "hafiye_privacy_mode", "NORMAL") in {"LOCAL_ONLY", "OFFLINE"}:
+        from hafiye_policy import filter_fallback_chain
+
+        _original_fallback_count = len(agent._fallback_chain)
+        agent._fallback_chain = filter_fallback_chain(
+            agent._fallback_chain,
+            agent.hafiye_privacy_mode,
+        )
+        if len(agent._fallback_chain) != _original_fallback_count:
+            logger.warning(
+                "Hafiye %s policy removed %d remote fallback provider(s)",
+                agent.hafiye_privacy_mode,
+                _original_fallback_count - len(agent._fallback_chain),
+            )
     agent._fallback_index = 0
     agent._fallback_activated = getattr(agent, "_fallback_activated", False)
     # Legacy attribute kept for backward compat (tests, external callers)
@@ -1583,6 +1657,15 @@ def init_agent(
         disabled_toolsets=disabled_toolsets,
         quiet_mode=agent.quiet_mode,
     )
+    try:
+        from hafiye_policy import filter_tool_definitions
+
+        agent.tools = filter_tool_definitions(
+            agent.tools,
+            getattr(agent, "hafiye_privacy_mode", "NORMAL"),
+        )
+    except ImportError:
+        pass
     
     # Show tool configuration and store valid tool names for validation
     agent.valid_tool_names = set()
@@ -2880,6 +2963,27 @@ def init_agent(
             agent.valid_tool_names.add(_tname)
             agent._context_engine_tool_names.add(_tname)
             _existing_tool_names.add(_tname)
+
+    # Context-engine plugins append their schemas after the base registry
+    # snapshot. Re-apply the Hafiye OFFLINE boundary after all additions so a
+    # late plugin cannot reintroduce a network-capable tool into the request.
+    try:
+        from hafiye_policy import filter_tool_definitions
+
+        agent.tools = filter_tool_definitions(
+            agent.tools,
+            getattr(agent, "hafiye_privacy_mode", "NORMAL"),
+        )
+        agent.valid_tool_names = {
+            tool["function"]["name"]
+            for tool in agent.tools
+            if isinstance(tool, dict)
+            and isinstance(tool.get("function"), dict)
+            and tool["function"].get("name")
+        }
+        agent._context_engine_tool_names.intersection_update(agent.valid_tool_names)
+    except ImportError:
+        pass
 
     # Notify context engine of session start
     if hasattr(agent, "context_compressor") and agent.context_compressor:

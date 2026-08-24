@@ -370,6 +370,7 @@ def _run_agent(
     from hermes_cli.models import detect_provider_for_model
     from hermes_cli.runtime_provider import resolve_runtime_provider
     from hermes_cli.tools_config import _get_platform_tools
+    from hafiye_policy import resolve_hafiye_route
     from run_agent import AIAgent
 
     cfg = load_config()
@@ -432,6 +433,18 @@ def _run_agent(
                 if detected:
                     effective_provider, effective_model = detected
 
+    hafiye_route = resolve_hafiye_route(
+        cfg,
+        provider=effective_provider or "",
+        model=effective_model or "",
+        base_url=explicit_base_url_from_alias or "",
+        task_text=prompt,
+    )
+    if hafiye_route.provider:
+        effective_provider = hafiye_route.provider
+    if hafiye_route.model:
+        effective_model = hafiye_route.model
+
     runtime = resolve_runtime_provider(
         requested=effective_provider,
         target_model=effective_model or None,
@@ -471,7 +484,7 @@ def _run_agent(
         # Read the effective fallback chain from profile config so oneshot
         # workers honour the same merge semantics as interactive CLI and
         # gateway sessions.
-        _fb = get_fallback_chain(cfg)
+        _fb = list(hafiye_route.fallback_providers) or get_fallback_chain(cfg)
 
         agent = AIAgent(
             api_key=runtime.get("api_key"),
@@ -486,6 +499,10 @@ def _run_agent(
             session_db=session_db,
             credential_pool=runtime.get("credential_pool"),
             fallback_model=_fb or None,
+            hafiye_privacy_mode=hafiye_route.privacy_mode,
+            hafiye_route_slot=hafiye_route.slot,
+            hafiye_task_text=prompt,
+            hafiye_route=hafiye_route.as_dict(),
             ephemeral_system_prompt=skills_prompt,
             # Interactive callbacks are intentionally NOT wired beyond this
             # one.  In oneshot mode there's no user sitting at a terminal:

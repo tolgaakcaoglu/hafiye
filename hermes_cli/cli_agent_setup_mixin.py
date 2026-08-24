@@ -39,9 +39,29 @@ class CLIAgentSetupMixin:
 
         _primary_exc = None
         runtime = None
+        requested_provider = self.requested_provider
+        try:
+            from hermes_cli.config import load_config
+            from hafiye_policy import resolve_hafiye_route
+
+            _route = resolve_hafiye_route(
+                load_config(),
+                provider=self.requested_provider,
+                model=getattr(self, "model", ""),
+                base_url=self._explicit_base_url,
+                slot=getattr(self, "hafiye_route_slot", "default"),
+            )
+            self._hafiye_privacy_mode = _route.privacy_mode
+            self._hafiye_route = _route.as_dict()
+            requested_provider = _route.provider or requested_provider
+            if _route.model:
+                self.model = _route.model
+        except Exception as exc:
+            ChatConsole().print(f"[bold red]Hafiye policy failed: {exc}[/]")
+            return False
         try:
             runtime = resolve_runtime_provider(
-                requested=self.requested_provider,
+                requested=requested_provider,
                 explicit_api_key=self._explicit_api_key,
                 explicit_base_url=self._explicit_base_url,
             )
@@ -531,6 +551,9 @@ class CLIAgentSetupMixin:
                 checkpoint_max_total_size_mb=self.checkpoint_max_total_size_mb,
                 checkpoint_max_file_size_mb=self.checkpoint_max_file_size_mb,
                 pass_session_id=self.pass_session_id,
+                hafiye_privacy_mode=getattr(self, "_hafiye_privacy_mode", "NORMAL"),
+                hafiye_route_slot=getattr(self, "hafiye_route_slot", "default"),
+                hafiye_route=getattr(self, "_hafiye_route", None),
                 skip_context_files=self.ignore_rules,
                 skip_memory=self.ignore_rules,
                 tool_progress_callback=self._on_tool_progress,

@@ -10,6 +10,26 @@ DEFAULT_CONFIG = {
     "fallback_providers": [],
     "credential_pool_strategies": {},
     "toolsets": ["hermes-cli"],
+    # Hafiye routing is explicit configuration layered over Hermes provider
+    # resolution. Empty slot values inherit the normal configured model;
+    # non-empty values select that provider/model for the matching task class.
+    "hafiye": {
+        "privacy_mode": "NORMAL",
+        "route_slots": {
+            "default": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+            "fast": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+            "reasoning": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+            "coding": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+            "vision": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+            "long_context": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+            "memory_aux": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+            "compression_aux": {"provider": "", "model": "", "locality_policy": "NORMAL"},
+        },
+        "task_overrides": {
+            "remote": {"provider": "", "model": ""},
+            "gemini": {"provider": "gemini", "model": ""},
+        },
+    },
     # SQLite journal mode used by every Hermes database opener. WAL is the
     # normal default; set DELETE for weak-fsync/shared filesystems where WAL is
     # not crash-safe (for example macOS virtiofs, NFS, or SMB).

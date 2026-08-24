@@ -2819,6 +2819,7 @@ class APIServerAdapter(BasePlatformAdapter):
         route: Optional[Dict[str, Any]] = None,
         session_model: Optional[str] = None,
         confirmed_runtime_lock: bool = False,
+        hafiye_task_text: Optional[str] = None,
     ) -> Any:
         """
         Create an AIAgent instance using the gateway's runtime config.
@@ -2863,6 +2864,7 @@ class APIServerAdapter(BasePlatformAdapter):
             GatewayRunner,
         )
         from hermes_cli.tools_config import _get_platform_tools
+        from hafiye_policy import resolve_hafiye_route
 
         # Catch RuntimeError ONLY around this call, not the wider
         # _create_agent()+run_conversation() span --
@@ -3084,6 +3086,27 @@ class APIServerAdapter(BasePlatformAdapter):
                 self._last_resolved_model["*"] = model
 
         user_config = _load_gateway_config()
+        hafiye_route = resolve_hafiye_route(
+            user_config,
+            provider=runtime_kwargs.get("provider", ""),
+            model=model,
+            base_url=runtime_kwargs.get("base_url", ""),
+            task_text=hafiye_task_text or "",
+        )
+        if hafiye_route.provider and (
+            hafiye_route.provider != _clean_request_string(runtime_kwargs.get("provider"))
+            or (hafiye_route.model and hafiye_route.model != model)
+        ):
+            _route_runtime = _resolve_provider_runtime(
+                hafiye_route.provider,
+                target_model=hafiye_route.model or model,
+                required=True,
+            )
+            if _route_runtime:
+                _apply_runtime_agent_overrides(runtime_kwargs, _route_runtime)
+            model = hafiye_route.model or model
+        elif hafiye_route.model and not model:
+            model = hafiye_route.model
         enabled_toolsets = sorted(_get_platform_tools(user_config, "api_server"))
 
         max_iterations = _current_max_iterations()
@@ -3093,7 +3116,8 @@ class APIServerAdapter(BasePlatformAdapter):
         fallback_model = (
             None
             if confirmed_runtime_lock
-            else GatewayRunner._load_fallback_model()
+            else list(hafiye_route.fallback_providers)
+            or GatewayRunner._load_fallback_model()
         )
 
         # Resolve reasoning against the model this request will actually
@@ -3129,6 +3153,10 @@ class APIServerAdapter(BasePlatformAdapter):
             "fallback_model": fallback_model,
             "reasoning_config": reasoning_config,
             "gateway_session_key": gateway_session_key,
+            "hafiye_privacy_mode": hafiye_route.privacy_mode,
+            "hafiye_route_slot": hafiye_route.slot,
+            "hafiye_task_text": hafiye_task_text,
+            "hafiye_route": hafiye_route.as_dict(),
         }
         if request_service_tier is not _REQUEST_OPTION_MISSING:
             agent_kwargs["service_tier"] = request_service_tier
@@ -7242,8 +7270,10 @@ class APIServerAdapter(BasePlatformAdapter):
                     ),
                 )
                 agent = None
+                from hafiye_policy import HafiyePolicyError
                 try:
                     agent = self._create_agent(
+                        hafiye_task_text=user_message,
                         ephemeral_system_prompt=ephemeral_system_prompt,
                         session_id=session_id,
                         stream_delta_callback=stream_delta_callback,
@@ -7370,6 +7400,17 @@ class APIServerAdapter(BasePlatformAdapter):
                             result["runtime"] = runtime
                         usage["runtime"] = runtime
                     return result, usage
+                except HafiyePolicyError as exc:
+                    logger.warning("Hafiye policy blocked session=%s: %s", session_id or "", exc)
+                    return (
+                        {
+                            "final_response": f"⚠️ Hafiye policy blocked this task: {exc}",
+                            "messages": [],
+                            "api_calls": 0,
+                            "tools": [],
+                        },
+                        {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0},
+                    )
                 except _ProviderAuthResolutionError as exc:
                     # Only _ProviderAuthResolutionError — raised exclusively
                     # where _resolve_runtime_agent_kwargs() is called inside
@@ -7681,6 +7722,7 @@ class APIServerAdapter(BasePlatformAdapter):
         )
 
         async def _run_and_close():
+            from hafiye_policy import HafiyePolicyError
             try:
                 self._set_run_status(run_id, "running")
                 if run_id in self._stopping_run_ids:
@@ -7697,6 +7739,7 @@ class APIServerAdapter(BasePlatformAdapter):
                     return
                 with self._profile_scope(request_profile):
                     agent = self._create_agent(
+                        hafiye_task_text=user_message,
                         ephemeral_system_prompt=ephemeral_system_prompt,
                         session_id=session_id,
                         stream_delta_callback=_text_cb,
@@ -7881,6 +7924,24 @@ class APIServerAdapter(BasePlatformAdapter):
                 except Exception:
                     pass
                 raise
+            except HafiyePolicyError as exc:
+                logger.warning("Hafiye policy blocked run=%s: %s", run_id, exc)
+                error_msg = f"⚠️ Hafiye policy blocked this task: {exc}"
+                self._set_run_status(
+                    run_id,
+                    "failed",
+                    error=error_msg,
+                    last_event="run.failed",
+                )
+                try:
+                    _put_event_if_active({
+                        "event": "run.failed",
+                        "run_id": run_id,
+                        "timestamp": time.time(),
+                        "error": error_msg,
+                    })
+                except Exception:
+                    pass
             except _ProviderAuthResolutionError as exc:
                 # /v1/runs builds its own agent via _create_agent() and does
                 # not route through _run_agent() (see that method's own

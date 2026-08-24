@@ -9,6 +9,7 @@ import {
   Moon,
   Palette,
   Sun,
+  Zap,
   Wrench
 } from '@/lib/icons'
 import { REASONING_EFFORTS } from '@/lib/reasoning-effort'
@@ -394,6 +395,23 @@ export const FIELD_LABELS: Record<string, string> = defineFieldCopy({
     serviceTier: 'Service Tier',
     toolUseEnforcement: 'Tool-Use Enforcement'
   },
+  hafiye: {
+    privacyMode: 'Privacy Mode',
+    routeSlots: {
+      default: { provider: 'Default Route Provider', model: 'Default Route Model', localityPolicy: 'Default Route Locality Policy' },
+      fast: { provider: 'Fast Route Provider', model: 'Fast Route Model', localityPolicy: 'Fast Route Locality Policy' },
+      reasoning: { provider: 'Reasoning Route Provider', model: 'Reasoning Route Model', localityPolicy: 'Reasoning Route Locality Policy' },
+      coding: { provider: 'Coding Route Provider', model: 'Coding Route Model', localityPolicy: 'Coding Route Locality Policy' },
+      vision: { provider: 'Vision Route Provider', model: 'Vision Route Model', localityPolicy: 'Vision Route Locality Policy' },
+      longContext: { provider: 'Long-Context Route Provider', model: 'Long-Context Route Model', localityPolicy: 'Long-Context Route Locality Policy' },
+      memoryAux: { provider: 'Memory Auxiliary Provider', model: 'Memory Auxiliary Model', localityPolicy: 'Memory Auxiliary Locality Policy' },
+      compressionAux: { provider: 'Compression Auxiliary Provider', model: 'Compression Auxiliary Model', localityPolicy: 'Compression Auxiliary Locality Policy' }
+    },
+    taskOverrides: {
+      remote: { provider: 'Remote Task Provider', model: 'Remote Task Model' },
+      gemini: { provider: 'Gemini Task Provider', model: 'Gemini Task Model' }
+    }
+  },
   terminal: {
     cwd: 'Working Directory',
     backend: 'Execution Backend',
@@ -558,6 +576,23 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
     imageInputMode: 'Controls how image attachments are sent to the model.',
     maxTurns: 'Upper bound for tool-calling turns before Hermes stops a run.'
   },
+  hafiye: {
+    privacyMode: 'NORMAL allows configured providers; LOCAL_ONLY and OFFLINE require a local runtime. OFFLINE also disables Hafiye-managed network tools.',
+    routeSlots: {
+      default: { provider: 'Provider used for ordinary tasks. Leave blank to inherit the Hermes default.', model: 'Model used for ordinary tasks. Leave blank to inherit the Hermes default.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
+      fast: { provider: 'Provider selected by a fast/quick task override.', model: 'Model selected by a fast/quick task override.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
+      reasoning: { provider: 'Provider selected by a reasoning task override.', model: 'Model selected by a reasoning task override.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
+      coding: { provider: 'Provider selected by a coding task override.', model: 'Model selected by a coding task override.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
+      vision: { provider: 'Provider selected by a vision task override.', model: 'Model selected by a vision task override.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
+      longContext: { provider: 'Provider selected by a long-context task override.', model: 'Model selected by a long-context task override.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
+      memoryAux: { provider: 'Provider for memory auxiliary work.', model: 'Model for memory auxiliary work.', localityPolicy: 'The strongest privacy mode allowed for this route.' },
+      compressionAux: { provider: 'Provider for compression auxiliary work.', model: 'Model for compression auxiliary work.', localityPolicy: 'The strongest privacy mode allowed for this route.' }
+    },
+    taskOverrides: {
+      remote: { provider: 'Provider used when the task explicitly says remote/cloud/uzak.', model: 'Model used when the task explicitly says remote/cloud/uzak.' },
+      gemini: { provider: 'Provider used when the task explicitly says Gemini.', model: 'Model used when the task explicitly says Gemini.' }
+    }
+  },
   terminal: {
     cwd: 'Default project folder for tool and terminal work.',
     persistentShell: 'Keep shell state between commands when the backend supports it.',
@@ -628,6 +663,42 @@ export const SECTIONS: DesktopConfigSection[] = [
     label: 'Model',
     icon: Box,
     keys: ['model_context_length', 'fallback_providers']
+  },
+  {
+    id: 'hafiye',
+    label: 'Hafiye Routing & Privacy',
+    icon: Zap,
+    keys: [
+      'hafiye.privacy_mode',
+      'hafiye.route_slots.default.provider',
+      'hafiye.route_slots.default.model',
+      'hafiye.route_slots.default.locality_policy',
+      'hafiye.route_slots.fast.provider',
+      'hafiye.route_slots.fast.model',
+      'hafiye.route_slots.fast.locality_policy',
+      'hafiye.route_slots.reasoning.provider',
+      'hafiye.route_slots.reasoning.model',
+      'hafiye.route_slots.reasoning.locality_policy',
+      'hafiye.route_slots.coding.provider',
+      'hafiye.route_slots.coding.model',
+      'hafiye.route_slots.coding.locality_policy',
+      'hafiye.route_slots.vision.provider',
+      'hafiye.route_slots.vision.model',
+      'hafiye.route_slots.vision.locality_policy',
+      'hafiye.route_slots.long_context.provider',
+      'hafiye.route_slots.long_context.model',
+      'hafiye.route_slots.long_context.locality_policy',
+      'hafiye.route_slots.memory_aux.provider',
+      'hafiye.route_slots.memory_aux.model',
+      'hafiye.route_slots.memory_aux.locality_policy',
+      'hafiye.route_slots.compression_aux.provider',
+      'hafiye.route_slots.compression_aux.model',
+      'hafiye.route_slots.compression_aux.locality_policy',
+      'hafiye.task_overrides.remote.provider',
+      'hafiye.task_overrides.remote.model',
+      'hafiye.task_overrides.gemini.provider',
+      'hafiye.task_overrides.gemini.model'
+    ]
   },
   {
     id: 'chat',

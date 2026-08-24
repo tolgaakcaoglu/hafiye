@@ -1057,6 +1057,28 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
         "description": "Context window override (0 = auto-detect from model metadata)",
         "category": "general",
     },
+    "hafiye.privacy_mode": {
+        "type": "select",
+        "description": "Hafiye inference and network privacy policy",
+        "options": ["NORMAL", "LOCAL_ONLY", "OFFLINE"],
+    },
+    **{
+        f"hafiye.route_slots.{_slot}.locality_policy": {
+            "type": "select",
+            "description": f"Locality policy for the Hafiye {_slot} route",
+            "options": ["NORMAL", "LOCAL_ONLY", "OFFLINE"],
+        }
+        for _slot in (
+            "default",
+            "fast",
+            "reasoning",
+            "coding",
+            "vision",
+            "long_context",
+            "memory_aux",
+            "compression_aux",
+        )
+    },
     "terminal.backend": {
         "type": "select",
         "description": "Terminal execution backend",
@@ -1250,7 +1272,7 @@ _CATEGORY_MERGE: Dict[str, str] = {
 
 # Display order for tabs — unlisted categories sort alphabetically after these.
 _CATEGORY_ORDER = [
-    "general", "agent", "terminal", "display", "delegation",
+    "general", "hafiye", "agent", "terminal", "display", "delegation",
     "memory", "compression", "security", "browser", "voice",
     "tts", "stt", "logging", "discord", "auxiliary",
 ]

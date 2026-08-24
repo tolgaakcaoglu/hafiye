@@ -581,6 +581,17 @@ def _run_agent_tool_execution_middleware(
     )
 
     trace = middleware_trace if middleware_trace is not None else []
+    # Hafiye OFFLINE is enforced at the execution boundary as well as in the
+    # advertised schema. This catches stale/deferred tool schemas and direct
+    # tool-call attempts; it does not weaken the product's full-host terminal
+    # execution model.
+    if scope_block is None and getattr(agent, "hafiye_privacy_mode", "NORMAL") == "OFFLINE":
+        try:
+            from hafiye_policy import offline_tool_block_message
+
+            scope_block = offline_tool_block_message(function_name)
+        except ImportError:
+            pass
     state = {
         "args": function_args,
         "middleware_trace": trace,

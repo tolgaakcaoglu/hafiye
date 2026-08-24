@@ -510,6 +510,7 @@ export const en: Translations = {
     },
     sections: {
       model: 'Model',
+      hafiye: 'Hafiye Routing & Privacy',
       chat: 'Chat',
       appearance: 'Appearance',
       workspace: 'Workspace',

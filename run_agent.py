@@ -522,6 +522,10 @@ class AIAgent:
         checkpoint_max_file_size_mb: int = 10,
         pass_session_id: bool = False,
         requested_provider: str = None,
+        hafiye_privacy_mode: str = None,
+        hafiye_route_slot: str = "default",
+        hafiye_task_text: str = None,
+        hafiye_route: Dict[str, Any] = None,
     ):
         """Forwarder — see ``agent.agent_init.init_agent``."""
         if tool_delay is not None:
@@ -612,6 +616,10 @@ class AIAgent:
             checkpoint_max_total_size_mb=checkpoint_max_total_size_mb,
             checkpoint_max_file_size_mb=checkpoint_max_file_size_mb,
             pass_session_id=pass_session_id,
+            hafiye_privacy_mode=hafiye_privacy_mode,
+            hafiye_route_slot=hafiye_route_slot,
+            hafiye_task_text=hafiye_task_text,
+            hafiye_route=hafiye_route,
         )
 
     def _get_session_db_for_recall(self):

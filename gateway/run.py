@@ -5574,7 +5574,19 @@ class TurnRunner:
             turn_route["runtime"],
             ctx.enabled_toolsets,
             combined_ephemeral,
-            cache_keys=self._runner._extract_cache_busting_config(ctx.user_config),
+            cache_keys={
+                **self._runner._extract_cache_busting_config(ctx.user_config),
+                "hafiye_privacy_mode": turn_route.get("hafiye_privacy_mode", "NORMAL"),
+                "hafiye_route_slot": turn_route.get("hafiye_route_slot", "default"),
+                "hafiye_fallback_providers": tuple(
+                    (
+                        entry.get("provider", ""),
+                        entry.get("model", ""),
+                        entry.get("base_url", ""),
+                    )
+                    for entry in turn_route.get("hafiye_route", {}).get("fallback_providers", [])
+                ),
+            },
             user_id=getattr(ctx.source, "user_id", None),
             user_id_alt=getattr(ctx.source, "user_id_alt", None),
             skip_context_files=skip_context_files,
@@ -5812,7 +5824,14 @@ class TurnRunner:
                 gateway_session_key=ctx.session_key,
                 session_db=getattr(self._runner._session_db, "_db", self._runner._session_db),
                 # Reload from disk — do not reuse the startup snapshot (#60955).
-                fallback_model=self._runner._refresh_fallback_model(),
+                fallback_model=(
+                    turn_route.get("hafiye_route", {}).get("fallback_providers")
+                    or self._runner._refresh_fallback_model()
+                ),
+                hafiye_privacy_mode=turn_route.get("hafiye_privacy_mode", "NORMAL"),
+                hafiye_route_slot=turn_route.get("hafiye_route_slot", "default"),
+                hafiye_task_text=turn_route.get("hafiye_task_text"),
+                hafiye_route=turn_route.get("hafiye_route"),
                 skip_context_files=skip_context_files,
                 # Keep the persona even with minimal context: soul identity is
                 # a single small file, not part of the expensive walk.
@@ -8230,6 +8249,46 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         accordingly.
         """
         from hermes_cli.models import resolve_fast_mode_overrides
+        from hafiye_policy import resolve_hafiye_route
+
+        _hafiye_config = _load_gateway_config()
+        hafiye_route = resolve_hafiye_route(
+            _hafiye_config,
+            provider=runtime_kwargs.get("provider", ""),
+            model=model,
+            base_url=runtime_kwargs.get("base_url", ""),
+            task_text=user_message,
+        )
+        if hafiye_route.provider and (
+            hafiye_route.provider != runtime_kwargs.get("provider")
+            or (hafiye_route.model and hafiye_route.model != model)
+        ):
+            from hermes_cli.runtime_provider import resolve_runtime_provider
+
+            _route_runtime = resolve_runtime_provider(
+                requested=hafiye_route.provider,
+                target_model=hafiye_route.model or model,
+            )
+            for _key in (
+                "api_key",
+                "base_url",
+                "provider",
+                "requested_provider",
+                "api_mode",
+                "command",
+                "args",
+                "credential_pool",
+                "max_tokens",
+            ):
+                if _key in _route_runtime:
+                    runtime_kwargs[_key] = (
+                        list(_route_runtime.get(_key) or [])
+                        if _key == "args"
+                        else _route_runtime.get(_key)
+                    )
+            model = hafiye_route.model or model
+        elif hafiye_route.model:
+            model = hafiye_route.model
 
         runtime = {
             "api_key": runtime_kwargs.get("api_key"),
@@ -8253,7 +8312,21 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                 runtime["api_mode"],
                 runtime["command"],
                 tuple(runtime["args"]),
+                hafiye_route.privacy_mode,
+                hafiye_route.slot,
+                tuple(
+                    (
+                        entry.get("provider", ""),
+                        entry.get("model", ""),
+                        entry.get("base_url", ""),
+                    )
+                    for entry in hafiye_route.fallback_providers
+                ),
             ),
+            "hafiye_privacy_mode": hafiye_route.privacy_mode,
+            "hafiye_route_slot": hafiye_route.slot,
+            "hafiye_task_text": user_message,
+            "hafiye_route": hafiye_route.as_dict(),
         }
 
         service_tier = getattr(self, "_service_tier", None)
@@ -22768,7 +22841,14 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     thread_id=source.thread_id,
                     session_db=getattr(self._session_db, "_db", self._session_db),
                     # Reload from disk — do not reuse the startup snapshot (#60955).
-                    fallback_model=self._refresh_fallback_model(),
+                    fallback_model=(
+                        turn_route.get("hafiye_route", {}).get("fallback_providers")
+                        or self._refresh_fallback_model()
+                    ),
+                    hafiye_privacy_mode=turn_route.get("hafiye_privacy_mode", "NORMAL"),
+                    hafiye_route_slot=turn_route.get("hafiye_route_slot", "default"),
+                    hafiye_task_text=turn_route.get("hafiye_task_text"),
+                    hafiye_route=turn_route.get("hafiye_route"),
                 )
                 try:
                     return agent.run_conversation(
