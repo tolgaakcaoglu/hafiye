@@ -9,8 +9,8 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: ba113121f275bf1ff8258037bb79eed0aa36e2bf
-  (P23 Desktop route/config consistency source/test commit)
+- Current Hafiye source HEAD: 5af73434e5ab36786a306966fa926b7cbbe08914
+  (P23 managed Qwen2 long-context compatibility source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -1576,17 +1576,20 @@ claimed as passed.
   `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
 - Current Hafiye source/test commit:
-  `ba113121f275bf1ff8258037bb79eed0aa36e2bf`.
+  `5af73434e5ab36786a306966fa926b7cbbe08914`.
 - The native gateway now uses the normal Hafiye XDG config root while
   retaining explicit `HERMES_HOME`/profile single-root behavior. The
   Electron/TUI `_make_agent` boundary now resolves the same Hafiye route slot,
   privacy mode, and fallback metadata before creating `AIAgent`. No Hermes
-  upstream commit or upstream history changed.
+  upstream commit or upstream history changed. The same source/test commit
+  adds a narrowly scoped Qwen2 context compatibility argument builder: above
+  32K it passes YaRN scaling from 32K and an explicit Qwen2 context metadata
+  override; other model families retain native metadata behavior.
 
 ### P23 verification completed so far
 
-- The P23 backend target matrix completed with `250 passed, 2 skipped, 1
-  warning in 19.46s`.
+- The P23 backend target matrix completed with `251 passed, 2 skipped, 1
+  warning in 22.66s`, including the managed local-runtime compatibility test.
 - `.venv/bin/ruff check` on the route/config source and tests, Python
   compilation, and `git diff --check` passed.
 - The exact five-ID upstream comparison after this source change returned
@@ -1614,15 +1617,24 @@ claimed as passed.
   returned the exact marker `P23_LOCAL_ENDPOINT_OK`. This confirms the local
   CUDA endpoint remains usable, but it is not being counted as the required
   disconnected-network Hafiye-agent test.
-- Loading the Qwen GGUF with `--context-size 65536` did not remove KI-014:
-  llama.cpp capped the model at `n_ctx=32768` because its trained context is
-  32K, and real `hafiye ask` rejected it below Hermes' 64K minimum. The server
-  was restored to the prior 4,096 context setting.
+- An initial Qwen load with `--context-size 65536` did not remove KI-014:
+  without the family-specific compatibility flags, llama.cpp capped the model
+  at `n_ctx=32768` because its trained context is 32K, and real `hafiye ask`
+  rejected it below Hermes' 64K minimum.
 - Two pinned compatible-model probes were attempted and rolled back: the
   3B Hermes Q4_K_M model hit a 7,168 MiB CUDA KV-cache OOM at 65K, while the
   1B Llama Q4_K_M model fit at 65K but generated 39,822 tokens without
   completing a simple marker request. Both temporary registry entries/files
-  were removed; KI-040 records the remaining local-agent blocker.
+  were removed; KI-040 records these historical diagnostics.
+- The new managed Qwen2 path was loaded with:
+  `.venv/bin/hafiye model unload --json && .venv/bin/hafiye model load
+  qwen2.5-0.5b-instruct-q4 --backend AUTO --context-size 65536 --json`.
+  The live server reported `n_ctx=65536`, `n_ctx_train=65536`, `ready=true`,
+  and `selected_backend=CUDA`. A direct AIAgent session made a real terminal
+  tool call and returned `P23_QWEN64_TERMINAL_OK`. A real packaged Desktop
+  Electron session then rendered an actual tool block for `/bin/printf
+  P23_DESKTOP_DOM_OK`, with exit code 0 and the exact marker in the DOM. This
+  is fresh local-route evidence; disconnected-network replay is still open.
 - A fresh root-broker check returned UID `0`; the corresponding live gateway
   process remained EUID `1000` while `hafiye-rootd` was EUID `0`.
 - The live computer doctor also observed a separate root-owned `ydotoold` on
@@ -1645,7 +1657,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.1 Boot | Packaged Desktop reached Composer after a real gateway restart; a fresh reboot/login replay is not recorded | PARTIAL / REBOOT REQUIRED |
 | 23.2 Text | Composer reached Firefox and opened it, but the same turn ended with Gemini HTTP 429 | WARNING / RE-RUN |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
-| 23.4 Local inference | Direct local endpoint marker passed; Qwen is below 64K and the tested 64K candidates were respectively CUDA-OOM or non-terminating | BLOCKED / KI-040 |
+| 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
 | 23.6 Gemini | P22 explicit Gemini one-shot passed; current Composer route hit provider quota | WARNING / RE-RUN |
 | 23.7 Privacy | Shared policy tests pass; final no-cloud request observation is not replayed here | NOT FINAL-CHECKED |

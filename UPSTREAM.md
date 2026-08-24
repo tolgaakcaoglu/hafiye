@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P23 Desktop route/config source/test commit):
-  ba113121f275bf1ff8258037bb79eed0aa36e2bf
+- Current Hafiye source HEAD (P23 managed Qwen2 long-context source/test commit):
+  5af73434e5ab36786a306966fa926b7cbbe08914
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -583,8 +583,9 @@ P0 computer-use acceptance requires:
 
 ## P23 Desktop route/config patch group (in progress)
 
-- Hafiye source/test commit:
-  `ba113121f275bf1ff8258037bb79eed0aa36e2bf`.
+- Hafiye source/test commits:
+  `ba113121f275bf1ff8258037bb79eed0aa36e2bf` (route/config boundary) and
+  `5af73434e5ab36786a306966fa926b7cbbe08914` (managed Qwen2 compatibility).
 - The native gateway's normal configuration lookup now follows Hafiye's XDG
   config root, while explicit `HERMES_HOME` and profile/context overrides keep
   the upstream-compatible single-root behavior. The Desktop/TUI agent factory
@@ -597,6 +598,13 @@ P0 computer-use acceptance requires:
 - A real packaged Composer operation under a temporarily forced Gemini route
   reached Firefox, but the provider later returned HTTP 429 free-tier quota;
   the P23 final acceptance remains open and is tracked as KI-037.
+- The managed runtime compatibility patch is deliberately narrow: when a
+  Qwen2 model is requested above its 32K native context, Hafiye passes the
+  current llama.cpp YaRN flags and an explicit Qwen2 context metadata override.
+  Other model families retain their native metadata behavior. A live CUDA
+  runtime reported 65,536 context, and direct AIAgent plus packaged Desktop
+  terminal calls passed. This is a Hafiye integration patch; the pinned Hermes
+  source, baseline merge, and upstream history did not change.
 
 ## P17 Control Center patch group
 

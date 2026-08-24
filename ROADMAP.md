@@ -594,13 +594,14 @@ complete; P23 is now the first incomplete phase.
 
 P22 source/test commit: `e031162fd`. The exact five-ID comparison returned
 `3 failed, 2 passed`; only accepted historical IDs 2, 3, and 5 failed. The
-small local Qwen one-shot remains the documented KI-014 context-window test
-fixture limitation; the explicit Gemini `hafiye ask` path passed. P23 — Final
+small local Qwen one-shot's 4K-context rejection is retained as historical
+KI-014 evidence; the managed Qwen2 64K compatibility path is recorded in the
+open P23 work below. The explicit Gemini `hafiye ask` path passed. P23 — Final
 E2E Suite — is now the first incomplete phase.
 
 ## P23 execution status — in progress
 
-- [x] Run the P23 backend target matrix: `250 passed, 2 skipped, 1 warning`.
+- [x] Run the P23 backend target matrix: `251 passed, 2 skipped, 1 warning`.
 - [x] Re-run the exact five-ID upstream comparison; it remains `3 failed, 2
       passed`, exactly the accepted historical baseline.
 - [x] Unify native gateway and Electron/TUI route resolution with the normal
@@ -615,8 +616,11 @@ E2E Suite — is now the first incomplete phase.
 - [x] Exercise the structured browser and native Firefox routes; retain the
       native AT-SPI focus warning as KI-022 rather than claiming a clean pass.
 - [x] Probe two pinned 64K-capable GGUF candidates; restore the original
-      Qwen/CUDA runtime after recording KI-040 (one CUDA OOM, one non-
-      terminating agent response).
+      Qwen/CUDA runtime after recording their historical KI-040 diagnostics
+      (one CUDA OOM, one non-terminating agent response).
+- [x] Add and test the narrowly scoped managed Qwen2 YaRN/context-metadata
+      compatibility path; verify the live CUDA runtime reports 65,536 context
+      and that direct AIAgent plus packaged Desktop terminal calls pass.
 - [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
       quota is available.
 - [ ] Execute and record every remaining real-machine item 23.1 and 23.3–23.16

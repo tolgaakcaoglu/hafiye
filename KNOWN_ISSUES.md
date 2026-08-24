@@ -197,7 +197,8 @@ silently treated as passing.
 
 ## KI-014 — Small validation GGUFs have a lower trained context window
 
-- Status: TEST-FIXTURE LIMITATION; not a runtime, P4, or P22 blocker.
+- Status: MEASURED COMPATIBILITY WARNING; the current Qwen2 path is usable for
+  the P23 local-agent smoke test, but its native training metadata remains 32K.
 - The real Gemma and Qwen validation files report a trained context limit of
   32,768 tokens, while Hermes' default local-agent configuration can request a
   larger context. The CUDA endpoint and Hermes one-shot were verified by using
@@ -208,12 +209,21 @@ silently treated as passing.
   context below Hermes' 64K minimum agent context. This is the same fixture
   limitation, not a new CLI/runtime regression. The explicit Gemini
   `hafiye ask` path returned `P22_GEMINI_CLI_OK`.
-- A P23 recovery attempt loaded the same GGUF with `--context-size 65536`.
-  llama.cpp correctly capped the slot at the model's trained 32,768-token
-  limit; the real `hafiye ask` then rejected 32,768 against Hermes' 64K
-  minimum. The runtime was restored to its prior 4,096-token setting. A
-  compatible production GGUF/model context remains required for local-agent
-  final E2E acceptance.
+- The initial P23 recovery attempt loaded the same GGUF with
+  `--context-size 65536`; without a family-specific compatibility override,
+  llama.cpp capped the slot at the model's trained 32,768-token limit and the
+  real `hafiye ask` rejected it against Hermes' 64K minimum.
+- Hafiye now applies an explicit, narrowly scoped Qwen2 compatibility path for
+  requested contexts above 32K: YaRN scaling from the 32K origin plus an
+  explicit `qwen2.context_length` metadata override. The managed runtime was
+  loaded with `--context-size 65536`, reported `n_ctx=65536` and
+  `n_ctx_train=65536`, and a real AIAgent terminal call plus packaged Desktop
+  Composer terminal call both returned exact markers. This does not silently
+  extrapolate other model families; they retain native metadata behavior.
+- The trained-context caveat remains relevant for production model selection
+  and for quality/long-context validation. It is no longer the current
+  host-local agent blocker; offline and full P23 replay evidence remain tracked
+  in `STATE.md` and `TEST_MATRIX.md`.
 - Production model entries must advertise a context window compatible with the
   requested Hafiye agent configuration. This is a model-selection/configuration
   concern, not a reason to weaken the managed runtime contract.
@@ -557,9 +567,10 @@ silently treated as passing.
   stop or alter the root user-manager process because it may belong to another
   host service and would require privileged operator coordination.
 
-## KI-040 — No compatible 64K local agent GGUF currently fits this host test path
+## KI-040 — Pinned 64K candidate probes failed before Qwen2 compatibility path
 
-- Status: P23 LOCAL-INFERENCE BLOCKER; no Hafiye source regression.
+- Status: RESOLVED FOR CURRENT QWEN2 PATH; historical diagnostic, no Hafiye
+  source regression.
 - The existing Qwen fixture is healthy on CUDA and the direct local endpoint
   returned `P23_LOCAL_ENDPOINT_OK`, but its runtime/trained context is below
   Hermes' 64K agent minimum (KI-014).
@@ -572,7 +583,9 @@ silently treated as passing.
   real `hafiye ask` generated unbounded output (39,822 generated tokens before
   interruption) instead of completing the marker request. It was removed from
   the registry as unsuitable for the agent runtime.
-- The registry and live runtime were restored to the original Gemma/Qwen
-  models with Qwen active at 4,096 context and CUDA selected. A compatible
-  production GGUF must be evaluated before P23 local-agent acceptance can pass;
-  the architecture and backend policy are unchanged.
+- The registry was cleaned back to the Gemma/Qwen entries. The managed Qwen2
+  runtime is now active at 65,536 context with CUDA selected using the explicit
+  compatibility flags documented in KI-014. A real local AIAgent tool call and
+  a real packaged Desktop DOM inspection succeeded; the remaining P23 local
+  acceptance work is offline/full-sequence replay, not a missing compatible
+  candidate. The architecture and backend policy are unchanged.

@@ -575,3 +575,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   provider and the boundary is covered by focused tests. This is a Hafiye
   integration detail; it does not change the fixed architecture, the local
   engine, provider policy, upstream pin, or upstream history.
+
+## ADR-0035 — Scope Qwen2 long-context compatibility to the managed runtime
+
+- Date: 2026-08-25
+- Decision: When the managed llama.cpp runtime is asked for a context above
+  32,768 tokens for a Qwen2 GGUF, pass YaRN scaling with a 32K origin and an
+  explicit `qwen2.context_length` metadata override. Keep this compatibility
+  path identity-based and leave all other model families on their native
+  metadata behavior.
+- Reason: The host's CUDA Qwen2 validation GGUF advertises a 32K context while
+  Hermes tool-calling sessions require 64K. The unmodified server capped the
+  slot and Hermes rejected it. The explicit current llama.cpp flags produced a
+  live 65,536-token CUDA server, a real AIAgent terminal call, and a real
+  packaged Desktop terminal call.
+- Consequence: The path is an explicit compatibility mode, not a generic
+  context extrapolation guarantee; long-context quality and offline/full P23
+  replay remain acceptance work. This records implementation detail only and
+  does not override the master roadmap or compute-backend policy.
