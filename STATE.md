@@ -1635,6 +1635,13 @@ claimed as passed.
   Electron session then rendered an actual tool block for `/bin/printf
   P23_DESKTOP_DOM_OK`, with exit code 0 and the exact marker in the DOM. This
   is fresh local-route evidence; disconnected-network replay is still open.
+- A real isolated file-organizing fixture was attempted through the same local
+  AIAgent with `terminal` and `file` toolsets. The Qwen2 validation fixture did
+  not complete the prescribed multi-step sequence: one run only created the
+  directories and another returned without a tool call; the source files were
+  not moved. This is recorded as KI-041 and 23.8 remains unaccepted. The
+  successful single-command terminal evidence above is not being generalized
+  to multi-step file behavior.
 - A fresh root-broker check returned UID `0`; the corresponding live gateway
   process remained EUID `1000` while `hafiye-rootd` was EUID `0`.
 - The live computer doctor also observed a separate root-owned `ydotoold` on
@@ -1661,7 +1668,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
 | 23.6 Gemini | P22 explicit Gemini one-shot passed; current Composer route hit provider quota | WARNING / RE-RUN |
 | 23.7 Privacy | Shared policy tests pass; final no-cloud request observation is not replayed here | NOT FINAL-CHECKED |
-| 23.8 Files | Existing host-tool/fixture evidence exists; final P23 organize-and-verify sequence is not replayed here | NOT FINAL-CHECKED |
+| 23.8 Files | Isolated real fixture replay did not move the files with the Qwen2 validation model; KI-041 records the exact result | NOT ACCEPTED / KI-041 |
 | 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
 | 23.10 Browser | Structured local navigation passed; native route actions returned `ok=true`, but Firefox AT-SPI focus/title confirmation warned under KI-022 | WARNING / RECHECK |
 | 23.11 Root | Fresh `hafiye root exec id -u` returned 0; gateway EUID 1000 and rootd EUID 0 | PASS / FRESH RECHECK |
@@ -1676,8 +1683,9 @@ tests exist. The master roadmap requires the final real-machine sequence.
 1. Re-run the clean P23.2/P23.6 Gemini-backed Composer check after the
    provider quota is available, without changing the route architecture.
 2. Execute and record the remaining real-machine P23.1 and P23.3–P23.16
-   acceptance sequences, including the exact voice, offline, privacy,
-   filesystem, desktop, browser, root, memory, OpenHands, barge-in,
-   emergency-stop, and restart-reconnect observations.
+   acceptance sequences, including a repeatable 23.8 filesystem replay after
+   the KI-041 tool-sequence warning, plus the exact voice, offline, privacy,
+   desktop, browser, root, memory, OpenHands, barge-in, emergency-stop, and
+   restart-reconnect observations.
 3. Only after every ledger row has real evidence, update P23 to complete and
    create the separate P23 completion commit.

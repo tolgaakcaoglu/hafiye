@@ -589,3 +589,17 @@ silently treated as passing.
   a real packaged Desktop DOM inspection succeeded; the remaining P23 local
   acceptance work is offline/full-sequence replay, not a missing compatible
   candidate. The architecture and backend policy are unchanged.
+
+## KI-041 — Qwen2 validation fixture did not complete multi-step file E2E
+
+- Status: P23 VALIDATION WARNING; no Hafiye source regression established.
+- On 2026-08-25 an isolated temporary fixture was presented to a real
+  AIAgent using the managed CUDA/Qwen2 endpoint with `terminal` and `file`
+  toolsets. One attempt executed only the directory-creation portion and
+  stopped; a second attempt returned the requested marker without invoking a
+  tool. In both cases the fixture's `notes.txt` and `photo.jpg` remained in
+  `incoming/`, so the master 23.8 organize-and-verify acceptance is not passed.
+- The same managed runtime and packaged Desktop already passed a real single
+  terminal command, so this record is limited to multi-step local fixture
+  behavior. Repeat 23.8 with a local model/route that reliably completes the
+  prescribed tool sequence; do not treat the marker alone as success.
