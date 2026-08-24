@@ -653,3 +653,19 @@ silently treated as passing.
   restored to local custom/Qwen. This prevents calling the Gemini Composer
   replay a clean P23.2/P23.6 acceptance until the bounded/approved behavior is
   replayed and documented.
+
+## KI-044 — Gemini natural-language desktop prompt selected file tools
+
+- Status: P23 VALIDATION WARNING; direct managed desktop acceptance passes and
+  no Hafiye source regression is established.
+- In an isolated local-gateway packaged Desktop replay on 2026-08-25, the
+  authenticated Gemini route received a VS Code/window/keyboard/mouse task and
+  returned the requested marker after reporting `Explored 2 files`; no VS Code
+  window was opened. The prompt was not accepted as P23.9 model behavior.
+- The required P23.9 real-machine behavior was then exercised directly through
+  Hafiye's managed `computer-use-linux` MCP tools: two real VS Code windows
+  were opened, exact window focus was switched first→second→first, a mouse
+  click and keyboard select/type/save were sent through the managed backend,
+  the saved fixture contained `P23_DESKTOP_TARGET`, and the final screenshot
+  showed the marker in VS Code. This warning remains model/tool-selection
+  specific and does not block the direct P23.9 acceptance evidence.

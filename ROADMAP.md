@@ -617,6 +617,11 @@ E2E Suite — is now the first incomplete phase.
       native screenshot verified the P23.10 fixture UI and the prior browser
       tab was restored. Retain the host's root-only AT-SPI focus warning as
       KI-022, without treating it as a failed UI-task acceptance.
+- [x] Execute the P23.9 desktop sequence through the managed
+      `computer-use-linux` MCP boundary: real VS Code windows were switched,
+      mouse/keyboard input was sent, the marker was saved and visually
+      verified, and fixture windows were closed. KI-044 records the separate
+      Gemini natural-language tool-selection warning.
 - [x] Probe two pinned 64K-capable GGUF candidates; restore the original
       Qwen/CUDA runtime after recording their historical KI-040 diagnostics
       (one CUDA OOM, one non-terminating agent response).

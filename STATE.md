@@ -1677,6 +1677,15 @@ claimed as passed.
   with 28 progress events and real terminal/file-editor tool history. The
   delegate changed `bug.py`, and an independent external `.venv/bin/python -m
   pytest -q` returned `1 passed in 0.00s`.
+- An isolated Gemini natural-language Desktop replay for the P23.9 VS Code
+  task returned `Explored 2 files` and the requested marker without opening a
+  VS Code window; KI-044 records this model/tool-selection warning. The actual
+  P23.9 acceptance then ran through Hafiye's managed
+  `computer-use-linux` MCP boundary: two real VS Code windows were opened,
+  focus switched first→second→first, a real mouse click and keyboard
+  Ctrl+A/type/Ctrl+S sequence were sent, the fixture file contained
+  `P23_DESKTOP_TARGET`, and the final managed screenshot showed the marker in
+  VS Code. The temporary fixture windows were closed afterward.
 - The real P23.7 fail-closed check temporarily selected the configured Gemini
   route, set global `LOCAL_ONLY`, and ran `.venv/bin/hafiye ask` without an
   explicit provider/model. It exited 1 with `Hafiye LOCAL_ONLY policy blocked
@@ -1712,7 +1721,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.6 Gemini | Rotated-key explicit one-shot passed; Composer reached Firefox but the same turn hit KI-043 sudo approval dialog | PASS WITH SAFETY WARNING |
 | 23.7 Privacy | Real Gemini-configured route under global `LOCAL_ONLY` exited before provider call with the policy-block message; settings restored | PASS / FAIL-CLOSED |
 | 23.8 Files | Authenticated Gemini fixture replay performed and verified the required moves and final paths; KI-041 retains the earlier local-Qwen warning | PASS / GEMINI ROUTE |
-| 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
+| 23.9 Desktop | Managed computer-use-linux MCP opened two real VS Code windows, switched focus, sent mouse/keyboard input, saved the marker, and visually verified the final UI | PASS / KI-044 MODEL WARNING |
 | 23.10 Browser | Structured local navigation passed; native managed route navigated a real Wayland Firefox window, screenshot verified the fixture title/marker, and the original tab was restored | PASS / KI-022 AT-SPI DIAGNOSTIC |
 | 23.11 Root | Fresh `hafiye root exec id -u` returned 0; gateway EUID 1000 and rootd EUID 0 | PASS / FRESH RECHECK |
 | 23.12 Memory | Fresh `test_project_alias_and_session_context_survive_fresh_process` returned `1 passed in 1.36s` | PASS / FRESH PROCESS |
@@ -1726,10 +1735,11 @@ tests exist. The master roadmap requires the final real-machine sequence.
 1. Re-run the clean P23.2/P23.6 Gemini-backed Composer check with the rotated
    credential after addressing/replaying the KI-043 sudo-remediation approval
    boundary; quota is no longer the active provider blocker.
-2. Execute and record the remaining real-machine P23.1 and P23.3–P23.16
-   acceptance sequences, plus the exact voice, offline, remote, desktop,
-   browser, barge-in, emergency-stop, and restart-reconnect observations. The
-   23.8 file fixture and 23.13 OpenHands fixture are now accepted through the
-   Gemini route; the local-Qwen limitation remains a model-specific warning.
+2. Execute and record the remaining real-machine P23.1, P23.3–P23.6, and
+   P23.14–P23.16 acceptance sequences, plus the exact voice, offline, remote,
+   text-safety, barge-in, emergency-stop, and restart-reconnect observations.
+   The 23.8 file fixture, 23.9 desktop sequence, 23.10 browser sequence, and
+   23.13 OpenHands fixture are now accepted; their model/host diagnostics
+   remain documented separately.
 3. Only after every ledger row has real evidence, update P23 to complete and
    create the separate P23 completion commit.
