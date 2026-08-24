@@ -274,3 +274,41 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   green runtime doctor does not count as successful microphone transcription.
   This ADR records implementation details and does not override the master
   roadmap.
+
+## ADR-0019 — Train and ship the prescribed Hafiye openWakeWord model
+
+- Date: 2026-08-24
+- Decision: Use the official openWakeWord `train.Model` pipeline from the pinned
+  source checkout, generate Turkish positive samples with the managed Piper
+  `tr_TR-dfki-medium` voice, and ship the resulting standalone
+  `tools/wakewords/hafiye.onnx` as Hafiye's Linux default. Keep the default
+  sensitivity at `0.6` and confirmation frames at `3`, with legacy Hermes model
+  aliases resolving to the Hafiye asset.
+- Reason: P12 requires a bundled custom Hafiye wake word with a reproducible
+  local training path and real false-positive/activation validation. This
+  keeps wake detection on-device and uses the already-fixed openWakeWord and
+  Piper machinery without adding a cloud dependency or a second wake engine.
+- Consequence: The source checkout, training venv, seed, sample count, model
+  hash, and validation metrics are recorded in ENVIRONMENT.md and UPSTREAM.md.
+  The openWakeWord CPython 3.13 packaging limitation is a documented warning;
+  the official source checkout and ONNX runtime are the accepted host path.
+  This ADR does not override the master roadmap.
+
+## ADR-0020 — Keep client wake capture alive while Desktop is minimized
+
+- Date: 2026-08-24
+- Decision: While the Desktop renderer owns an active client-side wake audio
+  graph, notify Electron through a dedicated IPC signal and include that
+  renderer in the existing stream-throttle activity calculation. On capture
+  stop or renderer destruction, remove the signal and restore normal idle
+  throttling.
+- Reason: Chromium can pause an idle hidden renderer's `ScriptProcessorNode`
+  callbacks when a window is minimized. That would leave the backend lease
+  apparently armed while no PCM reaches the detector. The existing stream
+  throttle is the smallest boundary that directly controls this behavior and
+  does not change the persistent gateway or wake detector architecture.
+- Consequence: A minimized Hafiye Desktop window continues local wake capture,
+  while ordinary idle windows retain Chromium's normal throttling. The real
+  minimized-window acceptance is recorded in TEST_MATRIX.md; no permanent
+  global disable-throttling setting is introduced. This ADR records an
+  implementation detail and does not override the master roadmap.

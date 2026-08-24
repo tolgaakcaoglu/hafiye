@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 6f2b982159a37d9fb73d460c19279ea06d06efa0
-  (P11 managed Turkish voice stack source commit)
+- Current Hafiye source HEAD: d1c5f4c9c5254ba34844e583e5486972e33bdd6b
+  (P12 bundled Hafiye wake-word source commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -49,7 +49,13 @@ P10 — Browser: complete.
 
 P11 — Local Turkish voice stack: complete. Managed whisper.cpp/Piper, the
 Hafiye transcription hook, Desktop voice settings, real Piper playback, and
-real Turkish microphone transcription are accepted. P12 is next.
+real Turkish microphone transcription are accepted.
+
+P12 — Custom Hafiye wake word: complete. The bundled Turkish openWakeWord
+model, persisted tuning controls, local/client capture path, synthetic and
+real-room validation, and minimized-window Desktop activation are accepted.
+
+P13 — Barge-in + emergency stop: next.
 
 ## Verified working
 
@@ -161,6 +167,15 @@ real Turkish microphone transcription are accepted. P12 is next.
   showing the managed binary, source pin, MCP provider, the four required
   readiness booleans, blockers, and a recheck action. Its component test and
   the full Desktop UI suite pass.
+- The default local wake model is the bundled Turkish `Hafiye` ONNX asset at
+  `tools/wakewords/hafiye.onnx`; the default threshold is `0.6` with three
+  confirmation frames. Legacy Hermes model aliases resolve to the Hafiye
+  asset for compatibility.
+- The real client-capture path fed PCM from Electron's fake microphone into the
+  persistent gateway; a normal-room music recording produced zero fires and a
+  real Turkish Hafiye recording opened a fresh session. The same flow passed
+  after the Hafiye window was actually minimized (`minimized=true`,
+  `visible=false`).
 
 ## Regression status
 
@@ -194,9 +209,15 @@ The only observations were Firefox's AT-SPI focus warning (KI-022) and the
 sparse VS Code accessibility tree (KI-023); neither is a P9 blocker and both
 are documented.
 
+P12 targeted wake-word Python/Desktop tests, the production build, the real
+openWakeWord detector, and the minimized Electron acceptance all passed. The
+only P12 observations are the existing PortAudio local-capture warning and
+the CPython 3.13 openWakeWord optional-packaging warning documented in
+KI-026; Desktop client capture is verified and P12 has no acceptance blocker.
+
 ## Active blockers
 
-P5, P6, P7, P8, P9, and P11 have no open acceptance blockers. The user service and
+P5, P6, P7, P8, P9, P11, and P12 have no open acceptance blockers. The user service and
 `hafiye-rootd.service` are active
 and the local CUDA runtime doctor is green. `loginctl` reports `Linger=no`,
 and a full reboot was not performed; GNOME's `Super+Shift+Space` conflict
@@ -206,9 +227,9 @@ packaged source entrypoint and is recorded as resolved KI-021.
 
 The accepted upstream failures, KI-019 browser scheduling diagnostic, KI-022
 Firefox focus warning, KI-023 VS Code accessibility warning, npm audit
-warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
-warnings are documented diagnostics. KI-025 is resolved after the synchronized
-real-microphone rerun recorded below.
+warnings, missing pactl, missing vulkaninfo, optional-extra packaging
+warnings, and KI-026 are documented diagnostics. KI-025 is resolved after the
+synchronized real-microphone rerun recorded below.
 
 ## Last tests and commands
 
@@ -654,6 +675,14 @@ P5's live Gemini credential was saved to Linux Secret Service and hydrated from
 the canonical Hafiye config root; no plaintext credential was added to the
 repository or configuration. The provider lifecycle/XDG fix is source commit
 `45294d3f77a3929731ac29d89d54f5d53c70957d`.
+P12 added only the user-owned openWakeWord training runtime and the bundled
+standalone ONNX asset. The official source checkout and training venv live
+under `~/.local/share/hafiye/runtimes/openwakeword-training/`; no sudo,
+system-package, systemd, group, device-permission, or password change was
+required. The host's missing PortAudio library remains a diagnostic for local
+PortAudio capture; PipeWire/WirePlumber-backed Desktop client capture was
+verified instead. The training dependency metadata warning is recorded as
+KI-026, not hidden by a fake readiness result.
 
 ### P4 source validation
 
@@ -758,8 +787,76 @@ The commit identities remain separate and are recorded here explicitly:
   not a source regression.
 - Ruff, Python bytecode compilation, and `git diff --check` passed.
 
-### Exact next action
+## P12 execution status — complete
 
-Begin P12 — Custom Hafiye wake word. Preserve the pinned upstream commit,
-baseline merge commit, and current Hafiye source HEAD separately when updating
-the next phase.
+The commit identities remain separate and are recorded here explicitly:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source HEAD: `d1c5f4c9c5254ba34844e583e5486972e33bdd6b`.
+
+### Verified working
+
+- Official openWakeWord source checkout:
+  `~/.local/share/hafiye/runtimes/openwakeword-training/source` at commit
+  `368c03716d1e92591906a84949bc477f3a834455`.
+- The reproducible training script
+  `scripts/train_hafiye_wakeword.py` uses official `openWakeWord.train.Model`,
+  Turkish Piper `tr_TR-dfki-medium`, 384 synthetic samples per class, seed
+  `20260824`, and 900 training steps. It exports the standalone ONNX asset
+  `tools/wakewords/hafiye.onnx`.
+- The default runtime config is phrase `Hafiye`, model `hafiye`, sensitivity
+  `0.6`, and confirmation frames `3`. The Desktop Voice settings expose the
+  real persisted tuning fields and an RPC-backed enable/disable control.
+- The client capture path signals Electron to keep its renderer unthrottled
+  only while the wake audio graph is active, so minimize does not pause PCM
+  delivery. Stopping capture restores normal idle throttling.
+
+### Acceptance
+
+- Synthetic validation at threshold `0.6`: accuracy `1.0`; negative maximum
+  `0.04943939670920372`; positive minimum `0.9991450309753418`.
+- `/tmp/hafiye-p12-positive-20260824.wav` (normal-room music) produced zero
+  wake fires with three-frame confirmation.
+- `/tmp/hafiye-p12-positive-20260824-take2.wav` contained five spoken Hafiye
+  activations; direct openWakeWord detection fired four times under the
+  two-second cooldown and managed Turkish STT recognized the repeated phrase.
+- The real Electron bundle armed the persistent Hafiye gateway through client
+  capture, then detected the same recording after the Hafiye window was
+  actually minimized: `minimized=true`, `visible=false`, and the route changed
+  from `#/settings?tab=config%3Avoice` to `#/`.
+
+### P12 test record
+
+- `.venv/bin/python -m pytest -q tests/tools/test_wake_word.py`
+  — 26 passed, 3 skipped.
+- `cd apps/desktop && npx vitest run --project ui src/store/wake-word.test.ts src/app/chat/composer/controls.test.tsx`
+  — 2 files, 37 passed.
+- `cd apps/desktop && npx vitest run --project electron electron/stream-throttle.test.ts`
+  — 1 file, 5 passed.
+- `cd apps/desktop && npm run typecheck`
+  — renderer, Electron, and E2E TypeScript checks passed.
+- `cd apps/desktop && npm run build`
+  — Vite, Electron main/preload bundles, native dependency staging, and
+  `assert-dist-built` passed; existing Vite/Babel/chunking warnings remain.
+- `.venv/bin/ruff check scripts/train_hafiye_wakeword.py tools/wake_word.py tests/tools/test_wake_word.py hermes_cli/config_defaults.py`; `.venv/bin/python -m py_compile scripts/train_hafiye_wakeword.py tools/wake_word.py tests/tools/test_wake_word.py hermes_cli/config_defaults.py`; `git diff --check`
+  — all passed.
+- Real Desktop acceptance used the built Electron bundle with
+  `--use-fake-ui-for-media-stream`, `--use-fake-device-for-media-stream`, and
+  `--use-file-for-fake-audio-capture=/tmp/hafiye-p12-positive-20260824-take2.wav`;
+  the minimized-window result was recorded above. The persistent wake config
+  was reset to `wake_word.enabled: false` after the test.
+
+P12 is accepted. The exact five historical upstream failures remain the
+`ACCEPTED_UPSTREAM_BASELINE`; the P12 targeted matrix introduced no new or
+different regression.
+
+## Exact next actions
+
+1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
+   source HEAD separate in every subsequent update.
+2. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
+   investigate any new or different failure in later phases.
+3. Begin P13 — Barge-in + emergency stop, keeping the P8 root-broker boundary,
+   P9 managed MCP provider, P10 browser routing, P11 voice stack, and P12
+   client wake capture enabled.

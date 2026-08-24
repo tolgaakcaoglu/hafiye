@@ -15,7 +15,7 @@ records execution status only.
 - [x] P9 Linux computer use
 - [x] P10 Browser
 - [x] P11 Local Turkish voice stack
-- [ ] P12 Custom Hafiye wake word
+- [x] P12 Custom Hafiye wake word
 - [ ] P13 Barge-in + emergency stop
 - [ ] P14 Memory + project registry
 - [ ] P15 OpenHands coding delegate
@@ -47,8 +47,32 @@ records execution status only.
 P11 is complete. The synchronized real microphone capture produced the correct
 Turkish sentence through both the managed whisper.cpp command and Hafiye's
 `transcribe_audio()` hook. Direct Piper, Hafiye TTS, Desktop settings, and the
-real Electron voice smoke also passed. KI-025 is resolved; P12 is now the next
-incomplete phase.
+real Electron voice smoke also passed. KI-025 is resolved; P12 followed and is
+now complete.
+
+## P12 execution status
+
+- [x] Train and bundle the Turkish `hafiye.onnx` openWakeWord model.
+- [x] Configure Hafiye as the default local wake model while preserving legacy
+      Hermes aliases for compatibility.
+- [x] Expose the real wake-word toggle and tuning fields in Desktop Voice
+      settings; persist the default sensitivity and confirmation frames.
+- [x] Keep client-side wake capture alive while Desktop is minimized by
+      disabling renderer background throttling only for the active wake graph.
+- [x] Run synthetic validation, real normal-room false-positive testing, real
+      Turkish activation testing, and the minimized Desktop acceptance flow.
+- [x] Run the targeted wake-word tests, Desktop tests/typecheck, production
+      build, lint, compilation, and whitespace checks.
+
+P12 is complete. The source implementation is recorded in commit
+`d1c5f4c9c5254ba34844e583e5486972e33bdd6b`. The bundled model is the standalone
+ONNX asset `tools/wakewords/hafiye.onnx` with SHA-256
+`9eb0e8c9fd509900ba5d33b4c43906817265605846564af76232daeea194ba50`.
+Synthetic validation at threshold `0.6` reached accuracy `1.0`; a normal-room
+music recording produced zero detector fires, while a real Turkish “Hafiye”
+recording produced detector fires and a fresh Desktop session. The real
+Electron acceptance also detected the phrase after the Hafiye window was
+minimized. P13 — Barge-in + emergency stop is now the next incomplete phase.
 
 ## P0 execution status
 
@@ -334,4 +358,5 @@ managed `computer-use-linux` MCP tools against the existing Firefox Wayland
 window with `blockers=[]`. The browser regression matrix measured 504 passed
 and 7 deselected with no failure. KI-022 remains a measured Firefox AT-SPI
 warning only; there is no P10 blocker or new/different regression. P11 is
-complete and P12 — Custom Hafiye wake word is now the next incomplete phase.
+complete and P12 — Custom Hafiye wake word is now complete; P13 is the next
+incomplete phase.

@@ -328,3 +328,20 @@ silently treated as passing.
 - The initial bad samples remain recorded as capture-window/low-level audio
   observations; no broader device defect is asserted. This was not an
   upstream baseline failure and no new upstream regression was added.
+
+## KI-026 — openWakeWord packaging and local PortAudio diagnostics
+
+- Status: MANAGED WARNING; not a P12 acceptance blocker.
+- The openWakeWord 0.6.0 package metadata requires `tflite-runtime`, but the
+  current CPython 3.13 environment has no compatible wheel. The official
+  openWakeWord source checkout was installed with `--no-deps`, and its ONNX
+  runtime path is the accepted Linux setup. The reproducible training source,
+  model hash, and validation results are recorded in ENVIRONMENT.md.
+- The repository venv's `sounddevice` import reports `PortAudio library not
+  found`, so the gateway's local PortAudio capture reports a diagnostic and
+  does not claim local input readiness. PipeWire/WirePlumber enumeration and
+  Electron client capture are available; the real P12 minimized-Desktop
+  acceptance passed through client PCM feeding.
+- Future packaging work may add a compatible optional dependency path, but P12
+  must not silently replace the prescribed openWakeWord/ONNX architecture or
+  fabricate local-capture readiness.

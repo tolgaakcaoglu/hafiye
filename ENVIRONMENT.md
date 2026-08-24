@@ -219,3 +219,39 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
   local_command`.
 - Direct Piper synthesis, the Hafiye TTS tool, and `pw-play` completed real
   Turkish audio playback. No cloud STT/TTS was used for this acceptance.
+
+## P12 custom Hafiye wake word validation (2026-08-24)
+
+- Official openWakeWord source checkout:
+  `/home/tolga/.local/share/hafiye/runtimes/openwakeword-training/source` at
+  commit `368c03716d1e92591906a84949bc477f3a834455` (package version 0.6.0).
+- Training venv: `/home/tolga/.local/share/hafiye/runtimes/openwakeword-training/venv`,
+  Python 3.13.15. The source package was installed with `--no-deps` because
+  its PyPI metadata requires `tflite-runtime`, which has no compatible CPython
+  3.13 wheel here; the ONNX path uses the installed ONNX runtime instead.
+- The managed Turkish Piper voice `tr_TR-dfki-medium` generated the positive
+  training samples. The command used was:
+
+  `/home/tolga/.local/share/hafiye/runtimes/openwakeword-training/venv/bin/python scripts/train_hafiye_wakeword.py --piper-python /home/tolga/.local/share/hafiye/runtimes/piper/venv/bin/python --piper-data-dir /home/tolga/.local/share/hafiye/runtimes/piper/voices --output-dir /home/tolga/.local/share/hafiye/runtimes/openwakeword-training/hafiye --export /home/tolga/projects/hafiye/tools/wakewords/hafiye.onnx --samples 384 --steps 900 --cpu-threads 4`
+
+- The bundled standalone model is
+  `/home/tolga/projects/hafiye/tools/wakewords/hafiye.onnx`, 216,102 bytes,
+  SHA-256 `9eb0e8c9fd509900ba5d33b4c43906817265605846564af76232daeea194ba50`.
+  Synthetic validation at threshold 0.6 reached accuracy 1.0; negative max
+  score was 0.04943939670920372 and positive minimum was 0.9991450309753418.
+- Real audio checks used `/tmp/hafiye-p12-positive-20260824.wav` as a
+  normal-room music negative and
+  `/tmp/hafiye-p12-positive-20260824-take2.wav` as the Turkish Hafiye positive.
+  The first produced zero detector fires; the second produced four direct
+  detector fires under the two-second cooldown.
+- The real Desktop check used the built Electron bundle with Chromium flags
+  `--use-fake-ui-for-media-stream`, `--use-fake-device-for-media-stream`, and
+  `--use-file-for-fake-audio-capture=/tmp/hafiye-p12-positive-20260824-take2.wav`.
+  After arming through the persistent gateway, the native Electron window
+  reported `minimized=true`, `visible=false`, and a new session route opened.
+- `sounddevice` in the repository venv still reports `PortAudio library not
+  found`, so local backend capture remains a warning. PipeWire/WirePlumber and
+  the Desktop browser client capture path are available; P12 acceptance uses
+  that client path and does not claim local PortAudio readiness. No sudo,
+  system package, systemd, group, device-permission, or password change was
+  required for P12.

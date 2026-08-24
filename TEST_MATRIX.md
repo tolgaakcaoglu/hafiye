@@ -152,7 +152,29 @@ KI-023 are warnings only.
 P11 is accepted. The master-roadmap test received correct text from a real
 Turkish microphone, and the same five historical upstream failures remain the
 `ACCEPTED_UPSTREAM_BASELINE`; no new/different upstream failure was found in
-the P11 targeted matrix. P12 is now the next incomplete phase.
+the P11 targeted matrix. P12 followed and is now complete; P13 is next.
+
+## P12 acceptance
+
+| ID | Boundary | Command | Result | Status |
+|---|---|---|---|---|
+| P12-PY-01 | Hafiye wake detector and upstream wake regressions | `.venv/bin/python -m pytest -q tests/tools/test_wake_word.py` | 26 passed, 3 skipped | PASS |
+| P12-TRAIN-01 | Reproducible Turkish openWakeWord training/export | `/home/tolga/.local/share/hafiye/runtimes/openwakeword-training/venv/bin/python scripts/train_hafiye_wakeword.py --piper-python /home/tolga/.local/share/hafiye/runtimes/piper/venv/bin/python --piper-data-dir /home/tolga/.local/share/hafiye/runtimes/piper/voices --output-dir /home/tolga/.local/share/hafiye/runtimes/openwakeword-training/hafiye --export /home/tolga/projects/hafiye/tools/wakewords/hafiye.onnx --samples 384 --steps 900 --cpu-threads 4` | Official source `368c03716d1e92591906a84949bc477f3a834455`; standalone ONNX exported; synthetic accuracy 1.0 at threshold 0.6 | PASS |
+| P12-REAL-01 | Real detector positive/negative behavior | Direct `_OpenWakeWordEngine`/`WakeWordDetector` check on `/tmp/hafiye-p12-positive-20260824.wav` and `/tmp/hafiye-p12-positive-20260824-take2.wav` | Normal-room music: 0 fires; spoken Hafiye recording: 4 fires under two-second cooldown; `audio_silent=false` | PASS |
+| P12-D-01 | Desktop wake/store and Composer behavior | `cd apps/desktop && npx vitest run --project ui src/store/wake-word.test.ts src/app/chat/composer/controls.test.tsx` | 2 files; 37 passed | PASS |
+| P12-D-02 | Renderer throttle regression | `cd apps/desktop && npx vitest run --project electron electron/stream-throttle.test.ts` | 1 file; 5 passed | PASS |
+| P12-D-03 | Desktop typecheck and production build | `cd apps/desktop && npm run typecheck && npm run build` | TypeScript checks, Vite/Electron bundles, native staging, and `assert-dist-built` passed; existing toolchain warnings remain | PASS WITH WARNING |
+| P12-LINT-01 | Wake Python lint, compile, and patch hygiene | `.venv/bin/ruff check scripts/train_hafiye_wakeword.py tools/wake_word.py tests/tools/test_wake_word.py hermes_cli/config_defaults.py; .venv/bin/python -m py_compile scripts/train_hafiye_wakeword.py tools/wake_word.py tests/tools/test_wake_word.py hermes_cli/config_defaults.py; git diff --check` | All checks passed | PASS |
+| P12-REAL-02 | Minimized-window Desktop activation | Real Electron bundle with `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream --use-file-for-fake-audio-capture=/tmp/hafiye-p12-positive-20260824-take2.wav`; Settings → Voice → Wake word enabled; native `BrowserWindow.minimize()` | `minimized=true`, `visible=false`; route changed from `#/settings?tab=config%3Avoice` to `#/`; fresh session opened | PASS |
+
+P12 is accepted. The bundled model is
+`tools/wakewords/hafiye.onnx`, SHA-256
+`9eb0e8c9fd509900ba5d33b4c43906817265605846564af76232daeea194ba50`. The
+threshold/confirmation defaults are `0.6`/`3`; Desktop client capture stayed
+functional while minimized. The exact historical five upstream failures remain
+accepted comparison baseline entries, and no new/different regression was
+found in the P12 matrix. The persistent wake setting was reset to disabled
+after the real acceptance run.
 
 ## Historical ACCEPTED_UPSTREAM_BASELINE and current comparison baseline
 
