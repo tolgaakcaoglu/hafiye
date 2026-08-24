@@ -12,7 +12,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
 - Current Hafiye HEAD (latest product/source commit):
-  15cbe1f6556addbaf694c36999e0c496730a1730
+  62b3d5762d49b1ce2872d142c8e5318239b01c5c
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -62,6 +62,11 @@ The Hafiye source history contains these separable logical groups:
   persistent gateway child process.
 - providers-secret-service: provider credential ownership, Linux Secret
   Service references, local/remote provider paths, and Desktop provider wiring.
+- routing-privacy: Hafiye route slots, task-scoped routing overrides, privacy
+  modes, legal fallback filtering, and OFFLINE tool enforcement.
+- gateway-contract-follow-up: tolerate non-mapping cache fixtures and preserve
+  upstream fallback-refresh call contracts while applying per-turn Hafiye
+  fallback routes.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -90,14 +95,13 @@ exact five test IDs were:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-After Hafiye source changes, the latest full run covered 3,215 files and
-measured 37,137 passed, 5 failed, and 244 skipped in 672.6 seconds. The five
-failures are the same exact IDs above, so they remain `ACCEPTED_UPSTREAM_BASELINE`
-and are not Hafiye regressions. The browser-control file passed in an isolated
-17-test run; the full-suite occurrence is still the same accepted upstream ID.
-The turn-lease file failed once in the parallel run, passed on retry and in
-isolation, and is tracked as timing diagnostics. Hafiye does not fix the
-upstream bugs.
+After P6 source changes, the latest full run covered 3,218 files and measured
+37,154 passed, 5 failed, and 244 skipped in 563.7 seconds. Four failures were
+members of the exact five IDs above; the fifth was the different local browser
+reconnect test documented as KI-019. That failure reproduces in the P6-parent
+checkout, while the selected test passes in both checkouts, so it is not a
+Hafiye regression and is not added to the exact baseline. Hafiye does not fix
+the upstream bugs.
 
 ## Computer-use-linux pinned source
 
@@ -218,7 +222,21 @@ P0 computer-use acceptance requires:
   automated Gemini, and Desktop provider/key tests pass. Desktop typecheck and
   production build pass.
 - Live Gemini test connection is pending because the host has no configured
-  `GEMINI_API_KEY`; P5 is intentionally not closed and P6 has not started.
+  `GEMINI_API_KEY`; P5 is intentionally not closed. P6 was started explicitly
+  while this environment prerequisite remained open.
+
+## P6 source validation
+
+- Hafiye source commits: `cf6457678b6083c4f783c1a80eef9eba3875ccc0`
+  (routing/privacy) and `62b3d5762d49b1ce2872d142c8e5318239b01c5c`
+  (gateway cache/fallback contract follow-up).
+- The source patch keeps Hermes provider/runtime resolution as the execution
+  base and adds the shared `hafiye_policy.py` boundary used by the native
+  gateway, API server, one-shot/interactive CLI, AIAgent, tool executor, and
+  Desktop settings schema.
+- The eight route slots, three privacy modes, task-scoped overrides, route
+  locality policy, legal fallback filtering, and OFFLINE network-tool deny
+  boundary are covered by targeted tests. No upstream commit was rewritten.
 
 ## Baseline divergence
 

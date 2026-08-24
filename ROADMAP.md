@@ -9,7 +9,7 @@ records execution status only.
 - [x] P3 Hafiye Composer + tray + autostart
 - [x] P4 llama.cpp managed local runtime
 - [ ] P5 Providers + Gemini + remote OpenAI-compatible
-- [ ] P6 Model router + privacy modes
+- [x] P6 Model router + privacy modes
 - [ ] P7 Full host tools + execution policy
 - [ ] P8 Hafiye root broker
 - [ ] P9 Linux computer use
@@ -42,10 +42,11 @@ records execution status only.
 - [x] Classify the exact upstream baseline failures under
       ACCEPTED_UPSTREAM_BASELINE.
 
-P0 is complete. The original five-failure baseline was reduced to four current
-accepted failures after Hafiye source changes; the browser-control baseline
-failure now passes. The accepted failures, missing pactl, and missing
-vulkaninfo are documented warnings/diagnostics and are not P0 blockers.
+P0 is complete. The original five-failure set remains the historical
+`ACCEPTED_UPSTREAM_BASELINE`. A later full run contained four of those IDs plus
+the separately investigated KI-019 browser reconnect diagnostic; the accepted
+failures, missing pactl, and missing vulkaninfo are documented
+warnings/diagnostics and are not P0 blockers.
 
 ## P1 execution status
 
@@ -168,6 +169,31 @@ baseline rule. P5 is now the next incomplete phase.
 
 P5 remains incomplete because the live Gemini acceptance check has not run:
 the host has no `GEMINI_API_KEY` in Secret Service, `.env`, or process
-environment. Do not start P6 until that credential is configured, the live
-connection succeeds, the P5 matrix is rerun, and the full backend comparison
-shows no new or different failure beyond the exact accepted upstream baseline.
+environment. P6 was started explicitly by the user while this environment
+gate remained open; P5 is still not complete and its live Gemini acceptance
+must still be run before P5 closure.
+
+## P6 execution status
+
+- [x] Add the eight Hafiye route slots: `default`, `fast`, `reasoning`,
+      `coding`, `vision`, `long_context`, `memory_aux`, and `compression_aux`.
+- [x] Add route provider/model/fallback/locality policy resolution on top of
+      Hermes runtime/provider resolution.
+- [x] Add the three privacy modes: `NORMAL`, `LOCAL_ONLY`, and `OFFLINE`.
+- [x] Add task-scoped natural-language overrides for local, remote, Gemini,
+      and route-slot requests without mutating conversation history.
+- [x] Enforce privacy at route resolution, AIAgent initialization, fallback
+      activation, tool-schema generation, and tool execution boundaries.
+- [x] Wire the native gateway, API server, one-shot CLI path, interactive CLI
+      setup, and Desktop settings to the shared Hafiye policy.
+- [x] Verify local, remote, Gemini, LOCAL_ONLY, OFFLINE, and legal-fallback
+      behavior with targeted tests.
+
+P6 is complete. Its routing/privacy source implementation is recorded in
+`cf6457678b6083c4f783c1a80eef9eba3875ccc0`, with the gateway cache/fallback
+contract follow-up in `62b3d5762`. Targeted P6 tests, the affected backend
+matrix, Desktop typecheck/settings tests, and the full regression comparison
+were run. The only different full-suite failure was reproduced before P6 and
+is documented as KI-019; no Hafiye regression remains. P5 remains the first
+incomplete roadmap phase because its live Gemini credential/test connection is
+still pending; no P7 work is claimed here.

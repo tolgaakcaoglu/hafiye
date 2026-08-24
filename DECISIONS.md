@@ -127,3 +127,39 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   removed through the credential lifecycle, stale keyring references are
   cleaned on deletion, and no second provider-resolution system is introduced.
   This is an implementation detail and does not override the master roadmap.
+
+## ADR-0011 — Centralize P6 routing and privacy enforcement at shared boundaries
+
+- Date: 2026-08-24
+- Decision: Store Hafiye route slots, task-scoped overrides, locality policy,
+  and privacy normalization in `hafiye_policy.py`. Resolve a task route before
+  native gateway/API agent construction, pass the resolved route into
+  `AIAgent`, and enforce `LOCAL_ONLY`/`OFFLINE` again at runtime, fallback,
+  tool-schema, and tool-dispatch boundaries.
+- Reason: P6 requires identical behavior across CLI, gateway, API, and Desktop
+  while preserving Hermes prompt-cache stability. A task override must be
+  selected before agent construction and must not be injected into persisted
+  conversation history. Defense-in-depth at the agent/tool boundary prevents
+  stale or direct calls from bypassing the policy.
+- Consequence: The existing Hermes provider/fallback infrastructure remains the
+  execution engine; Hafiye adds one shared policy layer and one `hafiye` config
+  namespace. OFFLINE removes network-capable tool surfaces while retaining
+  local terminal/filesystem/desktop capabilities. This ADR does not override
+  the master roadmap.
+
+## ADR-0012 — Preserve gateway cache and fallback-refresh contracts
+
+- Date: 2026-08-24
+- Decision: Normalize the gateway cache-busting result to a mapping before
+  adding Hafiye route keys, and select a per-turn Hafiye fallback chain through
+  a helper that still performs the upstream disk-refresh call at each agent
+  construction site.
+- Reason: Lightweight gateway runners and existing upstream source-level
+  tests exercise the pre-Hafiye contracts directly. Hafiye route metadata must
+  extend the cache signature without assuming every embedding returns a dict,
+  and per-turn fallback routing must not freeze or bypass Hermes' refresh
+  behavior.
+- Consequence: Hafiye route state remains part of the agent cache key, while
+  upstream fallback reload behavior and compatibility test contracts remain
+  intact. This is an implementation detail and does not override the master
+  roadmap.

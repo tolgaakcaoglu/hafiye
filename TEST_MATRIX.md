@@ -79,11 +79,18 @@ its result says so.
 | P5-D-01 | Desktop provider/key/model/custom endpoint surface | `cd apps/desktop && npm run test` | 692 test files passed, 1 skipped; 7,156 tests passed, 3 skipped; exit 0 | PASS |
 | P5-D-02 | Desktop provider integration typecheck/build | `cd apps/desktop && npm run typecheck && npm run build` | Typecheck and production build passed | PASS |
 | P5-GEMINI-REAL | Live Gemini test connection | Hafiye Desktop/CLI Secret Service credential entry, then real Gemini test | Not run: no `GEMINI_API_KEY` configured on host | BLOCKED BY ENVIRONMENT PREREQUISITE |
-| P5-BE-01 | Latest backend regression comparison | `./scripts/run_tests.sh` with persistent gateway and managed local model server stopped temporarily and restored by exit trap | 3,215 files; 37,137 passed, 5 failed, 244 skipped in 672.6s; exact original five accepted baseline IDs; turn-lease retry-only flake recorded | PASS WITH ACCEPTED BASELINE/DIAGNOSTIC |
+| P5-BE-01 | Latest pre-P6 backend regression comparison | `./scripts/run_tests.sh` with persistent gateway and managed local model server stopped temporarily | 3,215 files; 37,137 passed, 5 failed, 244 skipped in 672.6s; exact original five accepted baseline IDs; turn-lease retry-only flake recorded | PASS WITH ACCEPTED BASELINE/DIAGNOSTIC |
+| P6-PY-01 | Shared Hafiye route/privacy policy | `./scripts/run_tests.sh tests/test_hafiye_policy.py tests/run_agent/test_hafiye_agent_policy.py tests/gateway/test_hafiye_routing.py -q` | 3 files; 17 passed; local, remote, Gemini, LOCAL_ONLY, OFFLINE, locality, and legal-fallback checks | PASS |
+| P6-PY-02 | Affected config/API/web backend matrix | `./scripts/run_tests.sh tests/test_web_server.py tests/hermes_cli/test_web_server.py tests/hermes_cli/test_config_validation.py tests/gateway/test_api_server.py tests/gateway/test_api_server_runs.py tests/hermes_cli/test_fallback_config.py -q` | 6 files; 321 passed; 3 skipped; 0 failed | PASS |
+| P6-D-01 | Desktop routing/privacy settings support | `cd apps/desktop && npm run test -- --run src/app/settings/helpers.test.ts src/app/settings/settings-search.test.ts src/app/settings/voice-provider-fields.test.ts` | 3 files; 47 passed | PASS |
+| P6-D-02 | Desktop routing/privacy TypeScript | `cd apps/desktop && npm run typecheck` | Renderer, Electron, and E2E TypeScript checks passed | PASS |
+| P6-LINT-01 | P6 Python compile/lint/whitespace | `.venv/bin/ruff check <all P6 changed Python files>; python -m py_compile <all P6 changed Python files>; git diff --check` | Ruff checks passed; bytecode compilation and whitespace checks passed; existing upstream invalid `# noqa` warning remains | PASS WITH UPSTREAM WARNING |
+| P6-GW-01 | Gateway cache/fallback contract regression fix | `./scripts/run_tests.sh tests/gateway/test_compression_failure_session_sync.py tests/gateway/test_fallback_chain_reload.py -q` | 2 files; 6 passed; 0 failed after normalizing cache mappings and retaining refreshed fallback calls | PASS |
+| P6-BE-01 | Post-P6 full backend regression comparison | `./scripts/run_tests.sh` with persistent gateway and managed local model server stopped temporarily | 3,218 files; 37,154 passed, 5 failed, 244 skipped in 563.7s; four exact accepted-baseline members plus KI-019 browser reconnect diagnostic; exit 1 | PASS WITH DOCUMENTED BASELINE/DIAGNOSTIC |
 
 ## Current ACCEPTED_UPSTREAM_BASELINE
 
-The latest post-source run has this exact five-failure comparison set:
+The historical post-source comparison set is this exact five-failure baseline:
 
 1. tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip
 2. tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries
@@ -91,9 +98,10 @@ The latest post-source run has this exact five-failure comparison set:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The browser-control file passes in isolation (17 tests), but its full-suite
-failure remains the same accepted upstream ID rather than a new Hafiye
-regression.
+The latest post-P6 full run contained four members of this set; the remote
+browser-control ID did not reproduce. Its different local reconnect failure is
+documented as KI-019 after the same full-file behavior reproduced in the
+P6-parent checkout. The selected reconnect test passed in both checkouts.
 
 The same current five after future Hafiye changes are accepted. Fewer failures
 update the baseline. Any new or different failure is a regression to

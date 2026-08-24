@@ -9,7 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 15cbe1f6556addbaf694c36999e0c496730a1730 (P5 provider credential boundary fix)
+- Current Hafiye source HEAD: 62b3d5762d49b1ce2872d142c8e5318239b01c5c
+  (P6 gateway contract follow-up)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -35,6 +36,10 @@ llama.cpp, remote OpenAI-compatible validation/save, Hermes Gemini provider
 reuse, Desktop provider/key UI, and Secret Service storage are implemented and
 tested. P5 remains open until a real Gemini credential is configured and a
 live Gemini test connection succeeds.
+
+P6 — Model router + privacy modes: complete. P6 was started explicitly while
+the P5 live Gemini environment prerequisite remained open. P6 acceptance tests
+pass; P5 is intentionally still incomplete.
 
 ## Verified working
 
@@ -96,32 +101,46 @@ live Gemini test connection succeeds.
 - Automated Gemini provider registration, resolution, credential lifecycle,
   and Desktop surfaces pass. No live Gemini request has been made because this
   host has no configured Gemini credential.
+- Hafiye route slots are configured under the shared `hafiye` config namespace;
+  task-scoped natural-language overrides resolve before native gateway/API
+  agent construction and do not mutate conversation history.
+- `NORMAL`, `LOCAL_ONLY`, and `OFFLINE` are enforced by the shared policy at
+  route resolution, AIAgent initialization, fallback filtering, tool-schema
+  generation, and tool execution. OFFLINE retains local terminal/filesystem
+  capability while removing network-capable tools.
+- The native gateway, API server, one-shot CLI path, interactive CLI setup, and
+  Desktop settings all use the same Hafiye route/privacy policy. The Desktop
+  exposes the global privacy mode and route locality controls.
 
 ## Regression status
 
-The latest post-Hafiye full backend run covered 3,215 files and reported 37,137
-passed, 5 failed, and 244 skipped in 672.6 seconds. The five failures are
-exactly the original `ACCEPTED_UPSTREAM_BASELINE` IDs below; no new or
-different failure appeared. The remote browser-control baseline test passed in
-the isolated 17-test file run. The turn-lease file failed once in the full
-parallel runner and passed on retry and in isolation; this remains a timing
-diagnostic, not a Hafiye regression.
+The latest post-P6 full backend run covered 3,218 files and reported 37,154
+passed, 5 failed, and 244 skipped in 563.7 seconds. Four failures were members
+of the original `ACCEPTED_UPSTREAM_BASELINE`; the fifth was
+`tests/gateway/test_browser_control_api.py::test_local_api_same_identity_reconnect_completes_command_started_on_old_socket`.
+That different browser-control failure was investigated against the P6-parent
+checkout: the same full-file scheduling failure reproduces before P6, while
+the selected reconnect test passes in both checkouts. It is therefore tracked
+as an upstream full-suite diagnostic in KI-019, not as a Hafiye regression and
+not as a change to the exact five-ID baseline.
 
 The P5 targeted Python tests, Desktop provider tests, typecheck/build, real
 Secret Service round-trip, local CUDA endpoint, and remote OpenAI-compatible
-path pass. Live Gemini acceptance is still pending the host credential.
+path pass. P6 targeted policy/gateway/agent tests and Desktop settings
+validation pass. Live Gemini acceptance is still pending the host credential.
 
 ## Active blockers
 
 P5 has one acceptance blocker: no `GEMINI_API_KEY` is configured in the host's
 Secret Service, `.env`, or process environment, so the required live Gemini
 test connection cannot yet run. This is an environment prerequisite, not a
-provider implementation failure. The user service is active and the local
+provider implementation failure. P6 has no open acceptance blocker. The user
+service is active and the local
 CUDA runtime doctor is green. `loginctl` reports `Linger=no`, and a full reboot
 was not performed; GNOME's `Super+Shift+Space` conflict remains the existing
 operational warning.
 
-The accepted upstream failures, retry-only turn-lease timing, npm audit
+The accepted upstream failures, KI-019 browser scheduling diagnostic, npm audit
 warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
 warnings are documented diagnostics. They are not silently treated as passes.
 
@@ -315,16 +334,41 @@ directory:
 - Live Gemini connection — not run; no `GEMINI_API_KEY` is configured on this
   host. This remains the P5 acceptance blocker and is not counted as a pass.
 
+### P6 model router and privacy modes
+
+- `./scripts/run_tests.sh tests/test_hafiye_policy.py
+  tests/run_agent/test_hafiye_agent_policy.py tests/gateway/test_hafiye_routing.py
+  -q` — 3 files, 17 passed, 0 failed. This covers normal local routing,
+  explicit remote/Gemini overrides, all privacy boundaries, route locality,
+  and legal fallback activation.
+- `./scripts/run_tests.sh tests/test_web_server.py
+  tests/hermes_cli/test_web_server.py tests/hermes_cli/test_config_validation.py
+  tests/gateway/test_api_server.py tests/gateway/test_api_server_runs.py
+  tests/hermes_cli/test_fallback_config.py -q` — 6 files, 321 passed, 3
+  skipped, 0 failed.
+- `cd apps/desktop && npm run test -- --run
+  src/app/settings/helpers.test.ts src/app/settings/settings-search.test.ts
+  src/app/settings/voice-provider-fields.test.ts` — 3 files, 47 passed.
+- `cd apps/desktop && npm run typecheck` — passed after the Hafiye routing and
+  privacy settings wiring.
+- `.venv/bin/ruff check` on all P6 changed Python files — all checks passed;
+  the existing upstream invalid `# noqa` warning in `run_agent.py` remains.
+- `git diff --check` and Python bytecode compilation of all P6 changed Python
+  files — passed.
+
 ### Latest full backend comparison
 
 - `./scripts/run_tests.sh` with the persistent gateway and managed local model
-  server stopped temporarily and restored by the exit trap — 3,215 files;
-  37,137 passed, 5 failed, 244 skipped in 672.6 seconds, exit 1.
-- The five failures are exactly the accepted upstream baseline IDs below.
-- `./scripts/run_tests.sh tests/gateway/test_browser_control_api.py -q` — 17
-  passed in isolation.
-- `./scripts/run_tests.sh tests/gateway/test_turn_lease.py -q` — 12 passed in
-  isolation; the full runner's one first-attempt timeout passed on retry.
+  server stopped temporarily — 3,218 files; 37,154 passed, 5 failed, 244
+  skipped in 563.7 seconds, exit 1. Four failures are accepted-baseline IDs;
+  the fifth is the KI-019 browser reconnect diagnostic.
+- `./scripts/run_tests.sh tests/gateway/test_browser_control_api.py -q -k local_api_same_identity_reconnect_completes_command_started_on_old_socket`
+  — 1 selected test passed in the P6 checkout.
+- `HERMES_PYTHON=/home/tolga/projects/hafiye/.venv/bin/python /tmp/hafiye-pre-p6/scripts/run_tests.sh tests/gateway/test_browser_control_api.py -q -k local_api_same_identity_reconnect_completes_command_started_on_old_socket`
+  — 1 selected test passed in the P6-parent checkout; the temporary checkout
+  was removed after comparison.
+- `./scripts/run_tests.sh tests/gateway/test_compression_failure_session_sync.py tests/gateway/test_fallback_chain_reload.py -q`
+  — 2 files, 6 passed, 0 failed after the P6 gateway contract fix.
 
 ## ACCEPTED_UPSTREAM_BASELINE
 
@@ -338,9 +382,11 @@ they remain the accepted regression baseline:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The remote browser-control test passes when its file is run in isolation, but
-its full-suite failure is still the same accepted upstream baseline ID, not a
-new Hafiye regression. The upstream bugs are not being fixed by Hafiye.
+The exact five IDs remain the historical comparison baseline. The latest run
+contained four of those IDs; the accepted remote browser-control ID did not
+reproduce in that run. The separate local reconnect scheduling failure is
+documented in KI-019 and is not added to the exact baseline. The upstream bugs
+are not being fixed by Hafiye.
 
 ## Exact next actions
 
@@ -349,7 +395,8 @@ new Hafiye regression. The upstream bugs are not being fixed by Hafiye.
 2. Run the real Gemini test connection and record its exact result.
 3. Re-run the P5 acceptance matrix and compare the full backend result using
    the exact five-ID baseline rule. If live Gemini passes and no new failure
-   appears, mark P5 complete and begin P6.
+   appears, mark P5 complete. P6 is already complete; do not claim P7 until
+   the next explicitly authorized phase is started.
 
 ## Environment changes
 
@@ -365,6 +412,14 @@ uinput observations remain in ENVIRONMENT.md. P5 added the Hafiye Linux Secret
 Service provider-credential path, `keyring==25.7.0`, provider/key UI wiring,
 and the remote OpenAI-compatible test boundary. No sudo, root, passwordless
 sudo, or NOPASSWD sudoers change was made during P5.
+P6 added only user-configured route/privacy policy and shared enforcement code;
+the follow-up gateway cache/fallback contract fix is in commit
+`62b3d5762d49b1ce2872d142c8e5318239b01c5c` and
+made no system package, sudo, service, or password change. The managed local
+server was restored through `.venv/bin/hafiye runtime server start
+qwen2.5-0.5b-instruct-q4 --backend AUTO --context-size 4096 --gpu-layers 99`;
+the runtime doctor then reported `ok=true`, `blockers=[]`, and selected backend
+`CUDA`.
 
 ### P4 source validation
 
@@ -389,4 +444,21 @@ sudo, or NOPASSWD sudoers change was made during P5.
 - Local llama.cpp, remote OpenAI-compatible, provider parity, automated Gemini,
   and Desktop provider tests pass as recorded above.
 - Live Gemini is intentionally pending because the host has no configured
-  credential; P5 is not complete and P6 has not started.
+  credential; P5 is not complete. P6 routing/privacy source and tests are
+  recorded in the next section.
+
+### P6 source validation
+
+- Source commits: `cf6457678b6083c4f783c1a80eef9eba3875ccc0` (routing/privacy)
+  and `62b3d5762d49b1ce2872d142c8e5318239b01c5c` (gateway cache/fallback
+  contract follow-up).
+- `hafiye_policy.py` owns route slots, task overrides, privacy normalization,
+  local-runtime classification, legal fallback filtering, OFFLINE tool
+  filtering, and dispatcher denial messages.
+- Agent, native gateway, API server, one-shot CLI, interactive CLI setup, and
+  Desktop settings consume that shared policy. No second provider or config
+  system was introduced.
+- P6 targeted tests and the affected backend/config matrix pass as recorded
+  above. The only different full-suite failure was reproduced in the
+  P6-parent checkout and is tracked as KI-019; no Hafiye source regression was
+  found.

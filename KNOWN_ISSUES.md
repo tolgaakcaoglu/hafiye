@@ -19,13 +19,13 @@ silently treated as passing.
 - A later corrected post-source run temporarily measured 3,213 files with
   37,009 passed, 6 failed, and 291 skipped; the browser-control baseline test
   passed in that run.
-- The latest post-source full parallel run measured 3,215 files with 37,137
-  passed, 5 failed, and 244 skipped in 672.6 seconds. Its exact five failures
-  are the original five listed above, so the baseline is currently the exact
-  original five again.
-- `tests/gateway/test_browser_control_api.py` passed in an isolated 17-test
-  run. Its full-suite failure is still the same accepted upstream ID, not a
-  new Hafiye regression.
+- The latest post-P6 full parallel run measured 3,218 files with 37,154
+  passed, 5 failed, and 244 skipped in 563.7 seconds. Four failures were
+  members of the original five; the original remote browser-control ID did
+  not reproduce in that run.
+- A different browser-control reconnect test appeared in that run. It is
+  tracked separately as KI-019 after reproducing in the P6-parent checkout;
+  it is not added to this exact five-ID baseline.
 - The same exact five after future Hafiye changes are not new regressions. A
   reduction updates the baseline; any new or different failure must be
   investigated. Hafiye does not fix these upstream bugs.
@@ -205,6 +205,9 @@ silently treated as passing.
 - No live Gemini request has been made and no Gemini success is claimed.
   Configure the credential through the Hafiye Desktop/CLI Secret Service path,
   then run the real test connection and update P5 acceptance records.
+- P6's explicit Gemini route and LOCAL_ONLY rejection are verified with the
+  real Hafiye policy and agent/gateway tests, but a live cloud request remains
+  intentionally unperformed until this same credential prerequisite is met.
 
 ## KI-018 — Optional extras are not fully installable on CPython 3.13
 
@@ -217,3 +220,17 @@ silently treated as passing.
   relevant P5 and full backend tests run with all other optional extras
   installed; these two upstream optional packaging issues are recorded rather
   than substituted around.
+
+## KI-019 — Upstream browser reconnect full-suite scheduling diagnostic
+
+- Status: INVESTIGATED UPSTREAM; not a Hafiye regression or P6 blocker.
+- The latest post-P6 full run failed:
+  `tests/gateway/test_browser_control_api.py::test_local_api_same_identity_reconnect_completes_command_started_on_old_socket`.
+- The same browser-control full-file failure reproduced in a clean checkout at
+  the P6 parent commit `28e751f9b`, before Hafiye routing/privacy source
+  changes. The selected reconnect test passed in both the P6 checkout and the
+  P6-parent checkout when run with `-k` through `scripts/run_tests.sh`.
+- The P6 diff does not modify the browser-control broker or extension router.
+  Do not add this test to `ACCEPTED_UPSTREAM_BASELINE` or fix unrelated
+  upstream browser-control behavior in P6. Re-run it in isolation if it
+  reproduces outside the full-file scheduling context.
