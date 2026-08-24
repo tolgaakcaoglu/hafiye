@@ -662,3 +662,24 @@ E2E Suite — is now the first incomplete phase.
 
 P23 is still the first incomplete phase. The current state, exact commands,
 and unverified acceptance rows are recorded in `STATE.md` and `TEST_MATRIX.md`.
+
+## Deferred P23 acceptance — mandatory roadmap-end reminder
+
+Per the user's explicit instruction on 2026-08-25, the following real-machine
+acceptance steps are intentionally deferred. They are not passed and must be
+replayed before P23 is ever marked complete:
+
+- [ ] P23.1 reboot/login, gateway/Desktop/tray/Composer boot.
+- [ ] P23.2 clean Composer text behavior after the KI-043 safety boundary is
+      resolved or explicitly bounded.
+- [ ] P23.3 live Turkish wake-word, voice command, and spoken response.
+- [ ] P23.4 actual disconnected-network local chat and computer operation.
+- [ ] P23.5 configured OpenAI-compatible remote GPU route.
+- [ ] P23.6 clean Gemini task result.
+- [ ] P23.14 live spoken barge-in with `Hafiye dur.`.
+- [ ] P23.15 long-running managed desktop action stopped by
+      `Ctrl+Super+Escape`.
+
+This reminder is deliberately at the end of the execution roadmap. The master
+roadmap currently ends at P23; no P24 phase is defined, and these deferred
+checks must not be silently converted into a completed P23.

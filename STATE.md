@@ -97,7 +97,10 @@ replay are accepted.
 P22 — CLI: complete. The product command vocabulary, shared backend adapters,
 real service/model/computer checks, explicit Gemini one-shot, and accepted
 upstream-baseline comparison are recorded below. P23 — Final E2E Suite — is
-now the first incomplete phase.
+now the first incomplete phase. On 2026-08-25 the user explicitly instructed
+that the remaining real-machine acceptance checks be deferred and reminded at
+the end of the roadmap. They remain unaccepted and must not be represented as
+passed.
 
 ## Verified working
 
@@ -1748,14 +1751,12 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 ### Exact next actions
 
-1. Re-run the clean P23.2/P23.6 Gemini-backed Composer check with the rotated
-   credential after addressing/replaying the KI-043 sudo-remediation approval
-   boundary; quota is no longer the active provider blocker.
-2. Execute and record the remaining real-machine P23.1, P23.3–P23.6,
-   P23.14, and the exact long-running desktop portion of P23.15, plus the
-   voice, offline, remote, text-safety, and barge-in observations. The 23.8
-   file fixture, 23.9 desktop sequence, 23.10 browser sequence, 23.13
-   OpenHands fixture, and 23.16 restart/reconnect sequence are now accepted;
-   their model/host diagnostics remain documented separately.
-3. Only after every ledger row has real evidence, update P23 to complete and
-   create the separate P23 completion commit.
+1. Defer the remaining real-machine P23 checks by explicit user instruction;
+   do not mark them passed or create a P23 completion commit.
+2. At the end of the roadmap, return to the deferred checklist in
+   `ROADMAP.md`: P23.1, clean P23.2/P23.6 Gemini Composer behavior, P23.3
+   voice, P23.4 offline, P23.5 remote endpoint, P23.14 barge-in, and the
+   long-running managed desktop portion of P23.15.
+3. The current master roadmap defines no P24 phase. Do not invent one while
+   treating the deferred P23 acceptance as complete; the roadmap-end reminder
+   is the next recorded action.
