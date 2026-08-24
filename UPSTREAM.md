@@ -11,7 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P22 CLI source/test commit): e031162fd
+- Current Hafiye source HEAD (P23 Desktop route/config source/test commit):
+  ba113121f275bf1ff8258037bb79eed0aa36e2bf
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -579,6 +580,23 @@ P0 computer-use acceptance requires:
 - The exact five-ID comparison after P22 remained `3 failed, 2 passed`, with
   only accepted historical IDs 2, 3, and 5 failing. No Hermes upstream commit
   changed and no upstream history was rewritten.
+
+## P23 Desktop route/config patch group (in progress)
+
+- Hafiye source/test commit:
+  `ba113121f275bf1ff8258037bb79eed0aa36e2bf`.
+- The native gateway's normal configuration lookup now follows Hafiye's XDG
+  config root, while explicit `HERMES_HOME` and profile/context overrides keep
+  the upstream-compatible single-root behavior. The Desktop/TUI agent factory
+  applies the same Hafiye route slot, privacy mode, and fallback resolution
+  before creating `AIAgent`.
+- This is a Hafiye boundary adapter and test coverage change; no Hermes source
+  commit, upstream pin, baseline merge, or upstream history changed. The exact
+  five-ID comparison remained `3 failed, 2 passed`, with no new/different
+  regression.
+- A real packaged Composer operation under a temporarily forced Gemini route
+  reached Firefox, but the provider later returned HTTP 429 free-tier quota;
+  the P23 final acceptance remains open and is tracked as KI-037.
 
 ## P17 Control Center patch group
 

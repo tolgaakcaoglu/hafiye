@@ -94,8 +94,9 @@ silently treated as passing.
 ## KI-007 — Baseline npm audit reports vulnerabilities
 
 - Status: UPSTREAM BASELINE WARNING.
-- Root npm install reported 3 high-severity vulnerabilities and deprecated
-  packages.
+- The original root npm install reported 3 high-severity vulnerabilities and
+  deprecated packages. The current `hafiye doctor` also reports 4 findings in
+  `web` and 3 findings in `ui-tui`.
 - npm audit fix was not run because it could rewrite upstream dependencies and
   the lockfile outside the prescribed P1 scope.
 
@@ -504,3 +505,32 @@ silently treated as passing.
 - Existing P11/P12 real microphone, Turkish STT, Piper, and wake-word evidence
   was supplemented by the wizard-level replay. The temporary acceptance gate
   was removed afterward and the normal service/CUDA local server were restored.
+
+## KI-037 — P23 live Gemini route hit provider quota
+
+- Status: LIVE PROVIDER WARNING; P23.2/P23.6 final acceptance remains open.
+- On 2026-08-25 the default route was temporarily forced to
+  `gemini-flash-lite-latest` through the real Hafiye route configuration. The
+  packaged Electron Composer accepted `Firefox'u aç.`, the transcript reported
+  `Firefox tarayıcısı açıldı.`, and a real Firefox window was observed.
+- A later Gemini request in the same turn returned HTTP 429
+  `RESOURCE_EXHAUSTED` for the provider's free-tier quota. This confirms the
+  Desktop route/config boundary is active, but the turn is not a clean final
+  P23 result. The earlier P22 explicit Gemini one-shot remains valid evidence;
+  no API key is stored in this repository or in this issue record.
+- The default route was restored to local `custom`/Qwen and the user gateway
+  was restarted and verified active/enabled. Re-run the clean Composer/Gemini
+  acceptance when provider quota is available; do not change the architecture
+  or treat the quota error as a Hafiye routing regression.
+
+## KI-038 — Doctor reports intentional Secret Service/.env and workspace audit diagnostics
+
+- Status: DIAGNOSTIC; not a P23 blocker.
+- The live `.venv/bin/hafiye doctor` reports a missing
+  `~/.local/share/hafiye/.env`. Provider credentials for this installation are
+  intentionally stored in Linux Secret Service, so creating a plaintext `.env`
+  is not the normal product fix. The diagnostic should be made more aware of
+  the Secret Service-backed provider path in a later hardening pass.
+- The same doctor run reports the workspace audit counts recorded in KI-007:
+  4 findings in `web` and 3 findings in `ui-tui`. No dependency rewrite or
+  `npm audit fix` was run during P23.

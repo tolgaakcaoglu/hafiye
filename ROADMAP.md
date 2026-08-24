@@ -597,3 +597,26 @@ P22 source/test commit: `e031162fd`. The exact five-ID comparison returned
 small local Qwen one-shot remains the documented KI-014 context-window test
 fixture limitation; the explicit Gemini `hafiye ask` path passed. P23 — Final
 E2E Suite — is now the first incomplete phase.
+
+## P23 execution status — in progress
+
+- [x] Run the P23 backend target matrix: `250 passed, 2 skipped, 1 warning`.
+- [x] Re-run the exact five-ID upstream comparison; it remains `3 failed, 2
+      passed`, exactly the accepted historical baseline.
+- [x] Unify native gateway and Electron/TUI route resolution with the normal
+      Hafiye XDG config root; source/test commit `ba113121f`.
+- [x] Launch the real packaged Composer and observe the Firefox operation under
+      a forced Gemini route; the operation executed, but a later request hit
+      Gemini HTTP 429 and remains a documented warning.
+- [x] Restore the user's local custom/Qwen route, restart the user service, and
+      verify the CUDA runtime and computer-use readiness.
+- [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
+      quota is available.
+- [ ] Execute and record every remaining real-machine item 23.1 and 23.3–23.16
+      from the master roadmap. Earlier phase evidence is not silently promoted
+      to final P23 acceptance.
+- [ ] Mark P23 complete and create its completion commit only after every
+      acceptance row has fresh evidence.
+
+P23 is still the first incomplete phase. The current state, exact commands,
+and unverified acceptance rows are recorded in `STATE.md` and `TEST_MATRIX.md`.

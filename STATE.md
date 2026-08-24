@@ -9,8 +9,8 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: e031162fd
-  (P22 CLI source/test commit)
+- Current Hafiye source HEAD: ba113121f275bf1ff8258037bb79eed0aa36e2bf
+  (P23 Desktop route/config consistency source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -127,6 +127,13 @@ now the first incomplete phase.
   lifecycle (`start|stop|restart`), GGUF model listing/load/unload, provider
   listing, routing/privacy, Task Center, and computer-use doctor all use the
   existing Hafiye runtime/configuration boundaries.
+- Native gateway and Electron/TUI Desktop agent creation now read the normal
+  Hafiye XDG config root and apply the same route-slot/privacy policy before
+  constructing `AIAgent`. The change is covered by native-gateway and
+  Desktop-agent tests. A real packaged Composer run with the default route
+  temporarily forced to Gemini executed the Firefox operation; the turn then
+  received a Gemini free-tier HTTP 429 and remains a P23 warning, not a clean
+  final acceptance.
 - A real `hafiye restart` left `hafiye-gateway.service` active and enabled; a
   real model unload/load cycle restored the Qwen GGUF server with
   `selected_backend=CUDA` and `ready=true`.
@@ -1560,3 +1567,77 @@ Result: `3 failed, 2 passed`; this is the unchanged
 `ACCEPTED_UPSTREAM_BASELINE`, not a P22 blocker. P23 — Final E2E Suite — is
 now the first incomplete phase; its required real-machine checks are not yet
 claimed as passed.
+
+## P23 execution status — in progress
+
+### Source and route-boundary fix
+
+- Pinned Hermes upstream commit:
+  `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit:
+  `ba113121f275bf1ff8258037bb79eed0aa36e2bf`.
+- The native gateway now uses the normal Hafiye XDG config root while
+  retaining explicit `HERMES_HOME`/profile single-root behavior. The
+  Electron/TUI `_make_agent` boundary now resolves the same Hafiye route slot,
+  privacy mode, and fallback metadata before creating `AIAgent`. No Hermes
+  upstream commit or upstream history changed.
+
+### P23 verification completed so far
+
+- The P23 backend target matrix completed with `250 passed, 2 skipped, 1
+  warning in 19.46s`.
+- `.venv/bin/ruff check` on the route/config source and tests, Python
+  compilation, and `git diff --check` passed.
+- The exact five-ID upstream comparison after this source change returned
+  `3 failed, 2 passed`: IDs 2, 3, and 5 failed, IDs 1 and 4 passed. This is
+  exactly the accepted upstream baseline; no new or different failure was
+  found.
+- The real packaged Electron Composer path was launched from
+  `apps/desktop/release/linux-unpacked/hafiye-desktop`. With the default
+  route temporarily forced to `gemini-flash-lite-latest`, entering
+  `Firefox'u aç.` produced the real transcript `Firefox tarayıcısı açıldı.`
+  and a Firefox window was observed. A later Gemini request in the same turn
+  returned HTTP 429 `RESOURCE_EXHAUSTED` (free-tier quota), so this is not a
+  clean P23.2/P23.6 acceptance result; it is recorded as KI-037.
+- After that live check, the configured default route was restored to
+  `custom`/`qwen2.5-0.5b-instruct-q4`; `hafiye-gateway.service` was restarted
+  and verified `active` and `enabled`. `hafiye runtime doctor` returned
+  `ok=true`, `blockers=[]`, and `selected_backend=CUDA` on the RTX 3080 host.
+- The live computer-use-linux `windows` query returned exit 0 and enumerated
+  Firefox and Hafiye windows. The required readiness doctor remains green.
+
+### P23 final acceptance ledger
+
+The following are deliberately not marked passed merely because earlier phase
+tests exist. The master roadmap requires the final real-machine sequence.
+
+| Master item | Current evidence | Final status |
+|---|---|---|
+| 23.1 Boot | Earlier real boot/service/Desktop evidence exists; a fresh reboot/login replay is not recorded in this P23 run | NOT FINAL-CHECKED |
+| 23.2 Text | Composer reached Firefox and opened it, but the same turn ended with Gemini HTTP 429 | WARNING / RE-RUN |
+| 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
+| 23.4 Local inference | Local CUDA runtime is healthy; deliberate offline final replay is not performed | NOT FINAL-CHECKED |
+| 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
+| 23.6 Gemini | P22 explicit Gemini one-shot passed; current Composer route hit provider quota | WARNING / RE-RUN |
+| 23.7 Privacy | Shared policy tests pass; final no-cloud request observation is not replayed here | NOT FINAL-CHECKED |
+| 23.8 Files | Existing host-tool/fixture evidence exists; final P23 organize-and-verify sequence is not replayed here | NOT FINAL-CHECKED |
+| 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
+| 23.10 Browser | Structured and native browser evidence exists; final combined sequence is not replayed here | NOT FINAL-CHECKED |
+| 23.11 Root | P8 root-broker acceptance remains green | INHERITED / RECHECK |
+| 23.12 Memory | P14 fresh-process project/session evidence remains green | INHERITED / RECHECK |
+| 23.13 OpenHands | P15 real fixture delegation remains green | INHERITED / RECHECK |
+| 23.14 Barge-in | P13 real stop evidence remains green; exact final phrase is not replayed here | INHERITED / RECHECK |
+| 23.15 Emergency shortcut | P13 emergency-stop evidence remains green; exact final sequence is not replayed here | INHERITED / RECHECK |
+| 23.16 Restart recovery | Targeted recovery matrix passed; final Desktop reconnect replay is not recorded here | INHERITED / RECHECK |
+
+### Exact next actions
+
+1. Re-run the clean P23.2/P23.6 Gemini-backed Composer check after the
+   provider quota is available, without changing the route architecture.
+2. Execute and record the remaining real-machine P23.1 and P23.3–P23.16
+   acceptance sequences, including the exact voice, offline, privacy,
+   filesystem, desktop, browser, root, memory, OpenHands, barge-in,
+   emergency-stop, and restart-reconnect observations.
+3. Only after every ledger row has real evidence, update P23 to complete and
+   create the separate P23 completion commit.

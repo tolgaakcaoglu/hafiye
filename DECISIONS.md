@@ -555,3 +555,23 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   scoped policy override so a populated onboarding default cannot swallow an
   explicit command-line selection. This records implementation detail only and
   does not override `HAFIYE_MASTER_ROADMAP.md`.
+
+## ADR-0034 — Resolve Desktop and native gateway routes at their agent boundaries
+
+- Date: 2026-08-25
+- Decision: Keep the normal Hafiye behavioral configuration under the XDG
+  config root used by the CLI and Desktop. The native gateway reads that root
+  for normal operation, while explicit `HERMES_HOME` and profile/context
+  overrides retain upstream single-root behavior. The Electron/TUI
+  `tui_gateway.server._make_agent` path resolves the same Hafiye route slot,
+  privacy mode, and fallback metadata immediately before constructing
+  `AIAgent`.
+- Reason: The Desktop Composer uses the TUI gateway agent factory rather than
+  the classic native gateway path. Applying route policy in only one factory
+  allowed the Desktop to silently bypass a configured Hafiye route. Resolving
+  at both existing agent boundaries keeps CLI, native gateway, and Desktop on
+  one policy/configuration path without a second backend.
+- Consequence: A real packaged Composer route now reaches the configured
+  provider and the boundary is covered by focused tests. This is a Hafiye
+  integration detail; it does not change the fixed architecture, the local
+  engine, provider policy, upstream pin, or upstream history.

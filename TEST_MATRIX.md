@@ -418,3 +418,92 @@ PATH="$PWD/.venv/bin:$PATH" .venv/bin/pytest -q \
 The five IDs are the permanent `ACCEPTED_UPSTREAM_BASELINE`; the same set is
 not counted as a Hafiye regression in later phases. A smaller set updates the
 comparison baseline, while any new or different failure requires investigation.
+
+## P23 final E2E execution — in progress
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P23-BE-01 | P23 backend target matrix | Exact command below | `250 passed, 2 skipped, 1 warning in 19.46s` | PASS |
+| P23-LINT-01 | Route/config source quality | `.venv/bin/ruff check tui_gateway/server.py tests/tui_gateway/test_make_agent_provider.py gateway/run.py tests/gateway/test_hafiye_routing.py`; `py_compile` on the same files; `git diff --check` | All passed before source/test commit `ba113121f` | PASS |
+| P23-CONFIG-01 | Native gateway and Desktop route boundary | `tests/gateway/test_hafiye_routing.py` plus `tests/tui_gateway/test_make_agent_provider.py` | Normal XDG config root and shared route/privacy application are covered; 20 focused tests passed | PASS |
+| P23-REAL-01 | Persistent service and local CUDA runtime after live check | `.venv/bin/hafiye routing --json`; `.venv/bin/hafiye restart`; `systemctl --user is-active/is-enabled hafiye-gateway.service`; `.venv/bin/hafiye runtime doctor` | Default route restored to custom/Qwen; service active/enabled; runtime `ok=true`, `blockers=[]`, `selected_backend=CUDA` | PASS |
+| P23-CUA-01 | computer-use-linux live readiness/window query | `.venv/bin/hafiye computer doctor --json`; `/home/tolga/.local/bin/computer-use-linux windows` | Four required readiness fields true, blockers empty; windows query exit 0 and Firefox/Hafiye windows enumerated | PASS |
+| P23-DESKTOP-01 | Real packaged Composer text path | Packaged Electron command below, with default route temporarily forced to Gemini | Composer accepted `Firefox'u aç.`; Firefox opened and transcript reported `Firefox tarayıcısı açıldı.`; later Gemini call returned HTTP 429 quota error | WARNING / KI-037 |
+| P23-DOCTOR-01 | Live supporting readiness diagnostics | `.venv/bin/hafiye voice doctor`; `.venv/bin/hafiye runtime openhands doctor`; `.venv/bin/hafiye root status`; `.venv/bin/hafiye doctor` | Voice/OpenHands/root checks green; general doctor has KI-007/KI-038 audit and Secret Service `.env` diagnostics | PASS WITH DIAGNOSTICS |
+| P23-BE-BASELINE | Exact five upstream comparison after P23 source change | Exact command below | `3 failed, 2 passed`; IDs 2, 3, and 5 only, unchanged from accepted baseline | ACCEPTED BASELINE UNCHANGED |
+| P23-ACCEPTANCE | Master P23 closure | All 23.1–23.16 real-machine checks | Remaining final E2E rows are not yet replayed; P23 remains open | NOT COMPLETE |
+
+### P23 backend target matrix command
+
+```bash
+.venv/bin/pytest -q \
+  tests/test_estop.py tests/test_hafiye_rootd.py tests/test_hafiye_computer_use.py \
+  tests/test_hafiye_policy.py tests/hermes_cli/test_local_runtime.py \
+  tests/hermes_cli/test_voice_runtime.py tests/hermes_cli/test_openhands_runtime.py \
+  tests/hermes_cli/test_computer_use_cli.py tests/tools/test_hafiye_browser.py \
+  tests/tools/test_task_center.py tests/tools/test_coding_delegate.py \
+  tests/tools/test_voice_mode.py tests/tui_gateway/test_tasks_rpc.py \
+  tests/tui_gateway/test_projects_rpc.py tests/gateway/test_restart_resume_pending.py \
+  tests/gateway/test_active_turn_recovery.py \
+  tests/tui_gateway/test_make_agent_provider.py tests/gateway/test_hafiye_routing.py
+```
+
+Result: `250 passed, 2 skipped, 1 warning in 19.46s`.
+
+### P23 packaged Composer command
+
+Before this command, the test route was set with:
+
+```bash
+.venv/bin/hafiye routing set --slot default --provider gemini --model gemini-flash-lite-latest
+```
+
+The real packaged Electron invocation was:
+
+```bash
+node --input-type=module - <<'NODE'
+import fs from 'node:fs'
+import { _electron as electron } from '/home/tolga/projects/hafiye/node_modules/playwright/index.mjs'
+const userData = fs.mkdtempSync('/tmp/hafiye-p23-live-')
+const executablePath = '/home/tolga/projects/hafiye/apps/desktop/release/linux-unpacked/hafiye-desktop'
+let app
+try {
+  app = await electron.launch({
+    executablePath,
+    args: ['--disable-gpu', '--no-sandbox'],
+    env: {...process.env, HERMES_DESKTOP_USER_DATA_DIR: userData,
+      HERMES_DESKTOP_SKIP_QUIT_CONFIRM:'1', HERMES_DESKTOP_APP_NAME:'HafiyeP23Live'}
+  })
+  const page=await app.firstWindow()
+  await page.waitForLoadState('domcontentloaded')
+  await page.waitForFunction(() => document.title.includes('Hafiye'), null, {timeout:30000})
+  const composer=page.locator('[contenteditable="true"]').first()
+  await composer.waitFor({state:'visible',timeout:30000})
+  console.log('P23_COMPOSER_READY', await page.title())
+  await composer.click()
+  await composer.fill("Firefox'u aç.")
+  await composer.press('Enter')
+  await page.waitForTimeout(60000)
+  console.log('P23_TRANSCRIPT_TAIL', (await page.locator('body').innerText()).slice(-5000))
+} finally { if (app) await app.close().catch(()=>{}) }
+NODE
+```
+
+Observed `P23_COMPOSER_READY Hafiye`, the Firefox-open operation and
+`Firefox tarayıcısı açıldı.`. The same turn later reported Gemini HTTP 429
+`RESOURCE_EXHAUSTED` free-tier quota. The local route was restored afterward.
+
+### P23 exact five-ID baseline command
+
+```bash
+PATH="$PWD/.venv/bin:$PATH" .venv/bin/pytest -q \
+  tests/gateway/test_browser_control_api.py::test_remote_api_uses_the_same_authenticated_noop_round_trip \
+  tests/test_hermes_state.py::TestFTS5Search::test_search_projection_skips_context_enrichment_queries \
+  'tests/tools/test_execution_flag_detection.py::test_real_binaries_execute_leading_dash_program_payload[sort-args2-{bulk}-False]' \
+  tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning \
+  tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
+```
+
+Result: `3 failed, 2 passed`; the two passing IDs are 1 and 4, and the three
+failing IDs are 2, 3, and 5. This exact result is the accepted upstream
+baseline, not a P23 regression.
