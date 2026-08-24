@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+
+PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+
+# This runs inside the user's graphical session, so the user manager can own
+# and authorize the persistent gateway without sudo or a root process.
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user daemon-reload >/dev/null 2>&1 || true
+    if ! systemctl --user enable --now hafiye-gateway.service >/dev/null 2>&1; then
+        echo "Hafiye: persistent gateway could not be enabled; run hafiye package doctor." >&2
+    fi
+fi
+
+exec "$PACKAGE_ROOT/bin/hafiye-desktop" "$@"

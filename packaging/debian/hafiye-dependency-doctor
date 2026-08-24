@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+exec "$PACKAGE_ROOT/bin/hafiye-python" "$PACKAGE_ROOT/backend/packaging/debian/dependency_doctor.py" "$@"

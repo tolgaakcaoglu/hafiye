@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+DESKTOP_BINARY="$PACKAGE_ROOT/desktop/hafiye-desktop"
+
+if [ ! -x "$DESKTOP_BINARY" ]; then
+    echo "Hafiye Desktop is not installed at $DESKTOP_BINARY; run hafiye package doctor." >&2
+    exit 127
+fi
+
+exec "$DESKTOP_BINARY" "$@"

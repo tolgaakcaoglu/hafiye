@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+# The gateway is a user service and the root broker is per-user-UID. Do not
+# enable either from a root package script: doing so would bind the package to
+# root's home or silently grant the broker to the wrong desktop user. The
+# login launcher performs the user-scoped enable, and
+# hafiye-rootd-activate performs the explicit normal-sudo root-broker setup.
+if [ -z "${DPKG_ROOT:-}" ] && command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl --global daemon-reload >/dev/null 2>&1 || true
+fi
+
+exit 0

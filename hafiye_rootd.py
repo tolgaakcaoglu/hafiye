@@ -994,7 +994,15 @@ def _run_sudo_install(arguments: list[str]) -> int:
     sudo = shutil.which("sudo")
     if not sudo:
         raise RootBrokerError("sudo is required to install hafiye-rootd.service", code="unavailable")
-    result = subprocess.run([sudo, sys.executable, "-m", "hafiye_rootd", *arguments], check=False)
+    # Use the absolute module file when crossing the sudo boundary. A Debian
+    # package intentionally keeps the backend on PYTHONPATH rather than
+    # installing it as a system distribution; sudo may scrub that PYTHONPATH,
+    # so ``python -m hafiye_rootd`` would fail even though the caller can
+    # import the module. The source-checkout path remains equivalent.
+    result = subprocess.run(
+        [sudo, sys.executable, str(Path(__file__).resolve()), *arguments],
+        check=False,
+    )
     return result.returncode
 
 

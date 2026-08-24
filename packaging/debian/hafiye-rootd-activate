@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+# Root broker authorization is intentionally bound to one real desktop UID.
+# Package installation cannot infer that safely for multi-user systems, so
+# this explicit helper is the normal user-facing activation path.
+if [ -n "${HAFIYE_PACKAGE_ROOT:-}" ]; then
+    ROOTD="$HAFIYE_PACKAGE_ROOT/bin/hafiye-rootd"
+else
+    ROOTD="/usr/bin/hafiye-rootd"
+fi
+
+ALLOWED_UID="${HAFIYE_ALLOWED_UID:-$(id -u)}"
+if [ "$ALLOWED_UID" = "0" ] && [ -z "${HAFIYE_ALLOWED_UID:-}" ]; then
+    echo "Refusing to authorize root as Hafiye's desktop user; set HAFIYE_ALLOWED_UID." >&2
+    exit 2
+fi
+
+USER_HOME="$(getent passwd "$ALLOWED_UID" | cut -d: -f6)"
+if [ -z "$USER_HOME" ]; then
+    echo "Could not resolve the home directory for UID $ALLOWED_UID." >&2
+    exit 2
+fi
+
+exec "$ROOTD" --install-system \
+    --allowed-uid "$ALLOWED_UID" \
+    --estop-path "$USER_HOME/.local/share/hafiye/ESTOP"

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Hafiye
+Comment=Local-first desktop AI agent
+Exec=/usr/bin/hafiye-desktop %U
+Icon=hafiye
+Terminal=false
+Type=Application
+Categories=Utility;Development;ArtificialIntelligence;
+StartupWMClass=hafiye-desktop
+StartupNotify=true
+MimeType=x-scheme-handler/hafiye;

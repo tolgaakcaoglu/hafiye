@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+# Do not stop another user's persistent gateway from a root package hook.
+# The user-scoped unit is removed with the package and systemd will reconcile
+# it on the next daemon reload/login.
+exit 0

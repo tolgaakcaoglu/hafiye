@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+PYTHON_LAUNCHER="$PACKAGE_ROOT/bin/hafiye-python"
+
+# Packaging diagnostics must work before third-party Python dependencies are
+# installed, so dispatch this narrow package surface before importing the
+# full Hermes CLI. It is still the same `hafiye` command users get after the
+# .deb install; later phases may add more subcommands to the full parser.
+if [ "${1:-}" = "package" ]; then
+    shift
+    exec "$PACKAGE_ROOT/bin/hafiye-dependency-doctor" "$@"
+fi
+
+exec "$PYTHON_LAUNCHER" -m hermes_cli.main "$@"

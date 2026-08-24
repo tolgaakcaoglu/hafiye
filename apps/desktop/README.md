@@ -79,9 +79,20 @@ npm run dev:fake-boot   # exercise the startup overlay with deterministic delays
 ```bash
 npm run dist:mac     # DMG + zip
 npm run dist:win     # NSIS + MSI
-npm run dist:linux   # AppImage + deb + rpm
 npm run pack         # unpacked app under release/ (no installer)
+
+# Unified Hafiye Ubuntu/Debian package (Desktop + backend + services)
+cd ../..
+.venv/bin/python scripts/build_deb.py \
+  --output dist/hafiye_0.20.5_amd64.deb \
+  --desktop-dir apps/desktop/release/linux-unpacked
 ```
+
+`npm run dist:linux` remains available for the upstream Electron-only
+AppImage/deb/rpm artifacts. The Hafiye product `.deb` is assembled by
+`scripts/build_deb.py` after `npm run pack`, because it also installs the
+backend, user gateway unit, root-broker activation path, XDG entries, and
+dependency doctor.
 
 Installers are built and uploaded to GitHub Releases manually. macOS/Windows signing & notarization happen automatically when the relevant credentials are present in the environment (`CSC_LINK` / `CSC_KEY_PASSWORD` / `APPLE_*` for macOS, `WIN_CSC_*` for Windows).
 

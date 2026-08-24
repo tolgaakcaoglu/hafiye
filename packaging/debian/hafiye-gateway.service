@@ -1,0 +1,17 @@
+[Unit]
+Description=Hafiye persistent Desktop backend
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/hafiye/bin/hafiye-gateway-run
+Environment=HERMES_DESKTOP=1
+Environment=HAFIYE_PERSISTENT_GATEWAY=1
+Restart=always
+RestartSec=2
+TimeoutStopSec=15
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

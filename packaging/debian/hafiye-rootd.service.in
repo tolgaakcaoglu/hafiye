@@ -1,0 +1,23 @@
+# This is a deliberately non-runnable template. The allowed UID is selected
+# per desktop user and the final unit is rendered by `hafiye-rootd-activate`
+# through hafiye_rootd.generate_systemd_unit(). Never enable this .in file.
+[Unit]
+Description=Hafiye privileged operation broker
+After=local-fs.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/hafiye-rootd --serve --socket /run/hafiye/root.sock --audit-log /var/log/hafiye/rootd-audit.log --estop-path @HAFIYE_ESTOP_PATH@ --allowed-uid @HAFIYE_ALLOWED_UID@
+RuntimeDirectory=hafiye
+RuntimeDirectoryMode=0755
+Restart=on-failure
+RestartSec=2
+TimeoutStartSec=15
+TimeoutStopSec=15
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
