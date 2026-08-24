@@ -622,8 +622,10 @@ E2E Suite — is now the first incomplete phase.
       compatibility path; verify the live CUDA runtime reports 65,536 context
       and that direct AIAgent plus packaged Desktop terminal calls pass.
 - [x] Freshly recheck project alias/session persistence, OpenHands readiness,
-      root-broker UID, and voice-runtime readiness; retain the exact voice and
-      fixture delegation sequences as separate open acceptance work.
+      root-broker UID, and voice-runtime readiness; the exact P23.13 OpenHands
+      fixture delegation also completed through the Gemini coding route and
+      passed its independent pytest verification. Exact voice acceptance
+      remains open.
 - [x] Verify the real `LOCAL_ONLY` fail-closed boundary against a configured
       Gemini route; the request was blocked before provider execution and the
       original local route/privacy state was restored.
@@ -632,9 +634,9 @@ E2E Suite — is now the first incomplete phase.
 - [ ] Re-run the Gemini Composer text acceptance after the KI-043 unapproved
       sudo-remediation warning is resolved or explicitly bounded by the
       existing approval path.
-- [ ] Complete the real 23.8 file organize-and-verify replay; the current
-      Qwen2 validation fixture did not complete the multi-step tool sequence
-      (KI-041).
+- [x] Complete the real 23.8 file organize-and-verify replay through the
+      authenticated Gemini route; the required files were moved and verified.
+      KI-041 retains the earlier local-Qwen multi-step tool-calling warning.
 - [ ] Complete the local-route 23.2 natural-language Desktop task; the current
       Qwen2 validation fixture returned text without a computer-use call
       (KI-042).

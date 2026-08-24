@@ -1639,9 +1639,16 @@ claimed as passed.
   AIAgent with `terminal` and `file` toolsets. The Qwen2 validation fixture did
   not complete the prescribed multi-step sequence: one run only created the
   directories and another returned without a tool call; the source files were
-  not moved. This is recorded as KI-041 and 23.8 remains unaccepted. The
-  successful single-command terminal evidence above is not being generalized
-  to multi-step file behavior.
+  not moved. This remains the local-Qwen warning in KI-041; the successful
+  single-command terminal evidence above is not being generalized to
+  multi-step local-Qwen file behavior.
+- A follow-up isolated file fixture was run through the authenticated Gemini
+  route with `.venv/bin/hafiye ask --provider gemini --model
+  gemini-flash-lite-latest --toolsets terminal,file`. The real tool sequence
+  created `organized/text` and `organized/media`, moved `notes.txt` and
+  `photo.jpg`, left `incoming/keep.bin` in place, and verified the final paths
+  before returning `P23_FILES_GEMINI_OK`. This is fresh acceptance evidence for
+  master item 23.8; KI-041 retains the local-Qwen model-specific warning.
 - A packaged Desktop replay against the managed local Qwen2 route with the
   exact P23.2 prompt `Firefox'u aç.` reached a ready Composer but returned the
   wrong text `Merhaba, FireFox'a açın!` without a computer-use call or observed
@@ -1661,8 +1668,15 @@ claimed as passed.
   `ready=true` with `blockers=[]` for OpenHands SDK `1.41.0`; `hafiye root exec
   id -u` returned `0`; and `hafiye voice doctor` returned `ok=true`,
   `blockers=[]`, Piper ready, Whisper ready, and AUTO selecting CUDA. These
-  are supporting 23.3/23.11–23.13 evidence, not a claim that the exact voice,
-  OpenHands fixture, or emergency sequences have all been replayed.
+  are supporting 23.3/23.11–23.13 evidence; the exact voice and emergency
+  sequences remain open.
+- A fresh Gemini-backed P23.13 OpenHands fixture was executed through
+  `.venv/bin/hafiye ask --provider gemini --model gemini-flash-lite-latest
+  --toolsets coding`. Hafiye invoked `coding_delegate` on a temporary local
+  repository; the Task Center record reached `COMPLETED` on the `coding` route
+  with 28 progress events and real terminal/file-editor tool history. The
+  delegate changed `bug.py`, and an independent external `.venv/bin/python -m
+  pytest -q` returned `1 passed in 0.00s`.
 - The real P23.7 fail-closed check temporarily selected the configured Gemini
   route, set global `LOCAL_ONLY`, and ran `.venv/bin/hafiye ask` without an
   explicit provider/model. It exited 1 with `Hafiye LOCAL_ONLY policy blocked
@@ -1695,12 +1709,12 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
 | 23.6 Gemini | Rotated-key explicit one-shot passed; Composer reached Firefox but the same turn hit KI-043 sudo approval dialog | PASS WITH SAFETY WARNING |
 | 23.7 Privacy | Real Gemini-configured route under global `LOCAL_ONLY` exited before provider call with the policy-block message; settings restored | PASS / FAIL-CLOSED |
-| 23.8 Files | Isolated real fixture replay did not move the files with the Qwen2 validation model; KI-041 records the exact result | NOT ACCEPTED / KI-041 |
+| 23.8 Files | Authenticated Gemini fixture replay performed and verified the required moves and final paths; KI-041 retains the earlier local-Qwen warning | PASS / GEMINI ROUTE |
 | 23.9 Desktop | Real CUA window/keyboard/mouse evidence exists; final P23 sequence is not replayed here | NOT FINAL-CHECKED |
 | 23.10 Browser | Structured local navigation passed; native route actions returned `ok=true`, but Firefox AT-SPI focus/title confirmation warned under KI-022 | WARNING / RECHECK |
 | 23.11 Root | Fresh `hafiye root exec id -u` returned 0; gateway EUID 1000 and rootd EUID 0 | PASS / FRESH RECHECK |
 | 23.12 Memory | Fresh `test_project_alias_and_session_context_survive_fresh_process` returned `1 passed in 1.36s` | PASS / FRESH PROCESS |
-| 23.13 OpenHands | Fresh managed doctor returned SDK `1.41.0`, `ready=true`, `blockers=[]`; exact P23 fixture delegation replay remains open | PASS FOR READINESS / FIXTURE REPLAY REQUIRED |
+| 23.13 OpenHands | Fresh managed doctor plus Gemini-backed `coding_delegate` fixture; Task Center `COMPLETED`, 28 progress events, `bug.py` changed, independent `pytest -q` returned `1 passed` | PASS |
 | 23.14 Barge-in | P13 real stop evidence remains green; exact final phrase is not replayed here | INHERITED / RECHECK |
 | 23.15 Emergency shortcut | P13 emergency-stop evidence remains green; exact final sequence is not replayed here | INHERITED / RECHECK |
 | 23.16 Restart recovery | Gateway restart plus fresh packaged Desktop Composer boot passed; full recoverable-session reconnect is not recorded | PARTIAL / RECHECK |
@@ -1711,9 +1725,9 @@ tests exist. The master roadmap requires the final real-machine sequence.
    credential after addressing/replaying the KI-043 sudo-remediation approval
    boundary; quota is no longer the active provider blocker.
 2. Execute and record the remaining real-machine P23.1 and P23.3–P23.16
-   acceptance sequences, including a repeatable 23.8 filesystem replay after
-   the KI-041 tool-sequence warning, plus the exact voice, offline, privacy,
-   desktop, browser, root, memory, OpenHands, barge-in, emergency-stop, and
-   restart-reconnect observations.
+   acceptance sequences, plus the exact voice, offline, remote, desktop,
+   browser, barge-in, emergency-stop, and restart-reconnect observations. The
+   23.8 file fixture and 23.13 OpenHands fixture are now accepted through the
+   Gemini route; the local-Qwen limitation remains a model-specific warning.
 3. Only after every ledger row has real evidence, update P23 to complete and
    create the separate P23 completion commit.

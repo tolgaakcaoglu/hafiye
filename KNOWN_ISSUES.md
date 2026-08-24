@@ -603,17 +603,25 @@ silently treated as passing.
 
 ## KI-041 — Qwen2 validation fixture did not complete multi-step file E2E
 
-- Status: P23 VALIDATION WARNING; no Hafiye source regression established.
+- Status: RESOLVED for the P23.8 acceptance fixture through the authenticated
+  Gemini route; the local Qwen2 multi-step tool-calling limitation remains a
+  validation warning. No Hafiye source regression is established.
 - On 2026-08-25 an isolated temporary fixture was presented to a real
   AIAgent using the managed CUDA/Qwen2 endpoint with `terminal` and `file`
   toolsets. One attempt executed only the directory-creation portion and
   stopped; a second attempt returned the requested marker without invoking a
-  tool. In both cases the fixture's `notes.txt` and `photo.jpg` remained in
-  `incoming/`, so the master 23.8 organize-and-verify acceptance is not passed.
+  tool. At that point the fixture's `notes.txt` and `photo.jpg` remained in
+  `incoming/`, so the master 23.8 organize-and-verify acceptance was not yet
+  passed by the local-Qwen replay.
 - The same managed runtime and packaged Desktop already passed a real single
-  terminal command, so this record is limited to multi-step local fixture
-  behavior. Repeat 23.8 with a local model/route that reliably completes the
-  prescribed tool sequence; do not treat the marker alone as success.
+  terminal command, so the first result is limited to multi-step local fixture
+  behavior. A follow-up isolated fixture replay through
+  `.venv/bin/hafiye ask --provider gemini --model gemini-flash-lite-latest
+  --toolsets terminal,file ...` performed and verified all required operations:
+  `organized/text/notes.txt` and `organized/media/photo.jpg` existed, while
+  `incoming/keep.bin` remained in place. The exact marker was returned only
+  after verification. This closes the roadmap's 23.8 fixture acceptance while
+  retaining the local-Qwen warning for future model-specific validation.
 
 ## KI-042 — Qwen2 validation fixture did not complete a natural-language desktop task
 
