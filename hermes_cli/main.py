@@ -3313,68 +3313,84 @@ def cmd_gateway(args):
 def cmd_runtime(args):
     """Manage Hafiye's managed local llama.cpp runtime."""
     from hermes_cli.local_runtime import LocalRuntimeError, runtime_manager
+    from hermes_cli.openhands_runtime import OpenHandsRuntimeError
 
-    manager = runtime_manager()
     command = getattr(args, "runtime_command", None)
     try:
-        if command == "install":
-            result = manager.install_runtime(
-                backend=args.backend,
-                source_ref=args.source_ref,
+        if command == "openhands":
+            from hermes_cli.openhands_runtime import (
+                install_openhands_runtime,
+                openhands_runtime_doctor,
             )
-        elif command == "version":
-            result = manager.version()
-        elif command == "doctor":
-            result = manager.doctor()
-        elif command == "model":
-            model_command = getattr(args, "runtime_model_command", None)
-            if model_command in {"list", "ls"}:
-                result = {"models": manager.models()}
-            elif model_command == "import":
-                result = manager.import_model(args.path, args.model_id)
-            elif model_command == "download":
-                result = manager.download_model(
-                    args.repo_id,
-                    args.filename,
-                    revision=args.revision,
-                    model_id=args.model_id,
-                    sha256=args.sha256,
-                )
-            elif model_command == "delete":
-                result = manager.delete_model(args.model_id)
+
+            openhands_command = getattr(args, "runtime_openhands_command", None)
+            if openhands_command in {"install", "setup"}:
+                result = install_openhands_runtime()
+            elif openhands_command == "doctor":
+                result = openhands_runtime_doctor()
             else:
-                print("Use `hafiye runtime model {import,download,list,delete}`.")
-                return 0
-        elif command == "server":
-            server_command = getattr(args, "runtime_server_command", None)
-            if server_command == "start":
-                result = manager.start_server(
-                    args.model_id,
-                    backend=args.backend,
-                    context_size=args.context_size,
-                    gpu_layers=args.gpu_layers,
-                    port=args.port,
-                )
-            elif server_command == "restart":
-                manager.stop_server()
-                result = manager.start_server(
-                    args.model_id,
-                    backend=args.backend,
-                    context_size=args.context_size,
-                    gpu_layers=args.gpu_layers,
-                    port=args.port,
-                )
-            elif server_command in {"stop", "unload"}:
-                result = manager.stop_server()
-            elif server_command == "health":
-                result = manager.health()
-            else:
-                print("Use `hafiye runtime server {start,stop,restart,health,unload}`.")
+                print("Use `hafiye runtime openhands {install,doctor}`.")
                 return 0
         else:
-            print("Use `hafiye runtime {install,version,doctor,model,server}`.")
-            return 0
-    except LocalRuntimeError as exc:
+            manager = runtime_manager()
+            if command == "install":
+                result = manager.install_runtime(
+                    backend=args.backend,
+                    source_ref=args.source_ref,
+                )
+            elif command == "version":
+                result = manager.version()
+            elif command == "doctor":
+                result = manager.doctor()
+            elif command == "model":
+                model_command = getattr(args, "runtime_model_command", None)
+                if model_command in {"list", "ls"}:
+                    result = {"models": manager.models()}
+                elif model_command == "import":
+                    result = manager.import_model(args.path, args.model_id)
+                elif model_command == "download":
+                    result = manager.download_model(
+                        args.repo_id,
+                        args.filename,
+                        revision=args.revision,
+                        model_id=args.model_id,
+                        sha256=args.sha256,
+                    )
+                elif model_command == "delete":
+                    result = manager.delete_model(args.model_id)
+                else:
+                    print("Use `hafiye runtime model {import,download,list,delete}`.")
+                    return 0
+            elif command == "server":
+                server_command = getattr(args, "runtime_server_command", None)
+                if server_command == "start":
+                    result = manager.start_server(
+                        args.model_id,
+                        backend=args.backend,
+                        context_size=args.context_size,
+                        gpu_layers=args.gpu_layers,
+                        port=args.port,
+                    )
+                elif server_command == "restart":
+                    manager.stop_server()
+                    result = manager.start_server(
+                        args.model_id,
+                        backend=args.backend,
+                        context_size=args.context_size,
+                        gpu_layers=args.gpu_layers,
+                        port=args.port,
+                    )
+                elif server_command in {"stop", "unload"}:
+                    result = manager.stop_server()
+                elif server_command == "health":
+                    result = manager.health()
+                else:
+                    print("Use `hafiye runtime server {start,stop,restart,health,unload}`.")
+                    return 0
+            else:
+                print("Use `hafiye runtime {install,version,doctor,openhands,model,server}`.")
+                return 0
+    except (LocalRuntimeError, OpenHandsRuntimeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))

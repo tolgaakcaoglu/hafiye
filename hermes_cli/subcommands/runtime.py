@@ -23,6 +23,21 @@ def build_runtime_parser(subparsers, *, cmd_runtime: Callable) -> None:
     commands.add_parser("version", help="Show installed llama-server version and pinned source commit")
     commands.add_parser("doctor", help="Inspect runtime, backend, model, and server readiness")
 
+    openhands = commands.add_parser(
+        "openhands",
+        help="Install or inspect Hafiye's managed OpenHands coding runtime",
+    )
+    openhands_commands = openhands.add_subparsers(dest="runtime_openhands_command")
+    openhands_commands.add_parser(
+        "install",
+        aliases=["setup"],
+        help="Install the pinned OpenHands source checkout and package runtime",
+    )
+    openhands_commands.add_parser(
+        "doctor",
+        help="Inspect the pinned OpenHands coding runtime readiness",
+    )
+
     model = commands.add_parser("model", help="Manage local GGUF models")
     model_commands = model.add_subparsers(dest="runtime_model_command")
     model_import = model_commands.add_parser("import", help="Import a local .gguf file")

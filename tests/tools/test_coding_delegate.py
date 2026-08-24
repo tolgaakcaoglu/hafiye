@@ -88,7 +88,7 @@ def test_coding_delegate_uses_managed_process_and_redacts_secret_from_command(
     monkeypatch.setattr(
         coding_delegate_tool,
         "_wait_for_process",
-        lambda _session_id: {"status": "exited", "exit_code": 0},
+        lambda _session_id, **_kwargs: {"status": "exited", "exit_code": 0},
     )
     monkeypatch.setattr(
         coding_delegate_tool.process_registry,

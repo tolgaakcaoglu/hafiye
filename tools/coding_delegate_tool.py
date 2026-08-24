@@ -26,6 +26,7 @@ from hermes_cli.openhands_runtime import (
 from tools.interrupt import is_interrupted
 from tools.process_registry import process_registry
 from tools.registry import registry, tool_error
+from tools.task_center import task_center
 
 
 logger = logging.getLogger(__name__)
@@ -163,10 +164,59 @@ def _result_lines(output: str) -> tuple[dict[str, Any] | None, int]:
     return result, progress_count
 
 
-def _wait_for_process(session_id: str, max_seconds: int = 7200) -> dict[str, Any]:
+def _progress_lines(output: str) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for line in output.splitlines():
+        try:
+            record = json.loads(line)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(record, dict) and record.get("type") == "progress":
+            records.append(record)
+    return records
+
+
+def _publish_worker_progress(task_id: str, output: str) -> None:
+    for record in _progress_lines(output):
+        event_name = str(record.get("event") or "OpenHands event")[:240]
+        tool_name = str(record.get("tool") or "")[:240]
+        source = str(record.get("source") or "")[:240]
+        step = f"OpenHands: {event_name}"
+        if tool_name:
+            step += f" ({tool_name})"
+        try:
+            task_center.update(
+                task_id,
+                state="RUNNING",
+                current_step_summary=step,
+                event_name=event_name,
+                tool_name=tool_name,
+                source=source,
+            )
+        except (KeyError, ValueError):
+            logger.debug("Could not publish OpenHands task progress: %s", task_id)
+
+
+def _wait_for_process(
+    session_id: str,
+    max_seconds: int = 7200,
+    *,
+    task_id: str | None = None,
+) -> dict[str, Any]:
     deadline = time.monotonic() + max(1, max_seconds)
+    output_offset = 0
     while time.monotonic() < deadline:
         status = process_registry.poll(session_id)
+        if task_id:
+            log_result = process_registry.read_log(
+                session_id,
+                offset=output_offset,
+                limit=200,
+            )
+            chunk = str(log_result.get("output") or "")
+            if chunk:
+                _publish_worker_progress(task_id, chunk)
+                output_offset += len(chunk.splitlines())
         if status.get("status") == "exited":
             if status.get("completion_reason") == "killed" or str(
                 status.get("termination_source") or ""
@@ -218,6 +268,33 @@ def _handle_coding_delegate(args: dict[str, Any], **kwargs: Any) -> str:
 
     paths = get_openhands_runtime_paths()
     request_id = f"coding_{uuid.uuid4().hex[:16]}"
+    process_task_id = str(kwargs.get("task_id") or f"hafiye-{request_id}")
+    task_id = f"coding-{request_id}"
+    session_key = str(
+        kwargs.get("session_id")
+        or getattr(parent_agent, "session_id", None)
+        or ""
+    )
+    try:
+        task_center.create(
+            task_id=task_id,
+            session_id=session_key,
+            parent_task_id=str(kwargs.get("task_id") or ""),
+            goal=goal,
+            route=route["slot"],
+            provider=route["provider"],
+            model=route["model"],
+            privacy_mode=requested_policy,
+            repository_path=str(repository),
+        )
+        task_center.update(
+            task_id,
+            state="PLANNING",
+            current_step_summary="Preparing OpenHands workspace",
+        )
+    except Exception as exc:
+        return tool_error(f"coding_delegate task registration failed: {type(exc).__name__}: {exc}")
+
     paths.request_root.mkdir(parents=True, exist_ok=True)
     request_path = paths.request_root / f"{request_id}.json"
     payload = {
@@ -259,16 +336,21 @@ def _handle_coding_delegate(args: dict[str, Any], **kwargs: Any) -> str:
         # OpenHands' terminal subprocesses are created.
         env_vars["_HERMES_FORCE_HAFIYE_OPENHANDS_CREDENTIAL"] = credential
 
-    task_id = str(kwargs.get("task_id") or f"hafiye-{request_id}")
-    session_key = str(kwargs.get("session_id") or "")
     session = None
     try:
         session = process_registry.spawn_local(
             command,
             cwd=str(repository),
-            task_id=task_id,
+            task_id=process_task_id,
             session_key=session_key,
             env_vars=env_vars,
+        )
+        task_center.update(
+            task_id,
+            state="RUNNING",
+            current_step_summary="OpenHands worker running",
+            process_id=session.id,
+            command=command,
         )
         logger.info(
             "OpenHands coding delegation started: process_id=%s route=%s/%s repo=%s",
@@ -277,15 +359,21 @@ def _handle_coding_delegate(args: dict[str, Any], **kwargs: Any) -> str:
             route["model"],
             repository,
         )
-        wait_result = _wait_for_process(session.id)
+        wait_result = _wait_for_process(session.id, task_id=task_id)
         log_result = process_registry.read_log(session.id, offset=0, limit=10000)
         output = str(log_result.get("output") or "")
         worker_result, progress_count = _result_lines(output)
         if wait_result.get("status") == "cancelled":
+            task_center.update(
+                task_id,
+                state="CANCELLED",
+                current_step_summary="OpenHands delegation cancelled",
+            )
             return json.dumps(
                 {
                     "status": "cancelled",
                     "process_id": session.id,
+                    "task_id": task_id,
                     "progress_events": progress_count,
                 },
                 ensure_ascii=False,
@@ -297,6 +385,14 @@ def _handle_coding_delegate(args: dict[str, Any], **kwargs: Any) -> str:
                 output_tail = redact_sensitive_text(output[-2000:], code_file=True)
             except Exception:
                 output_tail = output[-2000:]
+            task_center.update(
+                task_id,
+                state="FAILED",
+                current_step_summary="OpenHands worker failed without a result",
+                error=(
+                    f"worker exited without a result; exit={wait_result.get('exit_code')}"
+                ),
+            )
             return tool_error(
                 "OpenHands worker exited without a result. "
                 f"process_id={session.id}; exit={wait_result.get('exit_code')}; "
@@ -305,6 +401,7 @@ def _handle_coding_delegate(args: dict[str, Any], **kwargs: Any) -> str:
         worker_result.update(
             {
                 "process_id": session.id,
+                "task_id": task_id,
                 "route": {
                     "provider": route["provider"],
                     "model": route["model"],
@@ -314,8 +411,38 @@ def _handle_coding_delegate(args: dict[str, Any], **kwargs: Any) -> str:
                 "progress_events": progress_count,
             }
         )
+        completed = (
+            wait_result.get("status") == "exited"
+            and wait_result.get("exit_code") == 0
+            and worker_result.get("status") == "completed"
+        )
+        task_center.update(
+            task_id,
+            state="COMPLETED" if completed else "FAILED",
+            current_step_summary=(
+                "OpenHands verification completed"
+                if completed
+                else "OpenHands worker reported failure"
+            ),
+            result_summary=str(worker_result.get("summary") or ""),
+            error=(
+                "OpenHands worker did not complete successfully"
+                if not completed
+                else ""
+            ),
+            changed_files=worker_result.get("changed_files") or [],
+        )
         return json.dumps(worker_result, ensure_ascii=False)
     except Exception as exc:
+        try:
+            task_center.update(
+                task_id,
+                state="FAILED",
+                current_step_summary="OpenHands delegation failed",
+                error=f"{type(exc).__name__}: {exc}",
+            )
+        except (KeyError, ValueError):
+            pass
         if session is not None:
             try:
                 process_registry.kill_process(

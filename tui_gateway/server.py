@@ -254,6 +254,7 @@ _LONG_HANDLERS = frozenset(
         "complete.path",
         "complete.slash",
         "llm.oneshot",
+        "tasks.list",
         # model.options builds the full picker payload — per-provider credential
         # pool checks, pricing fetch, Nous tier check, optional custom-provider
         # probe — measured seconds inline. While it runs on the reader thread,
@@ -10539,6 +10540,25 @@ def _wire_desktop_ui() -> None:
     _desktop_ui_wired = True
 
 
+_task_center_wired = False
+
+
+def _wire_task_center() -> None:
+    """Broadcast safe task lifecycle updates to connected Desktop clients."""
+    global _task_center_wired
+    if _task_center_wired:
+        return
+    try:
+        from tools.task_center import task_center
+
+        task_center.subscribe(
+            lambda record: _broadcast_global_event("task.update", record)
+        )
+        _task_center_wired = True
+    except Exception:
+        logger.debug("Could not wire Task Center gateway events", exc_info=True)
+
+
 # (stop_event, thread) for every poller ever started in this process.
 # Pruned of dead threads on each spawn; consumed by test teardowns to reap
 # leaked pollers (see _start_notification_poller).
@@ -10549,6 +10569,7 @@ def _start_notification_poller(sid: str, session: dict) -> threading.Event:
     """Start the background notification poller for a TUI session."""
     _wire_agent_terminal_output()
     _wire_desktop_ui()
+    _wire_task_center()
     stop = threading.Event()
     t = threading.Thread(
         target=_notification_poller_loop,
@@ -15857,12 +15878,14 @@ from . import (  # noqa: E402
     methods_profiles as _methods_profiles,
     methods_prompt as _methods_prompt,
     methods_session as _methods_session,
+    methods_tasks as _methods_tasks,
     methods_tools as _methods_tools,
 )
 
 for _m in (
     _methods_browser_control,
     _methods_session,
+    _methods_tasks,
     _methods_prompt,
     _methods_config,
     _methods_complete,
