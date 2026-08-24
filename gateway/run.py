@@ -42,6 +42,7 @@ import threading
 import time
 import traceback
 from collections import OrderedDict
+from collections.abc import Mapping
 from contextvars import Context, copy_context
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -115,6 +116,11 @@ _STALL_NOTIFY_SEND_TIMEOUT_SECONDS = 15.0
 _GATEWAY_PROXY_SSE_BUFFER_MAX_CHARS = 16 * 1024 * 1024
 _TELEGRAM_COMMAND_MENTION_RE = re.compile(r"(?<![\w:/])/([A-Za-z0-9][A-Za-z0-9_-]*)")
 _GATEWAY_HYGIENE_PLATFORM = "gateway_hygiene"
+
+
+def _select_turn_fallback_model(route_fallback, *, fallback_model):
+    """Prefer a task route's fallback chain over the refreshed global chain."""
+    return route_fallback or fallback_model
 
 _TELEGRAM_NOISY_STATUS_RE = re.compile(
     r"("  # transient/auxiliary status that should stay in logs, not gateway chats
@@ -5569,13 +5575,16 @@ class TurnRunner:
         # Check agent cache — reuse the AIAgent from the previous message
         # in this session to preserve the frozen system prompt and tool
         # schemas for prompt cache hits.
-        _sig = self._runner._agent_config_signature(
-            turn_route["model"],
-            turn_route["runtime"],
-            ctx.enabled_toolsets,
-            combined_ephemeral,
-            cache_keys={
-                **self._runner._extract_cache_busting_config(ctx.user_config),
+        _cache_keys = self._runner._extract_cache_busting_config(ctx.user_config)
+        # The production extractor returns a flat mapping. Keep gateway turn
+        # execution tolerant of lightweight test/embedding runners that omit
+        # that contract rather than failing before the agent can be built.
+        if isinstance(_cache_keys, Mapping):
+            _cache_keys = dict(_cache_keys)
+        else:
+            _cache_keys = {}
+        _cache_keys.update(
+            {
                 "hafiye_privacy_mode": turn_route.get("hafiye_privacy_mode", "NORMAL"),
                 "hafiye_route_slot": turn_route.get("hafiye_route_slot", "default"),
                 "hafiye_fallback_providers": tuple(
@@ -5586,7 +5595,14 @@ class TurnRunner:
                     )
                     for entry in turn_route.get("hafiye_route", {}).get("fallback_providers", [])
                 ),
-            },
+            }
+        )
+        _sig = self._runner._agent_config_signature(
+            turn_route["model"],
+            turn_route["runtime"],
+            ctx.enabled_toolsets,
+            combined_ephemeral,
+            cache_keys=_cache_keys,
             user_id=getattr(ctx.source, "user_id", None),
             user_id_alt=getattr(ctx.source, "user_id_alt", None),
             skip_context_files=skip_context_files,
@@ -5824,9 +5840,9 @@ class TurnRunner:
                 gateway_session_key=ctx.session_key,
                 session_db=getattr(self._runner._session_db, "_db", self._runner._session_db),
                 # Reload from disk — do not reuse the startup snapshot (#60955).
-                fallback_model=(
-                    turn_route.get("hafiye_route", {}).get("fallback_providers")
-                    or self._runner._refresh_fallback_model()
+                fallback_model=_select_turn_fallback_model(
+                    turn_route.get("hafiye_route", {}).get("fallback_providers"),
+                    fallback_model=self._runner._refresh_fallback_model(),
                 ),
                 hafiye_privacy_mode=turn_route.get("hafiye_privacy_mode", "NORMAL"),
                 hafiye_route_slot=turn_route.get("hafiye_route_slot", "default"),
@@ -22841,9 +22857,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                     thread_id=source.thread_id,
                     session_db=getattr(self._session_db, "_db", self._session_db),
                     # Reload from disk — do not reuse the startup snapshot (#60955).
-                    fallback_model=(
-                        turn_route.get("hafiye_route", {}).get("fallback_providers")
-                        or self._refresh_fallback_model()
+                    fallback_model=_select_turn_fallback_model(
+                        turn_route.get("hafiye_route", {}).get("fallback_providers"),
+                        fallback_model=self._refresh_fallback_model(),
                     ),
                     hafiye_privacy_mode=turn_route.get("hafiye_privacy_mode", "NORMAL"),
                     hafiye_route_slot=turn_route.get("hafiye_route_slot", "default"),
