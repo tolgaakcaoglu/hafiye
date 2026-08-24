@@ -1,4 +1,4 @@
-"""Tests for tools.wake_word — the "Hey Hermes" hotword detector.
+"""Tests for tools.wake_word — the Hafiye hotword detector.
 
 No live audio or network: the sounddevice import is faked, engines are stubbed,
 and lazy-dep availability is monkeypatched. Covers config resolution, engine
@@ -36,7 +36,7 @@ def test_config_defaults_and_clamping():
     assert ww._sensitivity({"sensitivity": "nope"}) == ww._DEFAULTS["sensitivity"]
     assert ww._sensitivity({}) == ww._DEFAULTS["sensitivity"]
     assert ww.wake_phrase({"phrase": "hey hermes"}) == "hey hermes"
-    assert ww.wake_phrase({}) == "hey hermes"
+    assert ww.wake_phrase({}) == "Hafiye"
 
 
 def test_wake_surface_enabled_gate():
@@ -227,13 +227,15 @@ def test_openwakeword_ensures_base_models_for_custom_path(monkeypatch):
     assert eng._labels == ["hey_hermes"]
 
 
-def test_bundled_hey_hermes_model_ships_on_disk():
-    # The "hey hermes" wake word works out of the box only if the model is
-    # actually bundled. Both framework artifacts must exist and be non-trivial.
-    for framework in ("onnx", "tflite"):
-        path = ww._bundled_wakeword_path(framework)
-        assert os.path.exists(path), path
-        assert os.path.getsize(path) > 1024, path
+def test_bundled_hafiye_onnx_model_ships_on_disk():
+    # The Hafiye wake word works out of the box only if the Linux ONNX model is
+    # actually bundled and non-trivial. The legacy Hermes TFLite artifact stays
+    # available for upstream compatibility; P12 ships the required Hafiye ONNX
+    # asset for the target Ubuntu/Linux product.
+    path = ww._bundled_wakeword_path("onnx")
+    assert path.endswith("/hafiye.onnx"), path
+    assert os.path.exists(path), path
+    assert os.path.getsize(path) > 1024, path
 
 
 # ── platform-aware backend selection (openWakeWord onnx is broken on macOS ARM64,

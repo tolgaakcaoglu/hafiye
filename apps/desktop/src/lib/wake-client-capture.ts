@@ -206,6 +206,12 @@ export async function startClientWakeCapture(options: ClientWakeCaptureOptions):
     await context.resume().catch(() => undefined)
   }
 
+  // Chromium throttles an idle hidden renderer, which can pause the
+  // ScriptProcessor callback even though the microphone track is still live.
+  // This is a real always-on capture path, so tell Electron to keep this
+  // renderer unthrottled until the listener is stopped.
+  window.hermesDesktop?.setWakeCaptureActive?.(true)
+
   return {
     get active() {
       return !stopped
@@ -216,6 +222,7 @@ export async function startClientWakeCapture(options: ClientWakeCaptureOptions):
       }
 
       stopped = true
+      window.hermesDesktop?.setWakeCaptureActive?.(false)
       queue.length = 0
 
       try {

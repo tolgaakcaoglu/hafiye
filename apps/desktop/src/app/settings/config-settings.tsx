@@ -34,6 +34,7 @@ import { PanelEmpty } from '../overlays/panel'
 import { ConfigField } from './config-field'
 import { MicrophoneDeviceSetting } from './microphone-device-setting'
 import { PiperVoiceSetting } from './piper-voice-setting'
+import { WakeWordSetting } from './wake-word-setting'
 import {
   clearsEnabledToolsets,
   enumOptionsFor,
@@ -394,6 +395,7 @@ function ConfigSettingsInner({
       {activeSectionId === 'chat' ? <AttachmentSizeSetting /> : null}
       {activeSectionId === 'voice' ? (
         <>
+          <WakeWordSetting />
           <MicrophoneDeviceSetting />
           {String(getNested(config, 'tts.provider') || '').toLowerCase() === 'piper' ? (
             <PiperVoiceSetting

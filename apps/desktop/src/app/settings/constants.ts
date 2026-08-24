@@ -457,6 +457,11 @@ export const FIELD_LABELS: Record<string, string> = defineFieldCopy({
     maxRecordingSeconds: 'Max Recording Length',
     autoTts: 'Read Responses Aloud'
   },
+  wakeWord: {
+    phrase: 'Wake Phrase',
+    sensitivity: 'Wake Sensitivity',
+    confirmationFrames: 'Wake Confirmation Frames'
+  },
   stt: {
     enabled: 'Speech To Text',
     echoTranscripts: 'Echo Transcripts',
@@ -631,6 +636,11 @@ export const FIELD_DESCRIPTIONS: Record<string, string> = defineFieldCopy({
   },
   voice: {
     autoTts: 'Automatically speak assistant responses.'
+  },
+  wakeWord: {
+    phrase: 'The local phrase used to label wake detections. Hafiye is the bundled model phrase.',
+    sensitivity: 'Raw openWakeWord score threshold. Higher values reduce false activations but require a clearer phrase.',
+    confirmationFrames: 'Consecutive over-threshold audio frames required before Hafiye activates. Higher values reduce ambient false positives.'
   },
   tts: {
     xai: {
@@ -810,7 +820,10 @@ export const SECTIONS: DesktopConfigSection[] = [
       'stt.elevenlabs.diarize',
       'voice.record_key',
       'voice.max_recording_seconds',
-      'voice.client_direct'
+      'voice.client_direct',
+      'wake_word.phrase',
+      'wake_word.sensitivity',
+      'wake_word.confirmation_frames'
     ]
   },
   {

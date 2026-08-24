@@ -273,6 +273,10 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   watchDirectory: dir => ipcRenderer.invoke('hermes:watchDirectory', dir),
   stopPreviewFileWatch: id => ipcRenderer.invoke('hermes:stopPreviewFileWatch', id),
   setActiveWork: payload => ipcRenderer.send('hermes:active-work', payload),
+  // Client wake capture is an always-on audio graph. Keep its renderer
+  // unthrottled while the Hafiye ear is armed, including when the window is
+  // minimized; the main process restores normal idle throttling on stop.
+  setWakeCaptureActive: active => ipcRenderer.send('hermes:wake-capture', Boolean(active)),
   setTitleBarTheme: payload => ipcRenderer.send('hermes:titlebar-theme', payload),
   setNativeTheme: mode => ipcRenderer.send('hermes:native-theme', mode),
   setTranslucency: payload => ipcRenderer.send('hermes:translucency', payload),

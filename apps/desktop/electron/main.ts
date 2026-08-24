@@ -14596,13 +14596,21 @@ ipcMain.handle('hermes:stopPreviewFileWatch', (_event, id) => stopPreviewFileWat
 // merged picture. Keyed by webContents id so a closed window stops counting.
 const activeWorkByWebContents = new Map<number, ActiveWork>()
 
+// Client-side wake capture is an always-on audio graph. It needs the same
+// background-throttling exemption as a live turn even while no chat is busy;
+// otherwise Chromium can pause the ScriptProcessor callback when the Desktop
+// window is minimized and the local ear silently stops receiving PCM.
+const wakeCaptureByWebContents = new Set<number>()
+
 // The same merged picture drives background throttling: chat windows run
 // unthrottled while any turn is in flight (streaming must paint while hidden)
 // and fall back to Chromium's default throttling at idle. See stream-throttle.ts.
 const streamThrottle = createStreamThrottle()
 
 function updateStreamThrottleFromActiveWork() {
-  streamThrottle.update(mergeActiveWork(activeWorkByWebContents.values()).count > 0)
+  streamThrottle.update(
+    mergeActiveWork(activeWorkByWebContents.values()).count > 0 || wakeCaptureByWebContents.size > 0
+  )
 }
 
 ipcMain.on('hermes:active-work', (event, payload) => {
@@ -14616,6 +14624,25 @@ ipcMain.on('hermes:active-work', (event, payload) => {
   }
 
   activeWorkByWebContents.set(id, normalizeActiveWork(payload))
+  updateStreamThrottleFromActiveWork()
+})
+
+ipcMain.on('hermes:wake-capture', (event, active) => {
+  const id = event.sender.id
+
+  if (active && !wakeCaptureByWebContents.has(id)) {
+    event.sender.once('destroyed', () => {
+      wakeCaptureByWebContents.delete(id)
+      updateStreamThrottleFromActiveWork()
+    })
+  }
+
+  if (active) {
+    wakeCaptureByWebContents.add(id)
+  } else {
+    wakeCaptureByWebContents.delete(id)
+  }
+
   updateStreamThrottleFromActiveWork()
 })
 
