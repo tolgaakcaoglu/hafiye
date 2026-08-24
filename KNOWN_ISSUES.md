@@ -483,3 +483,19 @@ silently treated as passing.
 - The optional `cargo` check remains a diagnostic warning only. The exact
   accepted upstream baseline is unchanged: historical IDs 2, 3, and 5 fail;
   IDs 1 and 4 pass; no new/different regression was found.
+
+## KI-036 — P21 full packaged onboarding replay
+
+- Status: RESOLVED 2026-08-25; no P21 acceptance blocker and not an upstream
+  or Hafiye regression.
+- The P21 onboarding boundary, focused backend/UI tests, current package
+  doctor, live authenticated onboarding doctor, and a real Electron partial
+  flow all pass. The live doctor reports computer-use readiness, local model
+  server readiness, voice readiness, and user autostart with no blockers.
+- The real `release/linux-unpacked/hafiye-desktop` binary replayed the complete
+  20-step sequence against the live authenticated gateway and returned
+  `PACKAGED_ONBOARDING_RESULT PASS 20/20`. The final live doctor returned
+  `ok=true` with an empty blocker array.
+- Existing P11/P12 real microphone, Turkish STT, Piper, and wake-word evidence
+  was supplemented by the wizard-level replay. The temporary acceptance gate
+  was removed afterward and the normal service/CUDA local server were restored.

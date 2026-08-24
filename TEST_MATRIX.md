@@ -248,7 +248,7 @@ is recorded under P15 below.
 | P14-D-02 | Desktop E2E TypeScript boundary | `cd apps/desktop && ../../node_modules/.bin/tsc -p tsconfig.e2e.json --noEmit` | Passed | PASS |
 | P14-REAL-02 | Real Electron + isolated live gateway project browser/search/edit/delete | `cd apps/desktop && ../../node_modules/.bin/playwright test e2e/p14-project-registry.spec.ts --reporter=list` | 1 passed in 12.2s; repository directory remained on disk after project deletion | PASS |
 | P14-D-03 | Desktop production package | `cd apps/desktop && npm run build` | Vite, Electron main/preload, native staging, and `assert-dist-built` passed; existing npm/Vite/Babel/chunking warnings remain | PASS WITH WARNING |
-| P14-ACCEPTANCE | Master P14 closure | Fresh-process alias/path resolution, session recall, and real Desktop browse/search/rename/delete all passed | No new/different regression; accepted five-ID whitelist and current four-ID baseline unchanged | PASS |
+| P14-ACCEPTANCE | Master P14 closure | Fresh-process alias/path resolution, session recall, and real Desktop browse/search/rename/delete all passed | No new/different regression; accepted five-ID whitelist and current three-ID baseline unchanged | PASS |
 
 P14 is accepted. The project registry and session-search behavior use the
 pin-preserved Hermes implementation; Hafiye's acceptance source/test commit
@@ -359,8 +359,31 @@ current comparison baseline is items 2, 3, and 5 only.
 | P20-DOCTOR-01 | Extracted final package readiness | Extract final artifact and run `hafiye package doctor --json` | `ok=true`, `blockers=[]`; source/pinned/baseline manifest values correct | PASS |
 | P20-INSTALL-01 | Debian install semantics without live-host mutation | Rootless `fakeroot dpkg --force-not-root --force-script-chrootless --force-depends --unpack/--configure` in a temporary root | Passed; expected unmet dependency warnings in temporary dpkg database; no live host install claimed | PASS WITH DIAGNOSTIC |
 | P20-BE-01 | Exact five upstream comparison | Same five historical test IDs run after P20 | `3 failed, 2 passed`; only accepted historical IDs 2, 3, and 5 failed | ACCEPTED BASELINE UNCHANGED |
-| P20-ACCEPTANCE | Master P20 closure | Debian package, package doctor, rootless install semantics, focused tests, and baseline comparison | All required P20 evidence recorded; P21 is next | PASS |
+| P20-ACCEPTANCE | Master P20 closure | Debian package, package doctor, rootless install semantics, focused tests, and baseline comparison | All required P20 evidence recorded; P21 followed | PASS |
 
 P20 is accepted. The package artifact is kept locally at
 `dist/hafiye_0.20.5_amd64.deb` and is ignored by Git; the source/test commit is
 `964fc49b5f564f25588894374ea83e81cc2f58c7`.
+
+## P21 acceptance — complete
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P21-PY-01 | Onboarding state and authenticated REST boundary | `.venv/bin/pytest -q tests/hermes_cli/test_persistent_gateway.py tests/hermes_cli/test_hafiye_onboarding_api.py tests/test_hafiye_onboarding.py tests/packaging/test_hafiye_deb.py tests/test_packaging_metadata.py tests/test_hafiye_rootd.py` | 30 passed | PASS |
+| P21-LINT-01 | P21 Python quality and patch hygiene | `.venv/bin/ruff check` on P21 source/tests; `py_compile`; `git diff --check` | Passed | PASS |
+| P21-DESKTOP-01 | Desktop type and component coverage | `cd apps/desktop && npm run typecheck`; `npm run test:ui -- src/components/hafiye-onboarding/index.test.tsx` | Typecheck passed; 3 UI tests passed | PASS |
+| P21-E2E-01 | Real Electron onboarding boundary | `cd apps/desktop && npx playwright test e2e/hafiye-onboarding.spec.ts --workers=1 --reporter=list` | Real Electron + real isolated Hermes backend advanced Welcome → Environment → computer-use doctor → Compute; 1 passed in 8.3s | PASS (PARTIAL FLOW) |
+| P21-E2E-02 | Complete packaged Desktop onboarding | Real Electron launch of `apps/desktop/release/linux-unpacked/hafiye-desktop` against the live authenticated gateway; Playwright runner advanced every roadmap heading | `PACKAGED_ONBOARDING_RESULT PASS 20/20`; final wizard disappeared after real microphone/STT, Piper/TTS, wake-word choice, Hafiye request, autostart, and doctor | PASS |
+| P21-PACKAGE-01 | Current packaged backend and manifest | `npm run pack`; `scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; extracted package doctor/backend probe | Current source/test HEAD `a87eaaba7373a2c23fa73b7ef498b64d67c989f5`; package doctor and authenticated onboarding doctor returned `ok=true`, `blockers=[]` | PASS |
+| P21-REAL-01 | Live persistent service onboarding doctor | Authenticated `GET /api/hafiye/onboarding/doctor` after reinstall/restart of `hafiye-gateway.service` | `ok=true`, `blockers=[]`, computer readiness true, local server ready, voice OK, autostart enabled | PASS |
+| P21-BE-01 | Exact five upstream comparison | Same five historical test IDs run after P21 | `3 failed, 2 passed`; only accepted historical IDs 2, 3, and 5 failed; IDs 1 and 4 passed | ACCEPTED BASELINE UNCHANGED |
+| P21-ACCEPTANCE | Master P21 closure | All 20 roadmap steps replayed through the real packaged Desktop GUI, including STT/TTS/wake/Hafiye/final doctor | All 20 steps passed; final live doctor returned `ok=true`, `blockers=[]`; P22 is next | PASS |
+
+P21 source/test commits are `48860ee5f` and
+`a87eaaba7373a2c23fa73b7ef498b64d67c989f5`. The pinned upstream commit and
+baseline merge remain `f293e7206b4ddd66042329442c6afebc19a8808d` and
+`2ac06b131a237916432503ac67bbcada6dbea39e`; no upstream history changed. The
+full packaged Electron replay reached all 20 steps and completed the wizard.
+The temporary acceptance gate was removed afterward; the normal service and
+CUDA local server were restored, and the authenticated final doctor remained
+green. P22 — CLI — is now the first incomplete phase.

@@ -2,6 +2,9 @@
 
 Captured on `2026-08-23T23:28:36+03:00` in `/home/tolga/projects/hafiye`.
 
+The original table is the P0 capture. Mutable host values were rechecked during
+P21; the current validation is recorded at the end of this document.
+
 ## Operating system and session
 
 | Item | Observed value |
@@ -401,3 +404,46 @@ contains `keyring 25.7.0` for the Hafiye provider Secret Service boundary.
 - No live system package, service, sudo rule, credential, group, device
   permission, or logout/login state was changed for P20. A privileged live-host
   install was intentionally not claimed.
+
+## P21 onboarding and live-host revalidation (2026-08-24/25)
+
+The following values were rechecked on the real logged-in Ubuntu host at
+`2026-08-24T23:55:03+03:00` Europe/Istanbul while validating the P21 backend and
+package boundary:
+
+- `gnome-shell --version` — GNOME Shell `50.1`; the session remains Ubuntu
+  GNOME on Wayland with Xwayland available.
+- `uname`/environment probe — kernel `7.0.0-30-generic`, x86_64; CPU
+  `12th Gen Intel(R) Core(TM) i5-12600K`, 16 logical CPUs; NVIDIA GeForce RTX
+  3080/CUDA remains the expected AUTO primary backend.
+- `free -h` — 14 GiB total RAM, approximately 5.9 GiB available at the
+  recheck, and 49 GiB swap.
+- `wpctl status` — PipeWire `1.6.2`, WirePlumber `1.6.2`; the real graph
+  enumerated Trust GXT 232 microphone (default source), V-Z632, Built-in Audio,
+  and GPU HDMI audio. `pactl` remains absent; wpctl/PipeWire/WirePlumber is the
+  accepted enumeration path. `vulkaninfo` also remains absent and is diagnostic
+  only because Vulkan is a fallback on this NVIDIA/CUDA host.
+- `.venv/bin/python --version` — CPython `3.13.15`; `node --version` —
+  `v22.22.1`; existing build tools remain available as recorded above.
+- The live `hafiye-gateway.service` is enabled/active on loopback port 9120.
+  Its generated normal-XDG unit contains no forced `HERMES_HOME`, so the
+  service sees the same Hafiye XDG state root as the CLI; explicit overrides
+  remain supported.
+- Authenticated live onboarding doctor returned `ok=true`, `blockers=[]`, with
+  `computer_ready=true`, `local_server_ready=true`, `voice_ok=true`, and
+  `autostart_enabled=true`.
+- The current Electron build and `dist/hafiye_0.20.5_amd64.deb` were built
+  from Hafiye source/test HEAD `a87eaaba7373a2c23fa73b7ef498b64d67c989f5`.
+  Temporary extraction and package-backend validation returned package and
+  onboarding doctor `ok=true` with empty blocker arrays; the artifact was not
+  installed into `/usr`.
+- The actual packaged Electron binary
+  `/home/tolga/projects/hafiye/apps/desktop/release/linux-unpacked/hafiye-desktop`
+  completed the full 20-step GUI onboarding against the live authenticated
+  gateway: `PACKAGED_ONBOARDING_RESULT PASS 20/20`. The temporary
+  `HAFIYE_ONBOARDING_FORCE` user-manager gate used for this non-`/usr` package
+  replay was removed afterward; the normal service unit was regenerated and
+  restarted, and the CUDA local server was started again explicitly.
+- No sudo password, passwordless sudo/NOPASSWD rule, credential, system
+  package, group, device permission, or logout/login state was changed during
+  this revalidation.

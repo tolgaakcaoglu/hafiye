@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P20 Packaging source/test commit):
-  964fc49b5f564f25588894374ea83e81cc2f58c7
+- Current Hafiye source HEAD (P21 First-run Onboarding source/test commit):
+  a87eaaba7373a2c23fa73b7ef498b64d67c989f5
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -489,8 +489,8 @@ P0 computer-use acceptance requires:
   records, and 22 `task.update` events; the Desktop Task Center test/build
   passed. P15, P16, and P17 are complete. P16's durable Task Center
   implementation and P17's real Control Center acceptance are recorded in the
-  current Hafiye commits; P18 and P19 are complete and P20 is the current
-  packaged phase. No Hermes upstream commit changed.
+  current Hafiye commits; P18, P19, and P20 are complete and P21 is the
+  current onboarding phase. No Hermes upstream commit changed.
 
 ## P18 Scheduler / skills / MCP patch group
 
@@ -535,6 +535,31 @@ P0 computer-use acceptance requires:
   `ok=true` with `blockers=[]`, and rootless fakeroot dpkg unpack/configure
   passed. The exact five-ID comparison remained historical IDs 2, 3, and 5
   only. No Hermes upstream commit changed and no upstream history was rewritten.
+
+## P21 First-run Onboarding patch group
+
+- Hafiye implementation commit: `48860ee5f`.
+- Hafiye Desktop/Electron acceptance-test commit:
+  `a87eaaba7373a2c23fa73b7ef498b64d67c989f5`.
+- The patch adds the exact 20-step GUI onboarding state machine, an atomic
+  XDG-state progress file, and authenticated REST operations that reuse the
+  existing Hafiye environment, computer-use, local-runtime, voice, config,
+  autostart, and doctor boundaries. It does not add a second configuration or
+  runtime store.
+- The real packaged-install wizard exposes compute selection, GGUF/model
+  setup, optional provider skips, microphone/STT, Piper/TTS, wake word,
+  stateless Hafiye, execution policy, autostart, and final doctor transitions.
+  The real `release/linux-unpacked/hafiye-desktop` binary passed all 20 steps
+  against the live authenticated gateway, including real microphone/STT,
+  Piper/TTS, wake-word choice, Hafiye request, autostart, and final doctor.
+- Normal-XDG systemd generation was corrected to omit a forced `HERMES_HOME`,
+  while explicit environment/profile overrides remain supported. Package
+  launchers propagate `HAFIYE_PACKAGE_ROOT` so the packaged-only boundary is
+  detected by the same backend.
+- The exact five-ID comparison after P21 remained `3 failed, 2 passed`; only
+  accepted historical IDs 2, 3, and 5 failed. No Hermes upstream commit
+  changed and no upstream history was rewritten. P21 is accepted; P22 — CLI —
+  is the next incomplete phase.
 
 ## P17 Control Center patch group
 

@@ -1,6 +1,6 @@
 # Hafiye State
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
 
 ## Repository and commit state
 
@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 964fc49b5f564f25588894374ea83e81cc2f58c7
-  (P20 Packaging source/test commit)
+- Current Hafiye source HEAD: a87eaaba7373a2c23fa73b7ef498b64d67c989f5
+  (P21 First-run Onboarding source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -64,8 +64,8 @@ validated against the P14 acceptance criteria.
 
 P15 — OpenHands coding delegate: complete. The managed official source/runtime,
 real coding delegation, gateway Task Center progress bridge, Desktop Task
-Center panel, and the master fixture E2E all pass. P16, P17, P18, and P19 are
-also complete; P20 is complete and P21 is now the first incomplete phase.
+Center panel, and the master fixture E2E all pass. P16, P17, P18, P19, and P20
+are complete; P21 is also complete and P22 is now the first incomplete phase.
 
 P16 — Task Center: complete. The durable generic task record, restart/reconnect
 behavior, complete required Desktop fields/actions, and real Electron
@@ -87,7 +87,11 @@ P20 — Packaging: complete. The real Linux Electron build is wrapped in a
 Debian package containing the Hafiye backend, launchers, user gateway unit,
 root-broker activation path, XDG entries, icons, notices, and dependency
 doctor/installer. Rootless dpkg unpack/configure and the extracted package
-doctor pass. P21 is now the first incomplete phase.
+doctor pass.
+
+P21 — First-run onboarding: complete. The implementation, backend boundary,
+packaged runtime validation, and complete 20-step real packaged Electron GUI
+replay are accepted. P22 is now the first incomplete phase.
 
 ## Verified working
 
@@ -257,9 +261,10 @@ doctor pass. P21 is now the first incomplete phase.
 ## Regression status
 
 The P7 full backend comparison covered 3,219 files and reported 37,160 passed,
-7 failed, and 244 skipped in 598.3 seconds. Four failures are members of the
-current `ACCEPTED_UPSTREAM_BASELINE`: Hermes state FTS, execution-flag
-detection, Termux audio detection, and Vercel doctor diagnostics. The two
+7 failed, and 244 skipped in 598.3 seconds. The historical five failures are
+the `ACCEPTED_UPSTREAM_BASELINE`; the latest exact comparison reproduces only
+items 2, 3, and 5 (Hermes state FTS, execution-flag detection, and Vercel
+doctor diagnostics). Items 1 and 4 pass in the latest comparison. The two
 cold-start failures passed 2/2 when the persistent Hafiye service was stopped
 and are the existing KI-016 topology diagnostic. The browser reconnect test
 is the existing KI-019 scheduling diagnostic; it passed on an immediate
@@ -268,31 +273,31 @@ isolated retry. No new Hafiye regression was found.
 P14's 127-test backend project/memory matrix, 114-test Desktop UI matrix, real
 Electron project acceptance, E2E typecheck, and production build passed. The
 P14 source/test commit introduced no new or different upstream failure; the
-historical five-ID whitelist and current four-ID comparison baseline are
+historical five-ID whitelist and current three-ID comparison baseline are
 unchanged.
 
 P15's targeted Python matrix, Desktop Task Center test, typecheck, production
 build, lint, compile, real OpenHands doctor, natural-language fixture E2E, and
 gateway Task Center RPC/event smoke passed. The P15 source/test commit
 introduced no new or different upstream failure; the historical five-ID
-whitelist and current four-ID comparison baseline are unchanged.
+whitelist and current three-ID comparison baseline are unchanged.
 
 P16's durable Task Center Python/RPC matrix, separate-process restart smoke,
 Desktop component test, E2E typecheck, typecheck, lint, production build, and
 real Electron + gateway acceptance passed. The P16 source/test commits
 introduced no new or different upstream failure; the historical five-ID
-whitelist and current four-ID comparison baseline are unchanged.
+whitelist and current three-ID comparison baseline are unchanged.
 
 P17's Control Center navigation contract, Desktop typecheck, clean production
 build, and real Electron/gateway acceptance passed. The P17 source/test commit
 introduced no new or different upstream failure; the historical five-ID
-whitelist and current four-ID comparison baseline are unchanged.
+whitelist and current three-ID comparison baseline are unchanged.
 
 P18's cron persistence/scheduler matrix, Desktop model/typecheck/lint checks,
 clean production build, real Electron/gateway scheduler acceptance, and two-
 tick recurring local-task acceptance passed. The P18 source/test commit
 introduced no new or different upstream failure; the historical five-ID
-whitelist and current four-ID comparison baseline are unchanged.
+whitelist and current three-ID comparison baseline are unchanged.
 
 P19's hardening matrix passed 111 focused backend tests plus 104 adjacent
 browser/voice/config/audit tests. Ruff, bytecode/patch hygiene, the real
@@ -320,9 +325,9 @@ P8 targeted broker, packaging, startup-registry, emergency-stop, lint, and
 compile checks pass. The real system service is active/enabled, the non-root
 broker smoke passed, malformed and unauthorized clients failed closed, and
 audit records were read through the broker without exposing raw command text.
-The accepted five-ID upstream whitelist and current four-ID comparison baseline
-are unchanged; no new P8 regression was found in the affected CLI/packaging
-matrix.
+The accepted five-ID upstream whitelist and current three-ID comparison
+baseline are unchanged; no new P8 regression was found in the affected
+CLI/packaging matrix.
 
 P9 targeted computer-use/MCP tests passed (258 tests), the full Desktop UI
 suite passed (579 files, 5,548 tests), the Desktop typecheck and clean
@@ -354,7 +359,7 @@ upstream regression was found.
 
 ## Active blockers
 
-P5, P6, P7, P8, P9, P11, and P12 have no open acceptance blockers. The user service and
+P5, P6, P7, P8, P9, P11, P12, and P21 have no open acceptance blockers. The user service and
 `hafiye-rootd.service` are active
 and the local CUDA runtime doctor is green. `loginctl` reports `Linger=no`,
 and a full reboot was not performed; GNOME's `Super+Shift+Space` conflict
@@ -763,12 +768,12 @@ bugs are not being fixed by Hafiye.
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `964fc49b5f564f25588894374ea83e81cc2f58c7` separate in all
-   state documents.
+   source/test commit `a87eaaba7373a2c23fa73b7ef498b64d67c989f5` separate in
+   all state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current three-ID comparison baseline; investigate any new/different ID.
-3. P19 and P20 are closed. Begin P21 — First-run onboarding — while preserving
-   the shared gateway and Desktop business-logic boundary.
+3. Begin P22 — CLI — against the accepted P21 backend/Desktop boundary while
+   preserving the shared gateway and Desktop business-logic boundary.
 
 ## Environment changes
 
@@ -1123,7 +1128,7 @@ The P14 acceptance criteria passed: project alias/path persistence across a
 backend process boundary, deterministic path resolution, recent session
 context recall, and real Desktop browse/search/rename/delete behavior. No new
 or different regression was found; the accepted historical five-ID whitelist
-and current four-ID comparison baseline are unchanged.
+  and current three-ID comparison baseline are unchanged.
 
 ## P15 execution status — complete
 
@@ -1312,12 +1317,12 @@ P18 acceptance passed. No new or different upstream regression was found.
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
- investigate any new or different failure in later phases.
+   investigate any new or different failure in later phases.
 2. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
- source/test commit `964fc49b5f564f25588894374ea83e81cc2f58c7` separate in all
- subsequent state updates.
-3. Begin P21 — First-run Onboarding — against the packaged Hafiye runtime and
- preserve the shared gateway/Desktop business-logic boundary.
+   source/test commit `a87eaaba7373a2c23fa73b7ef498b64d67c989f5` separate in all
+   subsequent state updates.
+3. Begin P22 — CLI — against the accepted P21 backend/Desktop boundary; do not
+   create a second configuration or business-logic path.
 
 ## P19 execution status — complete
 
@@ -1356,7 +1361,7 @@ The P19 implementation and acceptance are recorded in source/test commit
   the P19-focused and adjacent matrices passed.
 
 P19 acceptance passed. P20 followed and is complete; P21 — First-run
-Onboarding — is now the first incomplete phase.
+Onboarding — followed and is now complete.
 
 ## P20 execution status — complete
 
@@ -1400,8 +1405,73 @@ separate:
 - Exact five-ID upstream comparison after P20 — `3 failed, 2 passed`; only
   historical IDs 2, 3, and 5 failed. No new/different regression was found.
 
-P20 acceptance passed. P21 — First-run Onboarding — is now the first
-incomplete phase. A privileged install on the live host was deliberately not
+P20 acceptance passed. P21 — First-run Onboarding — followed and is now
+complete. A privileged install on the live host was deliberately not
 run by the build validation because it would mutate `/usr` and require an
 interactive sudo password; the rootless Debian install path and extracted
 package doctor are the recorded acceptance evidence.
+
+## P21 execution status — complete
+
+The P21 implementation is recorded in source/test commits `48860ee5f` and
+`a87eaaba7373a2c23fa73b7ef498b64d67c989f5`. The commit identities remain
+separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `a87eaaba7373a2c23fa73b7ef498b64d67c989f5`.
+
+### Implemented
+
+- Added the exact 20-step onboarding state machine from the master roadmap,
+  persisted atomically under the XDG Hafiye state root with owner-only
+  permissions.
+- Added the authenticated onboarding REST boundary for environment,
+  computer-use, local runtime/model, voice runtime, autostart, and final doctor
+  operations. Existing Hafiye config/runtime boundaries remain authoritative;
+  onboarding does not create a second configuration system.
+- Added the real packaged-install Desktop wizard with compute selection,
+  local GGUF import/download, local server/model assignment, optional provider
+  skips, microphone selection, STT/TTS/wake-word/Hafiye tests, execution
+  policy, autostart, and final doctor controls.
+- Corrected normal-XDG systemd unit generation so the user service does not
+  force a stale `HERMES_HOME`; explicit profile/environment overrides remain
+  supported. Package launchers propagate `HAFIYE_PACKAGE_ROOT` for packaged
+  onboarding detection.
+
+### Verified
+
+- `.venv/bin/pytest -q tests/hermes_cli/test_persistent_gateway.py tests/hermes_cli/test_hafiye_onboarding_api.py tests/test_hafiye_onboarding.py tests/packaging/test_hafiye_deb.py tests/test_packaging_metadata.py tests/test_hafiye_rootd.py` — 30 passed.
+- `.venv/bin/ruff check` on the P21 Python source/tests, `py_compile`, and
+  `git diff --check` — passed.
+- `cd apps/desktop && npm run typecheck` — passed.
+- `cd apps/desktop && npm run test:ui -- src/components/hafiye-onboarding/index.test.tsx` — 3 passed.
+- `cd apps/desktop && npx playwright test e2e/hafiye-onboarding.spec.ts --workers=1 --reporter=list` — real Electron plus real isolated Hermes backend, 1 passed in 8.3s. The flow verified Welcome → Environment → computer-use doctor → Compute.
+- Real packaged Electron replay using
+  `apps/desktop/release/linux-unpacked/hafiye-desktop` and the live authenticated
+  gateway — `PACKAGED_ONBOARDING_RESULT PASS 20/20`; all roadmap headings from
+  Welcome through final doctor were reached, including real microphone/STT,
+  Piper/TTS, wake-word choice, Hafiye request, autostart, and final doctor; the
+  wizard disappeared after completion.
+- Current `npm run pack` and `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json` — real Electron input and `amd64` package built from source/test HEAD `a87eaaba7373a2c23fa73b7ef498b64d67c989f5`.
+- Extracted current package backend — package doctor and authenticated onboarding doctor returned `ok=true`, `blockers=[]`; computer readiness, local model server, voice stack, and user autostart were all ready.
+- Live `hafiye-gateway.service` after the XDG unit fix — authenticated
+  `/api/hafiye/onboarding/doctor` returned `ok=true`, `blockers=[]`,
+  `computer_ready=true`, `local_server_ready=true`, `voice_ok=true`, and
+  `autostart_enabled=true`.
+- Exact five-ID upstream comparison after P21 — `3 failed, 2 passed`; only
+  accepted historical IDs 2, 3, and 5 failed. IDs 1 and 4 passed, so no new or
+  different upstream regression was found.
+
+### Acceptance closure
+
+- [x] Replay all 20 roadmap steps through the real packaged Desktop GUI on the
+      real host. The final state contains all 20 completed step IDs and
+      `completed=true`.
+- [x] Restore the normal user-manager environment after the acceptance gate,
+      restart `hafiye-gateway.service`, restart the managed CUDA local server,
+      and re-run the authenticated final doctor.
+
+P21 acceptance passed. The final live doctor returned `ok=true`,
+`blockers=[]`, `computer_ready=true`, `local_server_ready=true`, `voice_ok=true`,
+and `autostart_enabled=true`. P22 — CLI — is now the first incomplete phase.

@@ -24,7 +24,7 @@ records execution status only.
 - [x] P18 Scheduler / skills / MCP
 - [x] P19 Hardening
 - [x] P20 Packaging
-- [ ] P21 First-run onboarding
+- [x] P21 First-run onboarding
 - [ ] P22 CLI
 - [ ] P23 Final E2E suite
 
@@ -541,4 +541,35 @@ is now the next incomplete phase.
 P20 is accepted. Source/test commit
 `964fc49b5f564f25588894374ea83e81cc2f58c7` contains the implementation and
 tests; no Hermes upstream commit or history was changed. P21 — First-run
-Onboarding — is the first incomplete phase.
+Onboarding — followed and is now complete.
+
+## P21 execution status — complete
+
+- [x] Implement the exact 20-step first-run onboarding state machine and
+      persist its progress in the XDG Hafiye state root.
+- [x] Add authenticated backend endpoints for environment, computer-use,
+      runtime/model, voice, autostart, and final doctor checks.
+- [x] Add the real packaged-install Electron/React wizard, including compute
+      selection, local GGUF/model server setup, optional provider skips,
+      microphone/STT, Piper/TTS, wake word, Hafiye test, execution policy,
+      autostart, and final doctor controls.
+- [x] Fix normal-XDG user-service generation so the persistent gateway and
+      CLI share the same Hafiye state root; preserve explicit profile overrides.
+- [x] Build and inspect the current `.deb`, run package doctor, run focused
+      backend/Desktop checks, and compare the exact five upstream baseline IDs.
+- [x] Verify the live authenticated onboarding doctor: all computer-use,
+      local-server, voice, and autostart readiness fields pass with no blockers.
+- [x] Replay all 20 steps through the real packaged Desktop GUI on the real
+      host, including the microphone/STT, Piper/TTS, wake-word choice, Hafiye
+      test, autostart, and final doctor transitions.
+
+P21 implementation/source-test commits are `48860ee5f` and
+`a87eaaba7373a2c23fa73b7ef498b64d67c989f5`. The pinned upstream commit and
+baseline merge remain `f293e7206b4ddd66042329442c6afebc19a8808d` and
+`2ac06b131a237916432503ac67bbcada6dbea39e`; no Hermes history was rewritten.
+The current exact five-ID comparison is `3 failed, 2 passed`, with only
+accepted historical IDs 2, 3, and 5 failing. The packaged Electron replay
+reached all 20 steps and completed the wizard. After the temporary acceptance
+gate was removed, the normal live service and CUDA local server were restored
+and the authenticated final doctor remained green. P22 — CLI — is now the first
+incomplete phase.

@@ -501,3 +501,39 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   runtime after installation; a privileged live install remains a release
   operator action and was not performed during rootless acceptance. This ADR
   records implementation detail only and does not override the master roadmap.
+
+## ADR-0031 — Keep P21 onboarding state at the Hafiye XDG state boundary
+
+- Date: 2026-08-25
+- Decision: Persist only onboarding progress and choices in an atomic,
+  owner-readable `onboarding.json` under the Hafiye XDG state root. Each wizard
+  action calls the existing authenticated gateway/config/runtime/voice/autostart
+  boundary; onboarding does not create a parallel config file, model registry,
+  service manager, or provider credential store. The wizard is enabled for the
+  packaged installation through the package-root marker and remains inert in a
+  normal development checkout unless explicitly forced for acceptance tests.
+- Reason: P21 is a GUI first-run sequence, but the CLI, Desktop, and persistent
+  gateway must continue to share one backend/business-logic boundary. A small
+  resumable progress record is necessary for first-run UX while the actual
+  mutations must remain in the already-tested Hafiye authorities.
+- Consequence: A fresh packaged launch can resume the exact roadmap step and
+  the final doctor is the only completion transition. This records
+  implementation detail only and does not override the master roadmap.
+
+## ADR-0032 — Do not force HERMES_HOME into normal-XDG user service units
+
+- Date: 2026-08-25
+- Decision: When Hafiye resolves its normal XDG roots, generated
+  `hafiye-gateway.service` units omit `Environment=HERMES_HOME=...`. If a caller
+  explicitly supplies `HERMES_HOME` or a context/profile override, that value is
+  preserved in the unit. Packaged launchers separately export
+  `HAFIYE_PACKAGE_ROOT` for packaged-install detection.
+- Reason: Forcing the legacy single-root compatibility variable into a normal
+  XDG unit made the persistent gateway read a different onboarding/runtime
+  state from the CLI. Omitting it restores one state boundary without changing
+  upstream compatibility for explicit profiles.
+- Consequence: Reinstalling/regenerating the user unit is required after the
+  fix; the live service was reinstalled/restarted and its authenticated doctor
+  now returns `ok=true` with `blockers=[]`. No root service or passwordless sudo
+  rule is involved. This records implementation detail only and does not
+  override the master roadmap.
