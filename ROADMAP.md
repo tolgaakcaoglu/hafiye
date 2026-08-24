@@ -17,7 +17,7 @@ records execution status only.
 - [x] P11 Local Turkish voice stack
 - [x] P12 Custom Hafiye wake word
 - [x] P13 Barge-in + emergency stop
-- [ ] P14 Memory + project registry
+- [x] P14 Memory + project registry
 - [ ] P15 OpenHands coding delegate
 - [ ] P16 Task Center
 - [ ] P17 Control Center
@@ -386,8 +386,30 @@ commit `dfb0d29c7ba80efadd5a517bac07aa949e517a5a`; a real Gemini-backed fixture
 delegation edited `bug.py`, returned its result/change record, and the fixture
 test returned `1 passed`. A second live worker was stopped through the shared
 controller and resumed intentionally with no active process remaining. KI-027
-is resolved. P14 — Memory + project registry is now the next incomplete phase.
+is resolved. P14 — Memory + project registry followed and is now complete;
+P15 is the next incomplete phase.
 
 The OpenHands implementation is a P13 prerequisite and does not close P15 by
 itself; P15 still owns the remaining full-phase acceptance, including Task
 Center progress exposure.
+
+## P14 execution status
+
+- [x] Use Hermes memory and FTS5 session search for recent conversation context.
+- [x] Persist deterministic per-profile projects and resolve a saved path by
+      project slug/name after a fresh backend process.
+- [x] Exercise the real project tool boundary (`project_create` and
+      `project_switch`) with a session-search recall assertion.
+- [x] Exercise Desktop project grouping, project-picker search, rename, and
+      destructive delete through the live gateway; preserve the repository
+      directory after metadata deletion.
+- [x] Run the targeted Python/Desktop matrices, E2E typecheck, real Electron
+      acceptance, production build, lint, compilation, and whitespace checks.
+
+P14 is complete. The pinned Hermes project registry/session-search surfaces
+already supplied the runtime behavior; Hafiye source/test commit
+`831405dcec4abcba033d8ccc18308804868ecb1f` adds the acceptance coverage and
+isolated Desktop E2E wiring. The fresh-process memory/path E2E and real
+Electron project acceptance passed, with no new or different regression.
+P15 remains open for the full OpenHands coding-delegate scope, including
+managed bootstrap/setup and Task Center progress exposure.

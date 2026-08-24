@@ -384,3 +384,15 @@ silently treated as passing.
 - Hafiye did not install an unrelated generic CUA binary or replace the
   prescribed Linux provider. Revisit this warning only if a later phase
   explicitly requires the upstream generic lane.
+
+## P14 Desktop E2E isolation note
+
+- Status: RESOLVED 2026-08-24; test-harness diagnostic, not a product blocker.
+- On this Linux host, the normal Desktop launch prefers the real user-scoped
+  `hafiye-gateway.service`, while project acceptance must use its temporary
+  `HERMES_HOME`. The shared E2E fixture now sets
+  `HAFIYE_DESKTOP_DISABLE_PERSISTENT_GATEWAY=1` so the isolated gateway owns
+  the test state. The local Electron binary is resolved from the Desktop
+  package when it is not installed at the repository root.
+- The final real Electron P14 run passed 1/1 with no product error banner; the
+  host persistent service remained outside the sandbox and was not changed.

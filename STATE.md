@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: dfb0d29c7ba80efadd5a517bac07aa949e517a5a
-  (managed OpenHands coding delegation and P13 acceptance source commit)
+- Current Hafiye source HEAD: 831405dcec4abcba033d8ccc18308804868ecb1f
+  (P14 project-registry acceptance coverage source/test commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -58,12 +58,14 @@ real-room validation, and minimized-window Desktop activation are accepted.
 P13 — Barge-in + emergency stop: complete. The real OpenHands delegation
 start/stop/resume acceptance now passes; KI-027 is resolved.
 
-P14 — Memory + project registry: next incomplete phase; not started.
+P14 — Memory + project registry: complete. The pinned Hermes project registry,
+session-search path, gateway project RPCs, and Desktop project browser were
+validated against the P14 acceptance criteria.
 
 P15 — OpenHands coding delegate: foundational managed runtime and
 `coding_delegate` path implemented for P13 acceptance, but the full phase is
-not closed. Task Center progress exposure and the remaining P15 acceptance
-work are still pending.
+not closed. It is the next incomplete phase; Task Center progress exposure,
+bootstrap/setup, and the remaining P15 acceptance work are still pending.
 
 ## Verified working
 
@@ -184,6 +186,16 @@ work are still pending.
   real Turkish Hafiye recording opened a fresh session. The same flow passed
   after the Hafiye window was actually minimized (`minimized=true`,
   `visible=false`).
+- The per-profile Hermes project registry persists deterministic project names
+  and slugs with repository paths in `projects.db`; a fresh Python backend
+  process resolved `pocket-world` back to the exact saved path.
+- The real `session_search` FTS5 path returned the seeded recent Pocket World
+  context after that process boundary. The targeted project/memory matrix
+  passed 127 tests.
+- The real Electron Desktop project flow rendered project grouping, searched
+  the project picker, renamed a project through `projects.update`, deleted it
+  through the destructive confirmation, and preserved the repository folder.
+  The acceptance used the live gateway and passed 1/1.
 
 ## Regression status
 
@@ -195,6 +207,12 @@ cold-start failures passed 2/2 when the persistent Hafiye service was stopped
 and are the existing KI-016 topology diagnostic. The browser reconnect test
 is the existing KI-019 scheduling diagnostic; it passed on an immediate
 isolated retry. No new Hafiye regression was found.
+
+P14's 127-test backend project/memory matrix, 114-test Desktop UI matrix, real
+Electron project acceptance, E2E typecheck, and production build passed. The
+P14 source/test commit introduced no new or different upstream failure; the
+historical five-ID whitelist and current four-ID comparison baseline are
+unchanged.
 
 The P5 targeted Python matrix now passes 468 tests, alongside the Desktop
 provider tests/typecheck/build, real Secret Service round-trip, local CUDA
@@ -648,12 +666,13 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 ## Exact next actions
 
 1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source commit `dfb0d29c7ba80efadd5a517bac07aa949e517a5a` separate in all
+   source commit `831405dcec4abcba033d8ccc18308804868ecb1f` separate in all
    state documents.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline; investigate any new/different ID.
-3. P13 is closed. Start P14 as the first incomplete phase; keep P15 open for
-   its remaining full-phase acceptance, including Task Center progress.
+3. P14 is closed. Start P15 as the first incomplete phase; keep its full
+   acceptance open, including OpenHands bootstrap/setup and Task Center
+   progress exposure.
 
 ## Environment changes
 
@@ -707,6 +726,10 @@ required. The host's missing PortAudio library remains a diagnostic for local
 PortAudio capture; PipeWire/WirePlumber-backed Desktop client capture was
 verified instead. The training dependency metadata warning is recorded as
 KI-026, not hidden by a fake readiness result.
+P14 required no sudo, system-package, service, device-permission, or credential
+changes. Desktop acceptance sandboxes explicitly disabled the normal
+persistent-gateway preference so each test used its isolated `HERMES_HOME`;
+the host `hafiye-gateway.service` was not modified.
 
 ### P4 source validation
 
@@ -884,7 +907,7 @@ separate above and here:
 
 - Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
-- Current Hafiye source HEAD: `dfb0d29c7ba80efadd5a517bac07aa949e517a5a`.
+- P13 Hafiye source commit: `dfb0d29c7ba80efadd5a517bac07aa949e517a5a`.
 
 ### Implemented and verified
 
@@ -925,7 +948,8 @@ separate above and here:
   `process_registry`, `CancellationController.emergency_stop(...)` killed it,
   the delegate returned `status=cancelled`, the thread ended, and an explicit
   `controller.resume()` returned `paused=false` with no active worker left.
-- KI-027 is resolved. P13 is complete; P14 is now the first incomplete phase.
+- KI-027 is resolved. P13 is complete; P14 is also complete and P15 is now the
+  first incomplete phase.
 
 ### P13 test record
 
@@ -953,12 +977,42 @@ separate above and here:
   summary contained the exact fixture result `1 passed in 0.00s`.
 - `git diff --check` — pass.
 
+## P14 execution status — complete
+
+The P14 source/test commit is
+`831405dcec4abcba033d8ccc18308804868ecb1f`. The pinned Hermes source already
+provided the per-profile `projects.db`, deterministic slug/name project tools,
+gateway project RPCs, project tree, and FTS5 `session_search`; Hafiye added the
+acceptance coverage and isolated Desktop E2E wiring without replacing that
+upstream store or rewriting Hermes history.
+
+The commit identities remain separate:
+
+- Pinned Hermes upstream commit: `f293e7206b4ddd66042329442c6afebc19a8808d`.
+- Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Current Hafiye source/test commit: `831405dcec4abcba033d8ccc18308804868ecb1f`.
+
+### P14 test record
+
+- `.venv/bin/python -m pytest -q tests/tools/test_project_tools.py tests/hermes_cli/test_projects_db.py tests/hermes_cli/test_projects_cli.py tests/tui_gateway/test_projects_rpc.py tests/tui_gateway/test_project_tree.py tests/tools/test_session_search.py` — 127 passed in 3.38s.
+- `cd apps/desktop && ../../node_modules/.bin/vitest run --project ui src/store/projects.test.ts src/app/chat/sidebar/project-dialog.test.tsx src/app/chat/sidebar/projects/project-menu.test.tsx src/app/chat/sidebar/projects/overview-row.test.tsx src/app/chat/sidebar/projects/workspace-groups.test.ts src/lib/session-search.test.ts` — 6 files, 114 passed.
+- `cd apps/desktop && ../../node_modules/.bin/tsc -p tsconfig.e2e.json --noEmit` — passed.
+- `cd apps/desktop && ../../node_modules/.bin/playwright test e2e/p14-project-registry.spec.ts --reporter=list` — real Electron plus live isolated gateway, 1 passed in 12.2s.
+- `cd apps/desktop && npm run build` — Vite, Electron main/preload bundles, native staging, and `assert-dist-built` passed; existing npm/Vite/Babel/chunking warnings remain.
+- Fresh-process project-memory E2E — `project_create("Pocket World", path)` followed by a separate process `project_switch("pocket-world")` resolved the exact path, and `session_search("Pocket World")` returned the recent seeded context with marker `P14_PROJECT_MEMORY_E2E_OK`.
+
+The P14 acceptance criteria passed: project alias/path persistence across a
+backend process boundary, deterministic path resolution, recent session
+context recall, and real Desktop browse/search/rename/delete behavior. No new
+or different regression was found; the accepted historical five-ID whitelist
+and current four-ID comparison baseline are unchanged.
+
 ## Exact next actions
 
 1. Preserve the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and
    investigate any new or different failure in later phases.
-2. Begin P14 — inspect Hermes memory/session-search behavior and implement the
-   deterministic project registry in the order required by the master roadmap.
-3. Keep the OpenHands runtime/coding delegate source separable while P15's
-   remaining acceptance work (including Task Center progress exposure) stays
-   open; do not mark P15 complete from the P13 prerequisite evidence alone.
+2. Begin P15 — complete the prescribed OpenHands coding-delegate phase,
+   including managed bootstrap/setup and Task Center progress exposure.
+3. Keep the Pinned Hermes commit, baseline merge commit, and current Hafiye
+   source/test commit separate; do not mark P15 complete from the P13
+   prerequisite evidence alone.

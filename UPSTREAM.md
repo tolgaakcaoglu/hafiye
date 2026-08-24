@@ -11,8 +11,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P13 source commit):
-  dfb0d29c7ba80efadd5a517bac07aa949e517a5a
+- Current Hafiye source HEAD (P14 acceptance source/test commit):
+  831405dcec4abcba033d8ccc18308804868ecb1f
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -477,6 +477,25 @@ P0 computer-use acceptance requires:
   `paused=false` with no active worker. The full P15 phase remains open for
   setup/bootstrap and Task Center progress exposure; this section records the
   P13 prerequisite rather than marking P15 complete.
+
+## P14 memory and project registry validation
+
+- The pinned Hermes source already contains the per-profile `projects.db`,
+  deterministic project slug/name resolution, `project_list/create/switch`,
+  gateway `projects.*` RPCs, the authoritative project tree, and the FTS5
+  `session_search` tool. Hafiye keeps these upstream surfaces and does not
+  introduce a second project store.
+- Hafiye source/test commit
+  `831405dcec4abcba033d8ccc18308804868ecb1f` adds the real backend fresh-
+  process assertion and the real Electron project browser/search/rename/delete
+  acceptance. The Desktop E2E fixture opts out of the host's persistent
+  gateway so its isolated `HERMES_HOME` is the backend under test; the real
+  user service remains untouched.
+- A fresh process resolved `pocket-world` to the exact saved repository path
+  and `session_search` returned recent Pocket World context. The real Electron
+  flow passed 1/1; the P14 targeted backend/UI matrices passed 127 and 114
+  tests respectively. No Hermes upstream commit was rewritten, and the
+  pinned commit and baseline merge commit remain unchanged.
 
 ## Baseline divergence
 

@@ -237,3 +237,20 @@ accepted regression whitelist; the P13 matrix introduced no new or different
 upstream failure. The OpenHands runtime/coding-delegate implementation is a
 prerequisite for P13; P15 remains open for its full phase scope, including
 Task Center progress exposure.
+
+## P14 acceptance
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P14-PY-01 | Project registry, project tools, gateway project RPCs, project tree, and session search | `.venv/bin/python -m pytest -q tests/tools/test_project_tools.py tests/hermes_cli/test_projects_db.py tests/hermes_cli/test_projects_cli.py tests/tui_gateway/test_projects_rpc.py tests/tui_gateway/test_project_tree.py tests/tools/test_session_search.py` | 127 passed in 3.38s | PASS |
+| P14-REAL-01 | Fresh-process project alias/path resolution and recent context recall | The test creates `Pocket World`, starts a separate Python backend process, resolves `project_switch("pocket-world")` to the exact repository path, and runs `session_search("Pocket World")`; marker `P14_PROJECT_MEMORY_E2E_OK` | Exact path resolved; recent context returned; marker emitted | PASS |
+| P14-D-01 | Desktop project store/sidebar/search UI | `cd apps/desktop && ../../node_modules/.bin/vitest run --project ui src/store/projects.test.ts src/app/chat/sidebar/project-dialog.test.tsx src/app/chat/sidebar/projects/project-menu.test.tsx src/app/chat/sidebar/projects/overview-row.test.tsx src/app/chat/sidebar/projects/workspace-groups.test.ts src/lib/session-search.test.ts` | 6 files; 114 passed | PASS |
+| P14-D-02 | Desktop E2E TypeScript boundary | `cd apps/desktop && ../../node_modules/.bin/tsc -p tsconfig.e2e.json --noEmit` | Passed | PASS |
+| P14-REAL-02 | Real Electron + isolated live gateway project browser/search/edit/delete | `cd apps/desktop && ../../node_modules/.bin/playwright test e2e/p14-project-registry.spec.ts --reporter=list` | 1 passed in 12.2s; repository directory remained on disk after project deletion | PASS |
+| P14-D-03 | Desktop production package | `cd apps/desktop && npm run build` | Vite, Electron main/preload, native staging, and `assert-dist-built` passed; existing npm/Vite/Babel/chunking warnings remain | PASS WITH WARNING |
+| P14-ACCEPTANCE | Master P14 closure | Fresh-process alias/path resolution, session recall, and real Desktop browse/search/rename/delete all passed | No new/different regression; accepted five-ID whitelist and current four-ID baseline unchanged | PASS |
+
+P14 is accepted. The project registry and session-search behavior use the
+pin-preserved Hermes implementation; Hafiye's acceptance source/test commit
+is `831405dcec4abcba033d8ccc18308804868ecb1f`. P15 remains open for the full
+OpenHands coding-delegate acceptance, including Task Center progress exposure.

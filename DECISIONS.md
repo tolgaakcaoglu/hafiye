@@ -369,3 +369,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   hides `coding_delegate` when the official packages are absent. This records
   implementation detail only; it does not close the full P15 phase or replace
   the later Task Center requirement.
+
+## ADR-0024 — Reuse Hermes project registry and session search
+
+- Date: 2026-08-24
+- Decision: Use the pinned Hermes per-profile `projects.db`, deterministic
+  project slug/name tools, gateway `projects.*` RPCs, authoritative project
+  tree, and FTS5 `session_search` as Hafiye's P14 implementation boundary. Add
+  Hafiye acceptance coverage around those existing surfaces instead of
+  introducing a second project or conversation store.
+- Reason: The master roadmap explicitly selects Hermes memory/session search
+  as the conversational base and requires deterministic project path
+  resolution across restart. The existing Hermes surfaces provide that
+  persistence and the Desktop already consumes the same gateway state.
+- Consequence: Project metadata and session recall remain shared by CLI/TUI/
+  Desktop-compatible backend paths, upstream history stays intact, and P14
+  acceptance is verified with a fresh-process path/recall test plus real
+  Electron browse/search/edit/delete coverage. This ADR records an
+  implementation detail and does not override the master roadmap.
