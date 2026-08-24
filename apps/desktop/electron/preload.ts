@@ -184,6 +184,12 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:tray:toggle-voice', listener)
 
       return () => ipcRenderer.removeListener('hermes:tray:toggle-voice', listener)
+    },
+    onEmergencyStop: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:tray:emergency-stop', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:emergency-stop', listener)
     }
   },
   getBootProgress: () => ipcRenderer.invoke('hermes:boot-progress:get'),
@@ -413,6 +419,12 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     ipcRenderer.on('hermes:window-state-changed', listener)
 
     return () => ipcRenderer.removeListener('hermes:window-state-changed', listener)
+  },
+  onEmergencyStop: callback => {
+    const listener = () => callback()
+    ipcRenderer.on('hermes:emergency-stop', listener)
+
+    return () => ipcRenderer.removeListener('hermes:emergency-stop', listener)
   },
   onFocusSession: callback => {
     const listener = (_event, sessionId) => callback(sessionId)

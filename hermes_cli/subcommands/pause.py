@@ -12,6 +12,58 @@ Ported from: gastownhall/gastown estop.go (MIT); related prior art:
 from __future__ import annotations
 
 import argparse
+import json
+import time
+import uuid
+
+
+def _request_persistent_gateway(method: str, params: dict | None = None) -> dict | None:
+    """Best-effort RPC to the local persistent Hafiye gateway.
+
+    The CLI still works when the Desktop backend is not installed or is down:
+    the durable ESTOP sentinel is the fallback.  When the backend is alive,
+    this sends the same emergency RPC used by Desktop, voice, and tray.
+    """
+    try:
+        from websockets.sync.client import connect
+
+        from hermes_cli.persistent_gateway import (
+            _read_private_token,
+            connection_descriptor,
+            paths,
+        )
+
+        targets = paths()
+        token = _read_private_token(targets.token_file)
+        if not token:
+            return None
+        descriptor = connection_descriptor(targets)
+        port = int(descriptor["port"])
+        request_id = f"cli-{uuid.uuid4().hex}"
+        url = f"ws://127.0.0.1:{port}/api/ws?token={token}"
+        with connect(url, open_timeout=1.5, close_timeout=1.5, max_size=None) as websocket:
+            websocket.send(
+                json.dumps(
+                    {
+                        "id": request_id,
+                        "method": method,
+                        "params": params or {},
+                    },
+                    separators=(",", ":"),
+                )
+            )
+            deadline = time.monotonic() + 3.0
+            while time.monotonic() < deadline:
+                response = json.loads(websocket.recv(timeout=max(0.1, deadline - time.monotonic())))
+                if response.get("id") != request_id:
+                    continue
+                if response.get("error"):
+                    return None
+                result = response.get("result")
+                return result if isinstance(result, dict) else None
+    except Exception:
+        return None
+    return None
 
 
 def cmd_pause(args: argparse.Namespace) -> int:
@@ -44,6 +96,31 @@ def cmd_resume(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_emergency_stop(args: argparse.Namespace) -> int:
+    """Run the full process-wide emergency stop through the live gateway."""
+    from agent.estop import engage, get_state
+
+    reason = getattr(args, "reason", None) or "cli"
+    report = _request_persistent_gateway("emergency.stop", {"reason": reason})
+    if report is None:
+        path = engage(reason=reason)
+        state = get_state() or {}
+        print(f"⏹️  Hafiye emergency stop engaged — reason: {state.get('reason') or reason}")
+        print(f"    sentinel: {path}")
+        print("    Persistent gateway was unavailable; new work is blocked until `hermes resume`.")
+        return 0
+
+    print(f"⏹️  Hafiye emergency stop engaged — reason: {report.get('reason') or reason}")
+    print(
+        "    TTS, active sessions, desktop backends, delegations, and processes "
+        f"were signaled (sessions={report.get('interrupted_sessions', 0)}, "
+        f"desktop={report.get('stopped_desktop_sessions', 0)}, "
+        f"delegations={report.get('interrupted_delegations', 0)}, "
+        f"processes={report.get('killed_processes', 0)})."
+    )
+    return 0
+
+
 def build_pause_parser(subparsers) -> None:
     """Attach the ``pause`` and ``resume`` subcommands to ``subparsers``."""
     pause_parser = subparsers.add_parser(
@@ -68,3 +145,19 @@ def build_pause_parser(subparsers) -> None:
         description="Remove the ESTOP sentinel; dispatch resumes on the next tick.",
     )
     resume_parser.set_defaults(func=cmd_resume)
+
+    emergency_parser = subparsers.add_parser(
+        "emergency-stop",
+        help="Stop active Hafiye work and pause new work through the live gateway",
+        description=(
+            "Run the process-wide Hafiye emergency stop. The command uses the "
+            "persistent gateway when available and falls back to the durable "
+            "pause sentinel when it is not."
+        ),
+    )
+    emergency_parser.add_argument(
+        "--reason",
+        default=None,
+        help="Optional reason stored in the emergency-stop state",
+    )
+    emergency_parser.set_defaults(func=cmd_emergency_stop)

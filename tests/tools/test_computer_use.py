@@ -6,6 +6,8 @@ import base64
 import json
 import os
 import sys
+import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock, patch
@@ -101,6 +103,54 @@ class TestDispatch:
         out = handle_computer_use({"action": "nope"})
         parsed = json.loads(out)
         assert "error" in parsed
+
+    def test_emergency_stop_blocks_follow_up_desktop_actions(self, monkeypatch):
+        from agent import estop
+        from tools.computer_use.tool import handle_computer_use
+
+        monkeypatch.setattr(estop, "is_engaged", lambda: True)
+
+        parsed = json.loads(handle_computer_use({"action": "capture"}))
+
+        assert parsed["code"] == "emergency_stop"
+        assert "paused" in parsed["error"]
+
+    def test_emergency_stop_releases_cached_desktop_backend(self, noop_backend):
+        from tools.computer_use.tool import emergency_stop_computer_use_sessions
+
+        assert noop_backend._started is True
+        assert emergency_stop_computer_use_sessions() == 1
+        assert noop_backend._started is False
+
+    def test_long_desktop_wait_honors_hard_interrupt(self):
+        from tools.computer_use.tool import handle_computer_use
+        from tools.interrupt import set_interrupt
+
+        ready = threading.Event()
+        result: dict[str, Any] = {}
+        worker_id: list[int] = []
+
+        def run_wait() -> None:
+            worker_id.append(threading.get_ident())
+            ready.set()
+            result["value"] = json.loads(
+                handle_computer_use(
+                    {"action": "wait", "seconds": 5},
+                    session_id="p13-desktop-wait",
+                )
+            )
+
+        worker = threading.Thread(target=run_wait)
+        worker.start()
+        assert ready.wait(timeout=1)
+        time.sleep(0.1)
+        set_interrupt(True, worker_id[0])
+        worker.join(timeout=2)
+        set_interrupt(False, worker_id[0])
+
+        assert not worker.is_alive()
+        assert result["value"]["code"] == "interrupted"
+        assert result["value"]["ok"] is False
 
 
     def test_type_action_routes_to_type_text_backend(self, noop_backend):

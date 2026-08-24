@@ -205,7 +205,19 @@ def set_spawn_paused(paused: bool) -> bool:
 
 def is_spawn_paused() -> bool:
     with _spawn_pause_lock:
-        return _spawn_paused
+        locally_paused = _spawn_paused
+    if locally_paused:
+        return True
+    # The durable emergency sentinel must gate a persistent gateway process as
+    # well as the CLI process that created it.  Keep explicit delegation.pause
+    # state separate so emergency.resume cannot accidentally clear an operator
+    # fan-out pause.
+    try:
+        from agent.estop import is_engaged
+
+        return bool(is_engaged())
+    except Exception:
+        return locally_paused
 
 
 def _register_subagent(record: Dict[str, Any]) -> None:

@@ -3232,26 +3232,6 @@ def _(rid, params: dict) -> dict:
     session, err = _sess_nowait(params, rid)
     if err:
         return err
-    if _session_uses_compute_host(session):
-        sid = str(params.get("session_id") or "")
-        if session.get("running"):
-            try:
-                _get_compute_host_supervisor().interrupt(sid, request_id=f"interrupt-{rid}")
-            except Exception as exc:
-                return _err(rid, 5019, f"compute-host interrupt failed: {exc}")
-        with session["history_lock"]:
-            session["_turn_cancel_requested"] = True
-            session["queued_prompt"] = None
-            session.pop("queued_prompts", None)
-            session["_queued_prompt_generation"] = int(session.get("_queued_prompt_generation", 0)) + 1
-        _clear_pending(sid)
-        try:
-            from tools.approval import resolve_gateway_approval
-
-            resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
-        except Exception:
-            pass
-        return _ok(rid, {"status": "interrupted", "turn_isolation": True})
     session, err = _sess(params, rid)
     if err:
         return err
@@ -3262,40 +3242,34 @@ def _(rid, params: dict) -> dict:
     # Always tell the agent to interrupt when the session claims a run is active:
     # stale flags are cleared below, and fresh turns clear the interrupt flag at
     # entry. This keeps a stale/missing thread handle from making Stop a no-op.
-    run_thread = session.get("_run_thread")
-    run_thread_alive = run_thread is not None and run_thread.is_alive()
-    should_interrupt = bool(session.get("running"))
-    with session["history_lock"]:
-        session["_turn_cancel_requested"] = True
-        session["queued_prompt"] = None
-        session.pop("queued_prompts", None)
-        session["_queued_prompt_generation"] = int(session.get("_queued_prompt_generation", 0)) + 1
-    if should_interrupt:
-        from agent.interrupt_compat import request_hard_interrupt
+    result = _interrupt_session_record(
+        str(params.get("session_id") or ""),
+        session,
+        f"rpc-{rid}",
+    )
+    if result.get("error"):
+        return _err(rid, 5019, str(result["error"]))
+    return _ok(rid, result)
 
-        request_hard_interrupt(session["agent"])
-    if not run_thread_alive:
-        with session["history_lock"]:
-            if session.get("running"):
-                session["running"] = False
-                _clear_inflight_turn(session)
 
-    # Stop = stop the TURN (cooperative interrupt above also kills the in-flight
-    # foreground subprocess). Background processes the agent started (dev servers,
-    # watchers) are intentionally left running — kill those individually with the
-    # "x" on the task row (process.kill). Don't reap them here.
-    # Scope the pending-prompt release to THIS session.  A global
-    # _clear_pending() would collaterally cancel clarify/sudo/secret
-    # prompts on unrelated sessions sharing the same tui_gateway
-    # process, silently resolving them to empty strings.
-    _clear_pending(params.get("session_id", ""))
-    try:
-        from tools.approval import resolve_gateway_approval
+@method("emergency.stop")
+def _(rid, params: dict) -> dict:
+    """Pause new work and interrupt TTS, turns, delegations, and processes."""
+    reason = str(params.get("reason") or "operator").strip() or "operator"
+    return _ok(rid, _emergency_stop_all(reason))
 
-        resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
-    except Exception:
-        pass
-    return _ok(rid, {"status": "interrupted"})
+
+@method("emergency.resume")
+def _(rid, params: dict) -> dict:
+    """Resume intentionally after an emergency stop."""
+    return _ok(rid, _emergency_resume())
+
+
+@method("emergency.status")
+def _(rid, params: dict) -> dict:
+    from agent import estop
+
+    return _ok(rid, {"paused": bool(estop.is_engaged()), "state": estop.get_state()})
 
 
 @method("delegation.status")

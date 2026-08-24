@@ -52,6 +52,7 @@ DEFAULT_REQUEST_TIMEOUT = 30.0
 MAX_REQUEST_TIMEOUT = 180.0
 _FRAME_HEADER = struct.Struct("!I")
 _SO_PEERCRED = getattr(socket, "SO_PEERCRED", 17)
+ESTOP_FILENAME = "ESTOP"
 _SAFE_ID = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 _SAFE_PACKAGE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+_.:@-]{0,127}$")
 _SAFE_UNIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.@:-]{0,127}(?:\.service|\.socket|\.target|\.mount|\.timer|\.path)?$")
@@ -110,6 +111,24 @@ def _default_socket_path() -> Path:
 
 def _default_audit_log() -> Path:
     return Path(os.environ.get("HAFIYE_ROOTD_AUDIT_LOG", str(DEFAULT_AUDIT_LOG)))
+
+
+def _default_estop_path(allowed_uid: int | None = None) -> Path:
+    """Resolve the durable ESTOP path shared with the non-root Hafiye process."""
+    explicit = os.environ.get("HAFIYE_ESTOP_PATH", "").strip()
+    if explicit:
+        return Path(explicit).expanduser()
+    hermes_home = os.environ.get("HERMES_HOME", "").strip()
+    if hermes_home:
+        return Path(hermes_home).expanduser() / ESTOP_FILENAME
+    if allowed_uid is not None:
+        try:
+            user_home = Path(pwd.getpwuid(allowed_uid).pw_dir)
+        except KeyError:
+            user_home = Path.home()
+    else:
+        user_home = Path.home()
+    return user_home / ".local" / "share" / "hafiye" / ESTOP_FILENAME
 
 
 def paths() -> RootBrokerPaths:
@@ -590,6 +609,7 @@ class RootBrokerServer:
         socket_path: Path | str | None = None,
         allowed_uid: int | None = None,
         audit_log: Path | str | None = None,
+        estop_path: Path | str | None = None,
         io_timeout: float = DEFAULT_REQUEST_TIMEOUT,
     ) -> None:
         self.socket_path = Path(socket_path) if socket_path is not None else _default_socket_path()
@@ -600,8 +620,18 @@ class RootBrokerServer:
         self.allowed_uid = os.getuid() if allowed_uid is None and os.geteuid() != 0 else allowed_uid
         if self.allowed_uid is None or self.allowed_uid < 0:
             raise ValueError("allowed_uid must be configured for a root broker")
+        self.estop_path = (
+            Path(estop_path) if estop_path is not None else _default_estop_path(self.allowed_uid)
+        )
         self._listener: socket.socket | None = None
         self._stop = threading.Event()
+
+    def _estop_engaged(self) -> bool:
+        """Fail closed when the durable emergency-stop state is unreadable."""
+        try:
+            return self.estop_path.exists()
+        except OSError:
+            return True
 
     def _peer_credentials(self, connection: socket.socket) -> tuple[int, int, int]:
         try:
@@ -676,6 +706,22 @@ class RootBrokerServer:
             request_id = request["id"]
             operation = request["op"]
             args = request["args"]
+            if self._estop_engaged():
+                self._audit(
+                    {
+                        "event": "request",
+                        "status": "rejected",
+                        "reason": "emergency_stop",
+                        "request_id": request_id,
+                        "operation": operation,
+                        "peer_pid": peer_pid,
+                        "peer_uid": peer_uid,
+                    }
+                )
+                raise RootBrokerError(
+                    "privileged operations are paused by emergency stop",
+                    code="emergency_stop",
+                )
             self._audit(
                 {
                     "event": "request",
@@ -902,11 +948,15 @@ def generate_systemd_unit(
     socket_path: str | Path = DEFAULT_SOCKET_PATH,
     audit_log: str | Path = DEFAULT_AUDIT_LOG,
     allowed_uid: int,
+    estop_path: str | Path | None = None,
 ) -> str:
     """Generate the root service unit without embedding a secret."""
     if allowed_uid < 0:
         raise ValueError("allowed_uid must be non-negative")
     script = Path(__file__).resolve() if rootd_script is None else Path(rootd_script)
+    effective_estop_path = (
+        Path(estop_path) if estop_path is not None else _default_estop_path(allowed_uid)
+    )
     return (
         "[Unit]\n"
         "Description=Hafiye privileged operation broker\n"
@@ -917,6 +967,7 @@ def generate_systemd_unit(
         f"ExecStart={shlex_quote(str(python_executable))} {shlex_quote(str(script))} --serve"
         f" --socket {shlex_quote(str(socket_path))}"
         f" --audit-log {shlex_quote(str(audit_log))}"
+        f" --estop-path {shlex_quote(str(effective_estop_path))}"
         f" --allowed-uid {allowed_uid}\n"
         "RuntimeDirectory=hafiye\n"
         "RuntimeDirectoryMode=0755\n"
@@ -947,11 +998,24 @@ def _run_sudo_install(arguments: list[str]) -> int:
     return result.returncode
 
 
-def install_system_service(*, allowed_uid: int | None = None) -> int:
+def install_system_service(
+    *, allowed_uid: int | None = None, estop_path: str | Path | None = None
+) -> int:
     """Install and start the root unit, prompting through normal sudo once."""
     uid = _current_uid() if allowed_uid is None else int(allowed_uid)
     if os.geteuid() != 0:
-        return _run_sudo_install(["--install-system", "--allowed-uid", str(uid)])
+        effective_estop_path = (
+            Path(estop_path) if estop_path is not None else _default_estop_path(uid)
+        )
+        return _run_sudo_install(
+            [
+                "--install-system",
+                "--allowed-uid",
+                str(uid),
+                "--estop-path",
+                str(effective_estop_path),
+            ]
+        )
     if sys.platform != "linux":
         raise RootBrokerError("hafiye-rootd.service requires Linux", code="unsupported_platform")
     service_paths = paths()
@@ -965,6 +1029,7 @@ def install_system_service(*, allowed_uid: int | None = None) -> int:
         socket_path=service_paths.socket_path,
         audit_log=service_paths.audit_log,
         allowed_uid=uid,
+        estop_path=estop_path,
     )
     temporary = service_paths.unit_path.with_suffix(f".service.{os.getpid()}.tmp")
     temporary.write_text(unit, encoding="utf-8")
@@ -988,7 +1053,9 @@ def uninstall_system_service() -> int:
 def root_broker_command(args: argparse.Namespace) -> int:
     command = getattr(args, "root_command", None) or "status"
     if command == "install":
-        return install_system_service()
+        return install_system_service(
+            estop_path=getattr(args, "estop_path", None),
+        )
     if command == "uninstall":
         return uninstall_system_service()
     if command in {"start", "stop", "restart", "status"}:
@@ -1043,6 +1110,7 @@ def _build_standalone_parser() -> argparse.ArgumentParser:
     parser.add_argument("--uninstall-system", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--socket", default=str(_default_socket_path()), help=argparse.SUPPRESS)
     parser.add_argument("--audit-log", default=str(_default_audit_log()), help=argparse.SUPPRESS)
+    parser.add_argument("--estop-path", default=None, help=argparse.SUPPRESS)
     parser.add_argument("--allowed-uid", type=int, default=None, help=argparse.SUPPRESS)
     return parser
 
@@ -1057,6 +1125,7 @@ def main(argv: list[str] | None = None) -> int:
             socket_path=args.socket,
             audit_log=args.audit_log,
             allowed_uid=allowed_uid,
+            estop_path=args.estop_path,
         )
         try:
             server.serve_forever()
@@ -1064,7 +1133,10 @@ def main(argv: list[str] | None = None) -> int:
             server.close()
         return 0
     if args.install_system:
-        return install_system_service(allowed_uid=args.allowed_uid)
+        return install_system_service(
+            allowed_uid=args.allowed_uid,
+            estop_path=args.estop_path,
+        )
     if args.uninstall_system:
         return uninstall_system_service()
     _build_standalone_parser().error("one of --serve, --install-system, or --uninstall-system is required")

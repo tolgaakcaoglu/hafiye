@@ -145,6 +145,7 @@ import {
   useBackgroundSync
 } from './hooks/use-background-sync'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
+import { useEmergencyStopBridge } from './hooks/use-emergency-stop-bridge'
 import { usePetBridge } from './hooks/use-pet-bridge'
 import { useQuickEntryBridge } from './hooks/use-quick-entry-bridge'
 import { useSessionTileDelegate } from './hooks/use-session-tile-delegate'
@@ -687,6 +688,8 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     submitText,
     toggleVoice: () => requestVoiceToggle()
   })
+
+  useEmergencyStopBridge({ requestGateway })
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })

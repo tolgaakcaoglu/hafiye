@@ -20,13 +20,14 @@ from hafiye_rootd import (
 )
 
 
-def _start_server(tmp_path, *, allowed_uid: int | None = None):
+def _start_server(tmp_path, *, allowed_uid: int | None = None, estop_path=None):
     socket_path = tmp_path / "run" / "root.sock"
     audit_log = tmp_path / "log" / "rootd.jsonl"
     server = RootBrokerServer(
         socket_path=socket_path,
         allowed_uid=os.getuid() if allowed_uid is None else allowed_uid,
         audit_log=audit_log,
+        estop_path=estop_path,
         io_timeout=2,
     )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -130,6 +131,26 @@ def test_unknown_args_and_oversized_frame_fail_closed(tmp_path):
             response = _receive_response(connection)
             assert response["ok"] is False
             assert response["error"]["code"] == "malformed_request"
+    finally:
+        _stop_server(server, thread)
+
+
+def test_emergency_stop_blocks_new_root_operations(tmp_path):
+    estop_path = tmp_path / "ESTOP"
+    server, thread, socket_path, audit_log = _start_server(
+        tmp_path,
+        estop_path=estop_path,
+    )
+    try:
+        estop_path.write_text('{"reason":"p13-test"}\n', encoding="utf-8")
+        with pytest.raises(RootBrokerError, match="paused by emergency stop") as exc_info:
+            RootBrokerClient(socket_path, timeout=2).exec("id -u")
+        assert exc_info.value.code == "emergency_stop"
+        records = [json.loads(line) for line in audit_log.read_text().splitlines()]
+        assert any(
+            record.get("reason") == "emergency_stop" and record.get("status") == "rejected"
+            for record in records
+        )
     finally:
         _stop_server(server, thread)
 

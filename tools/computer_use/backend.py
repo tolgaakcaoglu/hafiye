@@ -243,7 +243,28 @@ class ComputerUseBackend(ABC):
 
     # ── Timing ──────────────────────────────────────────────────────
     def wait(self, seconds: float) -> ActionResult:
-        """Default implementation: time.sleep."""
+        """Wait while honoring the agent's thread-scoped hard interrupt."""
         import time
-        time.sleep(max(0.0, min(seconds, 30.0)))
+
+        duration = max(0.0, min(seconds, 30.0))
+        deadline = time.monotonic() + duration
+        while True:
+            try:
+                from tools.interrupt import is_interrupted
+
+                if is_interrupted():
+                    return ActionResult(
+                        ok=False,
+                        action="wait",
+                        message="desktop wait interrupted",
+                        code="interrupted",
+                    )
+            except Exception:
+                # The optional interrupt helper must not make a native backend
+                # unusable when it is imported outside the normal agent path.
+                pass
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(0.05, remaining))
         return ActionResult(ok=True, action="wait", message=f"waited {seconds:.2f}s")

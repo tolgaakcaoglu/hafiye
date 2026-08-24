@@ -264,11 +264,28 @@ def test_cli_resume_when_not_paused(hermes_home, capsys):
     assert "not paused" in capsys.readouterr().out.lower()
 
 
+def test_cli_emergency_stop_falls_back_to_durable_sentinel(hermes_home, capsys, monkeypatch):
+    from hermes_cli.subcommands import pause as pause_commands
+
+    monkeypatch.setattr(
+        pause_commands,
+        "_request_persistent_gateway",
+        lambda method, params=None: None,
+    )
+    rc = pause_commands.cmd_emergency_stop(argparse.Namespace(reason="cli-test"))
+
+    assert rc == 0
+    assert estop.is_engaged() is True
+    assert estop.get_state()["reason"] == "cli-test"
+    assert "emergency stop" in capsys.readouterr().out.lower()
+
+
 def test_builtin_subcommands_include_pause_resume():
     from hermes_cli.main import _BUILTIN_SUBCOMMANDS
 
     assert "pause" in _BUILTIN_SUBCOMMANDS
     assert "resume" in _BUILTIN_SUBCOMMANDS
+    assert "emergency-stop" in _BUILTIN_SUBCOMMANDS
 
 
 # ── hermes status surfacing ─────────────────────────────────────────────────

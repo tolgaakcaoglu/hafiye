@@ -148,6 +148,7 @@ declare global {
         onOpenSession: (callback: (sessionId: string) => void) => () => void
         onOpenSettings: (callback: () => void) => () => void
         onToggleVoice: (callback: () => void) => () => void
+        onEmergencyStop: (callback: () => void) => () => void
       }
       getBootProgress: () => Promise<DesktopBootProgress>
       getConnectionConfig: (profile?: null | string) => Promise<DesktopConnectionConfig>
@@ -435,6 +436,7 @@ declare global {
         force?: boolean
       }) => Promise<{ ok: boolean; pluginName?: string; path?: string; error?: string }>
       onWindowStateChanged?: (callback: (payload: HermesWindowState) => void) => () => void
+      onEmergencyStop?: (callback: () => void) => () => void
       onFocusSession?: (callback: (sessionId: string) => void) => () => void
       onNotificationAction?: (callback: (payload: { actionId: string; sessionId?: string }) => void) => () => void
       /** Plugin (and other session-less) notification body/action activation. */

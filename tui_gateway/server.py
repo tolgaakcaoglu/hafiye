@@ -14489,6 +14489,118 @@ def _tts_stream_stop(user_barge: bool = True) -> None:
         pass
 
 
+def _interrupt_session_record(
+    sid: str,
+    session: dict,
+    reason: str = "operator",
+) -> dict[str, Any]:
+    """Cancel one live session through the shared cancellation seam.
+
+    ``session.interrupt`` and the process-wide emergency controller both use
+    this helper.  Keeping the queue, pending-prompt, agent, and compute-host
+    cleanup together prevents a UI surface from stopping audio while leaving a
+    stale running flag or an approval request behind.
+    """
+    if _session_uses_compute_host(session):
+        if session.get("running"):
+            try:
+                _get_compute_host_supervisor().interrupt(
+                    sid,
+                    request_id=f"interrupt-{reason[:80]}",
+                )
+            except Exception as exc:
+                return {"status": "error", "error": f"compute-host interrupt failed: {exc}"}
+        with session["history_lock"]:
+            session["_turn_cancel_requested"] = True
+            session["queued_prompt"] = None
+            session.pop("queued_prompts", None)
+            session["_queued_prompt_generation"] = int(
+                session.get("_queued_prompt_generation", 0)
+            ) + 1
+        _clear_pending(sid)
+        try:
+            from tools.approval import resolve_gateway_approval
+
+            resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
+        except Exception:
+            pass
+        return {"status": "interrupted", "turn_isolation": True}
+
+    run_thread = session.get("_run_thread")
+    run_thread_alive = run_thread is not None and run_thread.is_alive()
+    should_interrupt = bool(session.get("running"))
+    with session["history_lock"]:
+        session["_turn_cancel_requested"] = True
+        session["queued_prompt"] = None
+        session.pop("queued_prompts", None)
+        session["_queued_prompt_generation"] = int(
+            session.get("_queued_prompt_generation", 0)
+        ) + 1
+    if should_interrupt and session.get("agent") is not None:
+        try:
+            from agent.interrupt_compat import request_hard_interrupt
+
+            request_hard_interrupt(session["agent"])
+        except Exception as exc:
+            return {"status": "error", "error": f"agent interrupt failed: {exc}"}
+    if not run_thread_alive:
+        with session["history_lock"]:
+            if session.get("running"):
+                session["running"] = False
+                _clear_inflight_turn(session)
+
+    _clear_pending(sid)
+    try:
+        from tools.approval import resolve_gateway_approval
+
+        resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
+    except Exception:
+        pass
+    return {"status": "interrupted" if should_interrupt else "idle"}
+
+
+_cancellation_controller = None
+
+
+def _get_cancellation_controller():
+    global _cancellation_controller
+    if _cancellation_controller is None:
+        from tools.async_delegation import interrupt_all
+        from tools.process_registry import process_registry
+        from tui_gateway.cancellation import CancellationController
+
+        def _stop_desktop_actions() -> int:
+            from tools.computer_use.tool import emergency_stop_computer_use_sessions
+
+            return emergency_stop_computer_use_sessions()
+
+        _cancellation_controller = CancellationController(
+            sessions=_sessions,
+            sessions_lock=_sessions_lock,
+            stop_tts=_tts_stream_stop,
+            stop_desktop_actions=_stop_desktop_actions,
+            interrupt_session=_interrupt_session_record,
+            interrupt_delegations=interrupt_all,
+            kill_processes=lambda: process_registry.kill_all(
+                source="emergency_stop",
+                consume_output=True,
+            ),
+        )
+    return _cancellation_controller
+
+
+def _emergency_stop_all(reason: str = "operator") -> dict[str, Any]:
+    """Backend entry point shared by Desktop, voice, tray, and RPC callers."""
+    report = _get_cancellation_controller().emergency_stop(reason).as_dict()
+    _broadcast_global_event("emergency.stop", report)
+    return report
+
+
+def _emergency_resume() -> dict[str, Any]:
+    """Lift the global pause without changing an explicit delegation pause."""
+    return _get_cancellation_controller().resume()
+
+
 def _tts_stream_barge_in_monitor(stop: threading.Event, done: threading.Event) -> None:
     """Deprecated shim — playback-only monitor replaced by the full-duplex
     agent-turn listener (see ``_full_duplex_listener``). Kept as a name so

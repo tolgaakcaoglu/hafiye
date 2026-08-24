@@ -166,6 +166,86 @@ def test_session_interrupt_uses_explicit_stop_compatibility(server, monkeypatch,
     assert calls == ["hard" if kind == "hard-only" else "legacy"]
 
 
+def test_emergency_stop_interrupts_live_work_and_gates_new_prompts(server, monkeypatch, tmp_path):
+    from agent import estop
+    from tools import async_delegation
+    from tools.process_registry import process_registry
+
+    calls = []
+
+    class _Agent:
+        def hard_interrupt(self):
+            calls.append("agent")
+
+    session = {
+        "agent": _Agent(),
+        "history_lock": threading.Lock(),
+        "inflight_turn": {"user": "long task"},
+        "running": True,
+        "queued_prompt": "later",
+        "session_key": "emergency-session",
+        "_run_thread": None,
+    }
+    server._sessions.clear()
+    server._sessions["emergency-runtime"] = session
+
+    sentinel = tmp_path / "ESTOP"
+    monkeypatch.setattr(estop, "sentinel_path", lambda: sentinel)
+    monkeypatch.setattr(server, "_session_uses_compute_host", lambda _session: False)
+    monkeypatch.setattr(server, "_tts_stream_stop", lambda: calls.append("tts"))
+    monkeypatch.setattr(server, "_clear_pending", lambda sid: calls.append(f"pending:{sid}"))
+    monkeypatch.setattr(
+        async_delegation,
+        "interrupt_all",
+        lambda reason="shutdown": calls.append(f"delegations:{reason}") or 2,
+    )
+    monkeypatch.setattr(
+        process_registry,
+        "kill_all",
+        lambda **kwargs: calls.append(f"processes:{kwargs['source']}") or 3,
+    )
+    events = []
+    monkeypatch.setattr(
+        server,
+        "_broadcast_global_event",
+        lambda event, payload=None: events.append((event, payload)),
+    )
+    server._cancellation_controller = None
+
+    stopped = server._methods["emergency.stop"](
+        "estop",
+        {"reason": "global-hotkey"},
+    )
+
+    assert stopped["result"]["status"] == "paused"
+    assert stopped["result"]["paused"] is True
+    assert stopped["result"]["interrupted_sessions"] == 1
+    assert stopped["result"]["interrupted_delegations"] == 2
+    assert stopped["result"]["killed_processes"] == 3
+    assert session["running"] is False
+    assert calls == [
+        "tts",
+        "agent",
+        "pending:emergency-runtime",
+        "delegations:global-hotkey",
+        "processes:emergency_stop",
+    ]
+    assert events == [("emergency.stop", stopped["result"])]
+
+    blocked = server._methods["prompt.submit"](
+        "blocked",
+        {"session_id": "emergency-runtime", "text": "new work"},
+    )
+    assert blocked["error"]["code"] == 4091
+    assert blocked["error"]["data"] == {"paused": True}
+
+    resumed = server._methods["emergency.resume"]("resume", {})
+    assert resumed["result"]["status"] == "resumed"
+    assert resumed["result"]["paused"] is False
+
+    server._sessions.clear()
+
+
 # ── write_json ────────────────────────────────────────────────
 
 

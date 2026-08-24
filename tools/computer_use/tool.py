@@ -420,6 +420,43 @@ def release_computer_use_session(session_id: str) -> bool:
     return True
 
 
+def emergency_stop_computer_use_sessions() -> int:
+    """Force-stop all cached desktop backends without waiting on action locks.
+
+    Normal session release waits for an in-flight action so its transcript can
+    settle cleanly.  Emergency stop has the opposite contract: terminate the
+    driver immediately, discard every cached target, and let the interrupted
+    tool return an error at the next boundary.
+    """
+    global _backend
+
+    with _backend_lock:
+        backends: list[ComputerUseBackend] = []
+        seen: set[int] = set()
+        for backend in [*list(_backends.values()), _backend]:
+            if backend is None or id(backend) in seen:
+                continue
+            seen.add(id(backend))
+            backends.append(backend)
+        _backends.clear()
+        _backend_call_locks.clear()
+        _backend_permission_modes.clear()
+        _backend = None
+
+    with _approval_lock:
+        _session_auto_approve.clear()
+        _always_allow.clear()
+
+    stopped = 0
+    for backend in backends:
+        try:
+            backend.stop()
+            stopped += 1
+        except Exception:
+            logger.debug("computer_use emergency stop failed", exc_info=True)
+    return stopped
+
+
 def _shutdown_backend_atexit() -> None:
     """Stop all cached backends so cua-driver children don't outlive us.
 
@@ -552,6 +589,29 @@ def handle_computer_use(args: Dict[str, Any], **kwargs) -> Any:
     action = (args.get("action") or "").strip().lower()
     if not action:
         return json.dumps({"error": "missing `action`"})
+    # Emergency stop is durable across the persistent gateway process.  The
+    # agent interrupt handles the current tool call; this gate prevents a
+    # subsequent model/tool iteration from issuing another desktop action
+    # before the operator explicitly resumes Hafiye.
+    try:
+        from agent.estop import is_engaged
+
+        if is_engaged():
+            return json.dumps(
+                {
+                    "error": "desktop actions paused by emergency stop",
+                    "code": "emergency_stop",
+                    "hint": "Run emergency.resume or `hermes resume` before retrying.",
+                }
+            )
+    except Exception:
+        # The safety check fails closed if the pause state cannot be read.
+        return json.dumps(
+            {
+                "error": "desktop actions unavailable: emergency-stop state could not be read",
+                "code": "emergency_stop_state_unavailable",
+            }
+        )
     # Per-run key for approval-state and daemon-mode isolation across
     # concurrent sessions.
     session_id = str(kwargs.get("session_id") or "")

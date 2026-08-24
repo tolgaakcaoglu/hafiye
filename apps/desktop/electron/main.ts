@@ -261,6 +261,8 @@ import {
   spliceRegistrySessionRows
 } from './profile-session-routing'
 import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
+import { createEmergencyStopShortcut, DEFAULT_EMERGENCY_STOP_SHORTCUT } from './emergency-stop-shortcut'
+import { createGnomeEmergencyStopFallback, gnomeSessionSupportsFallback } from './gnome-emergency-stop'
 import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
 import * as remoteLifecycle from './remote-lifecycle'
 import {
@@ -12273,6 +12275,56 @@ function toggleQuickEntryWindow() {
 
 const quickEntryShortcut = createQuickEntryShortcut(globalShortcut, toggleQuickEntryWindow)
 
+function broadcastEmergencyStop(): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send('hermes:emergency-stop')
+    }
+  }
+}
+
+function resolveEmergencyStopCli(): string | null {
+  const candidates = [
+    path.join(SOURCE_REPO_ROOT, '.venv', 'bin', 'hafiye'),
+    path.join(SOURCE_REPO_ROOT, '.venv', 'bin', 'hermes'),
+    path.join(SOURCE_REPO_ROOT, 'venv', 'bin', 'hafiye'),
+    path.join(SOURCE_REPO_ROOT, 'venv', 'bin', 'hermes'),
+    path.join(ACTIVE_HERMES_ROOT, 'venv', 'bin', 'hafiye'),
+    path.join(ACTIVE_HERMES_ROOT, 'venv', 'bin', 'hermes'),
+    findOnPath('hafiye'),
+    findOnPath('hermes')
+  ]
+
+  return candidates.find(candidate => Boolean(candidate && fileExists(candidate))) ?? null
+}
+
+function createEmergencyStopFallback() {
+  if (!gnomeSessionSupportsFallback()) {
+    return undefined
+  }
+
+  const cliPath = resolveEmergencyStopCli()
+
+  if (!cliPath) {
+    rememberLog('[emergency-stop] no Hafiye CLI found for the GNOME Wayland fallback')
+
+    return undefined
+  }
+
+  return createGnomeEmergencyStopFallback(cliPath, process.env.HERMES_HOME)
+}
+
+const emergencyStopFallback = createEmergencyStopFallback()
+const emergencyStopShortcut = createEmergencyStopShortcut(globalShortcut, broadcastEmergencyStop, emergencyStopFallback)
+
+function registerEmergencyStopShortcut(): void {
+  if (!emergencyStopShortcut.register()) {
+    rememberLog('[emergency-stop] shortcut unavailable — Electron and GNOME user-keybinding registration failed')
+  } else if (emergencyStopFallback && !globalShortcut.isRegistered(DEFAULT_EMERGENCY_STOP_SHORTCUT)) {
+    rememberLog('[emergency-stop] using GNOME user-keybinding fallback for Control+Super+Escape')
+  }
+}
+
 function applyQuickEntrySettings(settings) {
   const state = quickEntryShortcut.apply(settings)
 
@@ -12362,6 +12414,7 @@ function refreshHafiyeTrayMenu(): void {
       { type: 'separator' },
       { enabled: false, label: 'Mute Microphone (Voice phase)' },
       { click: () => sendTrayCommand('hermes:tray:toggle-voice'), label: 'Pause Voice' },
+      { click: () => sendTrayCommand('hermes:tray:emergency-stop'), label: 'Emergency Stop' },
       { enabled: false, label: 'Pause Computer Control (Host tools phase)' },
       {
         label: 'Privacy Mode',
@@ -15625,6 +15678,7 @@ app.whenReady().then(() => {
   }
 
   createHafiyeTray()
+  registerEmergencyStopShortcut()
   createWindow()
 
   // SHOW_ON_LOGIN gives the user a brief, explicit “Hafiye hazır” signal after
@@ -15787,6 +15841,7 @@ app.on('before-quit', event => {
   // closeHudWindow(): that also re-shows the main window, which is wrong on the
   // way out (and `hudRestoreMainWindow` may still be armed from entering HUD).
   hudSnapShortcut.dispose()
+  emergencyStopShortcut.dispose()
 
   if (hudWindow && !hudWindow.isDestroyed()) {
     hudWindow.removeAllListeners('closed')

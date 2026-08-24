@@ -16,6 +16,9 @@
 // spoken utterance to match.
 const STOP_PHRASES: readonly string[] = [
   'stop',
+  'dur',
+  'dur lütfen',
+  'lütfen dur',
   'stop listening',
   'stop it',
   'stop please',
@@ -35,7 +38,17 @@ const STOP_PHRASES: readonly string[] = [
 
 // Optional address prefixes so "hermes stop" / "ok stop" / "hey hermes, stop"
 // still count. Stripped before matching the core phrase.
-const ADDRESS_PREFIXES: readonly string[] = ['hey hermes', 'hey hermes,', 'hermes', 'hermes,', 'ok', 'okay', 'hey']
+const ADDRESS_PREFIXES: readonly string[] = [
+  'hey hermes',
+  'hey hermes,',
+  'hermes',
+  'hermes,',
+  'hey hafiye',
+  'hafiye',
+  'ok',
+  'okay',
+  'hey'
+]
 
 // Normalise: lowercase, strip surrounding punctuation/whitespace, collapse
 // internal runs of spaces. Trailing punctuation (".", "!", "…") is common in

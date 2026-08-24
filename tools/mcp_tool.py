@@ -5771,6 +5771,32 @@ def _make_tool_handler(server_name: str, tool_name: str, tool_timeout: float):
     """
 
     def _handler(args: dict, **kwargs) -> str:
+        # Hafiye's managed Linux desktop provider is the native MCP surface
+        # for computer-use-linux.  Keep the durable emergency-stop gate in
+        # this narrow handler so a paused model cannot lazy-connect or issue a
+        # new desktop action after the controller has fired.
+        try:
+            from hafiye_computer_use import COMPUTER_USE_LINUX_MCP_SERVER
+
+            is_managed_desktop = server_name == COMPUTER_USE_LINUX_MCP_SERVER
+        except Exception:
+            is_managed_desktop = False
+        if is_managed_desktop:
+            try:
+                from agent.estop import is_engaged
+
+                if is_engaged():
+                    return tool_error(
+                        "desktop actions paused by emergency stop",
+                        code="emergency_stop",
+                        hint="Run emergency.resume or `hermes resume` before retrying.",
+                    )
+            except Exception:
+                return tool_error(
+                    "desktop actions unavailable: emergency-stop state could not be read",
+                    code="emergency_stop_state_unavailable",
+                )
+
         # Trust-tier gate (security boundary): write-capable tools on
         # servers configured ``trust: untrusted`` must be approved by the
         # user before ANY transport work happens — including the lazy

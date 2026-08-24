@@ -6,6 +6,7 @@ import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { triggerHaptic } from '@/lib/haptics'
 import { markAssistantIdSpoken, resolveSpokenReply } from '@/lib/spoken-reply'
 import { clearWakeIndicator, syncWakeIndicatorWithVoice } from '@/lib/wake-indicator'
+import { stopVoicePlayback } from '@/lib/voice-playback'
 import { $voiceConversationStartRequest, takeVoiceConversationStart } from '@/store/composer'
 import { resetBrowseState } from '@/store/composer-input-history'
 import { $gateway } from '@/store/gateway'
@@ -135,6 +136,19 @@ export function useComposerVoice({
   // fail and the conversation never starts listening.
   const wakePauseBarrierRef = useRef<Promise<void> | null>(null)
 
+  const emergencyStop = useCallback(() => {
+    stopVoicePlayback()
+    const gateway = $gateway.get()
+
+    if (!gateway) {
+      return
+    }
+
+    return gateway
+      .request('emergency.stop', { reason: 'voice-stop' })
+      .catch(error => notifyError(error, 'Emergency stop failed'))
+  }, [])
+
   const conversation = useVoiceConversation({
     busy,
     consumePendingResponse,
@@ -148,7 +162,10 @@ export function useComposerVoice({
     // hands-free conversation. Flipping the flag is the authoritative off
     // switch — the enabled=false prop + effect below drive conversation.end()
     // teardown (mic close, wake re-arm).
-    onStopWord: () => setVoiceConversationActive(false),
+    onStopWord: () => {
+      setVoiceConversationActive(false)
+      void emergencyStop()
+    },
     onSubmit: submitVoiceTurn,
     onTranscribeAudio,
     pendingResponse: pendingTurnResponse,

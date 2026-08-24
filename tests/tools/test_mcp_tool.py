@@ -580,6 +580,28 @@ class TestToolHandler:
         finally:
             _servers.pop("test_srv", None)
 
+    def test_managed_desktop_call_is_gated_by_emergency_stop(self, monkeypatch):
+        from agent import estop
+        from hafiye_computer_use import COMPUTER_USE_LINUX_MCP_SERVER
+        from tools.mcp_tool import _make_tool_handler, _servers
+
+        mock_session = MagicMock()
+        mock_session.call_tool = AsyncMock(
+            return_value=_make_call_result("must not run", is_error=False)
+        )
+        server = _make_mock_server(COMPUTER_USE_LINUX_MCP_SERVER, session=mock_session)
+        _servers[COMPUTER_USE_LINUX_MCP_SERVER] = server
+
+        try:
+            monkeypatch.setattr(estop, "is_engaged", lambda: True)
+            handler = _make_tool_handler(COMPUTER_USE_LINUX_MCP_SERVER, "click", 120)
+            result = json.loads(handler({"element": 1}))
+            assert result["code"] == "emergency_stop"
+            assert "paused" in result["error"]
+            mock_session.call_tool.assert_not_called()
+        finally:
+            _servers.pop(COMPUTER_USE_LINUX_MCP_SERVER, None)
+
 
     def test_recycled_stdio_server_reconnects_lazily_on_tool_call(self):
         from tools.mcp_tool import _make_tool_handler, _servers

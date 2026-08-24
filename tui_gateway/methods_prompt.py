@@ -306,6 +306,13 @@ def _(rid, params: dict) -> dict:
             _voice_emit("voice.transcript", {"stop_phrase": True, "typed": True})
             logger.info("prompt.submit: typed stop phrase — voice chat ended")
             return _ok(rid, {"voice_stopped": True})
+    # Emergency stop is a gateway-wide gate, not just a CLI dispatch hint.
+    # Keep the stop/resume/status RPCs available while refusing every new root
+    # prompt before it can claim a session slot or build an agent.
+    from agent.estop import paused_reply
+
+    if (pause_message := paused_reply()) is not None:
+        return _err(rid, 4091, pause_message, data={"paused": True})
     truncate_user_ordinal = params.get("truncate_before_user_ordinal")
     if params.get("interrupted"):
         # Client-side barge-in (desktop VAD / typing over playback) — latch it
