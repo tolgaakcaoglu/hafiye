@@ -683,3 +683,9 @@ silently treated as passing.
   that the required desktop action sequence was stopped by the shortcut. No
   Hafiye source regression is established; direct managed P23.9 acceptance
   remains green.
+- A follow-up real local-Qwen command using
+  `.venv/bin/hafiye ask --provider custom --model
+  qwen2.5-0.5b-instruct-q4 --toolsets computer_use` with an explicit 60-second
+  `computer_use` wait request exited without producing a `computer_use` tool
+  event. No emergency chord was sent in that probe, and no P23.15 acceptance
+  is claimed.

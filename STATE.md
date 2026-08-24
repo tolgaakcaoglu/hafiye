@@ -1698,6 +1698,10 @@ claimed as passed.
   `terminal` tool instead of a managed desktop action, so the required
   long-running desktop-task stop sequence is not claimed as passed; KI-045
   records this validation warning.
+- A follow-up real local-Qwen probe using `.venv/bin/hafiye ask --toolsets
+  computer_use` exited without producing a `computer_use` tool event, so no
+  chord was sent and no P23.15 acceptance was claimed. This is retained as
+  the same model/tool-selection warning, not a Hafiye source regression.
 - The real P23.7 fail-closed check temporarily selected the configured Gemini
   route, set global `LOCAL_ONLY`, and ran `.venv/bin/hafiye ask` without an
   explicit provider/model. It exited 1 with `Hafiye LOCAL_ONLY policy blocked
