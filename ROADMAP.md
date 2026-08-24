@@ -627,6 +627,9 @@ E2E Suite — is now the first incomplete phase.
 - [ ] Complete the real 23.8 file organize-and-verify replay; the current
       Qwen2 validation fixture did not complete the multi-step tool sequence
       (KI-041).
+- [ ] Complete the local-route 23.2 natural-language Desktop task; the current
+      Qwen2 validation fixture returned text without a computer-use call
+      (KI-042).
 - [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
       quota is available.
 - [ ] Execute and record every remaining real-machine item 23.1 and 23.3–23.16

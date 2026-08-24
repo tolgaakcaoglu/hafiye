@@ -1642,6 +1642,11 @@ claimed as passed.
   not moved. This is recorded as KI-041 and 23.8 remains unaccepted. The
   successful single-command terminal evidence above is not being generalized
   to multi-step file behavior.
+- A packaged Desktop replay against the managed local Qwen2 route with the
+  exact P23.2 prompt `Firefox'u aç.` reached a ready Composer but returned the
+  wrong text `Merhaba, FireFox'a açın!` without a computer-use call or observed
+  Firefox task result. It is recorded as KI-042; local single-command terminal
+  success does not establish natural-language desktop execution.
 - Fresh supporting rechecks passed: the real project alias/session test
   returned `1 passed in 1.36s`; `hafiye runtime openhands doctor` returned
   `ready=true` with `blockers=[]` for OpenHands SDK `1.41.0`; `hafiye root exec
@@ -1669,7 +1674,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | Master item | Current evidence | Final status |
 |---|---|---|
 | 23.1 Boot | Packaged Desktop reached Composer after a real gateway restart; a fresh reboot/login replay is not recorded | PARTIAL / REBOOT REQUIRED |
-| 23.2 Text | Composer reached Firefox and opened it, but the same turn ended with Gemini HTTP 429 | WARNING / RE-RUN |
+| 23.2 Text | Gemini route previously opened Firefox before HTTP 429; local Qwen2 replay returned wrong text without a computer-use call (KI-042) | NOT ACCEPTED / RE-RUN |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |

@@ -603,3 +603,18 @@ silently treated as passing.
   terminal command, so this record is limited to multi-step local fixture
   behavior. Repeat 23.8 with a local model/route that reliably completes the
   prescribed tool sequence; do not treat the marker alone as success.
+
+## KI-042 — Qwen2 validation fixture did not complete a natural-language desktop task
+
+- Status: P23 VALIDATION WARNING; no Hafiye source regression established.
+- On 2026-08-25 the real packaged Desktop was launched against the managed
+  local Qwen2 route and given the exact P23 text request `Firefox'u aç.`. The
+  Composer became ready, but the model returned a wrong natural-language reply
+  (`Merhaba, FireFox'a açın!`) without a computer-use tool call; no new Firefox
+  window or successful task transcript was observed. The 30-second replay was
+  therefore not accepted as P23.2 text execution.
+- The managed runtime's direct terminal tool call and packaged Desktop
+  `/bin/printf` tool block remain valid narrow-path evidence. This issue covers
+  the validation fixture's reliability for natural-language desktop/file
+  tool-calling; the clean Gemini-backed P23.2/P23.6 replay also remains open
+  because the provider returned HTTP 429 quota exhaustion (KI-037).
