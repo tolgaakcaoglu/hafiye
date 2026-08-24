@@ -9,8 +9,8 @@ Last updated: 2026-08-24
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 4972645e07c408a8f0856bc4f1ee1b1cd62cd63a
-  (P8 privileged root broker; source commit)
+- Current Hafiye source HEAD: 6d3672e498e1bcb9316e5c7d88c9fc896714630c
+  (P9 managed computer-use-linux MCP integration; source commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -41,8 +41,10 @@ P6 — Model router + privacy modes: complete.
 
 P7 — Full host tools + execution policy: complete.
 
-P8 — Hafiye root broker: complete. P9 — Linux computer use is the next
-incomplete phase.
+P8 — Hafiye root broker: complete.
+
+P9 — Linux computer use: complete. P10 — Browser is the next incomplete
+phase.
 
 ## Verified working
 
@@ -141,6 +143,19 @@ incomplete phase.
 - The real system socket rejected a `nobody` peer with `permission_denied`.
   Broker audit records contain peer identity, request lifecycle, duration, and
   redacted arguments; no raw acceptance command text was present.
+- Hafiye automatically manages the pinned
+  `agent-sh/computer-use-linux` source binary at
+  `/home/tolga/.local/bin/computer-use-linux` as the reserved built-in MCP
+  provider `hafiye-computer-use-linux`; no `mcp_servers` edit is required.
+- A real Hermes MCP discovery registered 18 tools from the managed provider.
+  The provider was exercised on the actual GNOME Wayland session: windows were
+  enumerated, Calculator's AT-SPI tree was read, `12*7` was entered and the
+  result `84` was read back, Firefox navigation and application switching were
+  verified, and VS Code/Files windows were opened and queried.
+- Desktop Settings includes a real `Settings → Computer` diagnostics page
+  showing the managed binary, source pin, MCP provider, the four required
+  readiness booleans, blockers, and a recheck action. Its component test and
+  the full Desktop UI suite pass.
 
 ## Regression status
 
@@ -167,9 +182,16 @@ The accepted five-ID upstream whitelist and current four-ID comparison baseline
 are unchanged; no new P8 regression was found in the affected CLI/packaging
 matrix.
 
+P9 targeted computer-use/MCP tests passed (258 tests), the full Desktop UI
+suite passed (579 files, 5,548 tests), the Desktop typecheck and clean
+production build passed, and the real Wayland/GNOME acceptance flow passed.
+The only observations were Firefox's AT-SPI focus warning (KI-022) and the
+sparse VS Code accessibility tree (KI-023); neither is a P9 blocker and both
+are documented.
+
 ## Active blockers
 
-P5, P6, P7, and P8 have no open acceptance blockers. The user service and
+P5, P6, P7, P8, and P9 have no open acceptance blockers. The user service and
 `hafiye-rootd.service` are active
 and the local CUDA runtime doctor is green. `loginctl` reports `Linger=no`,
 and a full reboot was not performed; GNOME's `Super+Shift+Space` conflict
@@ -177,7 +199,8 @@ remains the existing operational warning. The initial development-v-env
 systemd `-m hafiye_rootd` entrypoint failure was corrected by using the
 packaged source entrypoint and is recorded as resolved KI-021.
 
-The accepted upstream failures, KI-019 browser scheduling diagnostic, npm audit
+The accepted upstream failures, KI-019 browser scheduling diagnostic, KI-022
+Firefox focus warning, KI-023 VS Code accessibility warning, npm audit
 warnings, missing pactl, missing vulkaninfo, and optional-extra packaging
 warnings are documented diagnostics. They are not silently treated as passes.
 
@@ -481,6 +504,40 @@ directory:
   complete request groups, accepted/rejected plus closed lifecycle events,
   peer and duration fields present, and raw test command text absent.
 
+### P9 Linux computer use
+
+- `.venv/bin/python -m pytest -q tests/test_hafiye_computer_use.py` and the
+  MCP configuration tests — 9 passed in the focused run.
+- `.venv/bin/python -m pytest -q tests/tools/test_mcp_tool.py
+  tests/hermes_cli/test_tools_config.py tests/cron/test_scheduler.py
+  tests/hermes_cli/test_mcp_tools_config.py tests/test_hafiye_computer_use.py`
+  — 258 passed; one pre-existing async resource warning was emitted by the
+  scheduler test.
+- `cd apps/desktop && npx vitest run --project ui
+  src/app/settings/computer-settings.test.tsx` — 1 file, 1 passed.
+- `cd apps/desktop && npm run test:ui` — 579 files, 5,548 tests passed.
+  Existing jsdom canvas warnings were emitted; no test failed.
+- `cd apps/desktop && npm run typecheck` — renderer, Electron, and E2E
+  TypeScript checks passed.
+- `cd apps/desktop && npm run build` — clean source build passed; the build
+  stamp recorded `6d3672e498e1` and `assert-dist-built` passed. Existing Vite,
+  Babel, and chunking warnings remain documented upstream build diagnostics.
+- Real managed readiness probe through `computer_use_linux_status()` —
+  source `94736dc3e0dca56acfc89752c26869fb9ed01202`, all four required
+  readiness booleans true, `ready=true`, `blockers=[]`.
+- Real `discover_mcp_tools()` with the managed entry — provider connected and
+  18 `mcp__hafiye_computer_use_linux__*` tools registered without a user
+  `mcp_servers` configuration edit.
+- Real MCP E2E through `model_tools.handle_function_call()` on Wayland/GNOME:
+  Calculator exposed a 66-node initial and 70-node post-input AT-SPI tree;
+  the focused editable value became `84` after `12*7` and Enter. Firefox
+  created a tab, navigated to an Example Domain marker, and switched focus to
+  and from Calculator. VS Code and Files launched; focus was verified and Files
+  exposed 137 accessible nodes without an accessibility error.
+- Cleanup verification — Calculator, VS Code, and Files test windows were
+  closed through the managed input path; the user's existing Firefox windows
+  remained open.
+
 ## ACCEPTED_UPSTREAM_BASELINE
 
 The original five upstream failures were accepted before Hafiye source
@@ -503,15 +560,16 @@ investigate. The upstream bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Keep the verified P8 source commit
-   `4972645e07c408a8f0856bc4f1ee1b1cd62cd63a` separate from the pinned
+1. Keep the verified P9 source commit
+   `6d3672e498e1bcb9316e5c7d88c9fc896714630c` separate from the pinned
    upstream and baseline merge SHAs.
 2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
    current four-ID comparison baseline for future phases; reduce the current
    baseline again if failures disappear, and investigate any new/different ID.
-3. P9 — Linux computer use is the next incomplete phase. Preserve the P8
-   root-broker boundary: the main Hafiye process remains non-root and only
-   explicitly privileged operations cross the local `hafiye-rootd` socket.
+3. Start P10 — Browser. Preserve the P8 root-broker boundary: the main Hafiye
+   process remains non-root and only explicitly privileged operations cross
+   the local `hafiye-rootd` socket. Keep the P9 managed MCP provider enabled
+   while wiring browser routing.
 
 ## Environment changes
 
@@ -543,6 +601,11 @@ normal interactive sudo in a visible terminal. The service runs as root only
 for brokered privileged operations, permits the configured local UID 1000 over
 `/run/hafiye/root.sock`, and uses no TCP/UDP listener. No passwordless sudo or
 `NOPASSWD` sudoers rule was created.
+P9 did not require sudo or system-package changes. It reused the P0-pinned
+computer-use-linux checkout/binary, added only the Hafiye-managed MCP/provider
+and Desktop diagnostics wiring, and closed the real Calculator, VS Code, and
+Files test windows after acceptance. The user's existing Firefox windows were
+left open.
 P5's live Gemini credential was saved to Linux Secret Service and hydrated from
 the canonical Hafiye config root; no plaintext credential was added to the
 repository or configuration. The provider lifecycle/XDG fix is source commit

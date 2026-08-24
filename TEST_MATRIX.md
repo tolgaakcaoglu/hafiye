@@ -107,6 +107,24 @@ its result says so.
 | P8-REAL-03 | Real malformed and unauthorized socket clients | Duplicate-key frame through `/run/hafiye/root.sock`; broker-controlled `runuser -u nobody` peer probe | Malformed response code `malformed_request`; actual `nobody` client received `permission_denied` | PASS |
 | P8-REAL-04 | Real audit trail | `RootBrokerClient` read of redacted audit-log sample through `root.exec` | 33 records sampled; 11 complete request groups; accepted/rejected + closed lifecycle, peer/duration fields present; raw test command text absent | PASS |
 
+| P9-PY-01 | Managed computer-use-linux boundary and MCP regression matrix | `.venv/bin/python -m pytest -q tests/tools/test_mcp_tool.py tests/hermes_cli/test_tools_config.py tests/cron/test_scheduler.py tests/hermes_cli/test_mcp_tools_config.py tests/test_hafiye_computer_use.py` | 258 passed; one pre-existing async resource warning from the scheduler test; user-config tests isolate the host-managed provider | PASS WITH DOCUMENTED WARNING |
+| P9-D-01 | Settings → Computer diagnostics component | `cd apps/desktop && npx vitest run --project ui src/app/settings/computer-settings.test.tsx` | 1 file; 1 passed; managed backend, source pin, MCP name, and all four readiness values rendered | PASS |
+| P9-D-02 | Full Desktop UI regression suite | `cd apps/desktop && npm run test:ui` | 579 files; 5,548 tests passed; existing jsdom canvas warnings only | PASS WITH WARNING |
+| P9-D-03 | Desktop typecheck | `cd apps/desktop && npm run typecheck` | Renderer, Electron, and E2E TypeScript checks passed | PASS |
+| P9-D-04 | Clean Desktop production build | `cd apps/desktop && npm run build` | Clean build stamp `6d3672e498e1`; Vite, Electron bundles, native staging, and `assert-dist-built` passed; existing Vite/Babel/chunking warnings remain | PASS WITH WARNING |
+| P9-REAL-01 | Managed computer-use-linux doctor | Real `computer_use_linux_status()` using `/home/tolga/.local/bin/computer-use-linux` | Pinned source `94736dc3e0dca56acfc89752c26869fb9ed01202`; `ready=true`; all four required readiness booleans true; `blockers=[]` | PASS |
+| P9-REAL-02 | Automatic built-in MCP registration | Real `discover_mcp_tools()` through Hermes MCP client with empty user MCP config | `hafiye-computer-use-linux` connected and 18 `mcp__hafiye_computer_use_linux__*` tools registered; no manual config edit | PASS |
+| P9-REAL-03 | Wayland/GNOME computer-use E2E | Real `model_tools.handle_function_call()` MCP calls plus `/usr/bin/gnome-calculator`, Firefox, `/usr/bin/code --new-window`, and `nautilus --new-window` | Windows enumerated; Calculator AT-SPI tree read and `12*7` produced/read as `84`; Firefox tab/navigation and app switching verified; VS Code launched; Files focus/tree interaction verified with 137 accessible nodes | PASS WITH KI-022/KI-023 WARNINGS |
+
+## P9 acceptance
+
+The managed provider is pinned to source commit
+`94736dc3e0dca56acfc89752c26869fb9ed01202`. The required readiness fields are
+all true and `blockers=[]`; the real MCP provider registered 18 tools without a
+user configuration edit. The Calculator, Firefox, VS Code, and Files flow was
+completed on the actual Wayland/GNOME session. P9 is accepted; KI-022 and
+KI-023 are warnings only.
+
 ## Historical ACCEPTED_UPSTREAM_BASELINE and current comparison baseline
 
 The historical post-source comparison set is this exact five-failure baseline:

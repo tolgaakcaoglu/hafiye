@@ -12,7 +12,7 @@ records execution status only.
 - [x] P6 Model router + privacy modes
 - [x] P7 Full host tools + execution policy
 - [x] P8 Hafiye root broker
-- [ ] P9 Linux computer use
+- [x] P9 Linux computer use
 - [ ] P10 Browser
 - [ ] P11 Local Turkish voice stack
 - [ ] P12 Custom Hafiye wake word
@@ -257,5 +257,32 @@ the root broker returns UID 0 while the Hafiye gateway remains UID 1000. Real
 privileged file-write and `root.exec` smoke tests passed, malformed duplicate
 JSON failed closed, an actual `nobody` peer received `permission_denied`, and
 audit records contained peer/lifecycle/duration data without raw command text.
-The affected CLI/packaging matrix passed with no new Hafiye regression. P9 is
-now the next incomplete phase.
+The affected CLI/packaging matrix passed with no new Hafiye regression.
+
+## P9 execution status
+
+- [x] Reuse the pinned `agent-sh/computer-use-linux` source checkout and
+      resolve its real installed binary through a Hafiye-managed boundary.
+- [x] Connect `computer-use-linux` automatically as the built-in
+      `hafiye-computer-use-linux` MCP provider without requiring a user
+      `mcp_servers` configuration edit.
+- [x] Expose real source identity, doctor readiness, blockers, and MCP
+      diagnostics in Desktop `Settings → Computer`.
+- [x] Preserve the existing Hermes MCP lifecycle and model toolset resolver;
+      add focused regression coverage for managed-provider injection and
+      host-independent upstream config tests.
+- [x] Run the targeted Python/MCP matrix, the Desktop Computer settings test,
+      the full Desktop UI suite, typecheck, lint, and a clean production build.
+- [x] Run the required E2E flow on the actual GNOME Wayland session:
+      enumerate windows, read an accessibility tree, launch Calculator and
+      verify `12*7 = 84`, create and navigate a Firefox tab, switch apps,
+      launch VS Code, and interact with Files.
+
+P9 is complete. The source implementation is recorded in commit
+`6d3672e498e1bcb9316e5c7d88c9fc896714630c`. The pinned Hermes upstream commit
+and baseline merge commit are unchanged. The managed provider doctor reports
+all four required readiness booleans true with `blockers=[]`; real MCP
+discovery registered 18 tools; the real desktop E2E passed. Firefox's
+AT-SPI focus warning and VS Code's sparse accessibility tree are documented as
+KI-022 and KI-023 warnings, not P9 blockers. P10 — Browser is now the next
+incomplete phase.

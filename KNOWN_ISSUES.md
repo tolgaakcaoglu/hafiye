@@ -271,3 +271,25 @@ silently treated as passing.
   directly, and the package declares both the module and the `hafiye-rootd`
   console entrypoint. After the unit was regenerated, `hafiye-rootd.service`
   became active/enabled and the real broker acceptance tests passed.
+
+## KI-022 — Firefox AT-SPI focus feedback warning during P9 E2E
+
+- Status: MEASURED WARNING; not a P9 acceptance blocker.
+- On the real GNOME Wayland session, targeted `press_key`/`type_text` calls
+  for Firefox reported that AT-SPI could not identify a focused element in the
+  Firefox application. The managed input calls still completed, the window
+  title changed to the expected Example Domain page, and application focus
+  switching was verified through `list_windows`/`focused_window`.
+- Future browser-phase work should improve Firefox focus diagnostics and rerun
+  the native browser acceptance path. This warning does not justify replacing
+  the prescribed computer-use-linux backend.
+
+## KI-023 — VS Code exposes a sparse AT-SPI tree in the current session
+
+- Status: MEASURED WARNING; not a P9 acceptance blocker.
+- The real VS Code window launched and accepted compositor focus, but its
+  `get_app_state` response exposed only the application/frame nodes in this
+  session. Files exposed a full accessible tree (137 nodes) and was interacted
+  with successfully, satisfying the P9 acceptance requirement.
+- Semantic VS Code interaction should be revisited if a later phase needs it;
+  P9 only requires launching VS Code and interacting with Files.

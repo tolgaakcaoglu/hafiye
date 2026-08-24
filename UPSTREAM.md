@@ -303,9 +303,33 @@ P0 computer-use acceptance requires:
   `2ac06b131a237916432503ac67bbcada6dbea39e` remain unchanged. No upstream
   commit was rewritten.
 
+## P9 managed computer-use-linux integration
+
+- External repository: `https://github.com/agent-sh/computer-use-linux`.
+- Pinned source commit: `94736dc3e0dca56acfc89752c26869fb9ed01202`.
+- Managed checkout: `/home/tolga/.cache/hafiye/computer-use-linux`.
+- Resolved binary: `/home/tolga/.local/bin/computer-use-linux`.
+- Hafiye source commit: `6d3672e498e1bcb9316e5c7d88c9fc896714630c`.
+- Integration boundary: Hafiye adds a reserved in-memory MCP entry to the
+  existing Hermes MCP loader and toolset resolver. The user does not need to
+  edit `mcp_servers`; session display/DBus/XDG routing variables are passed to
+  the stdio child without copying secret environment variables.
+- Real discovery connected `hafiye-computer-use-linux` and registered 18 MCP
+  tools. The doctor contract normalizes the four roadmap-required readiness
+  fields and blockers for the Desktop `Settings → Computer` diagnostics page.
+- Real GNOME Wayland E2E passed for window enumeration, AT-SPI tree access,
+  Calculator input/result verification, Firefox tab/navigation and app
+  switching, VS Code launch, and Files interaction. Firefox focus feedback and
+  VS Code's sparse tree are documented as KI-022/KI-023 warnings.
+- The pinned Hermes commit
+  `f293e7206b4ddd66042329442c6afebc19a8808d` and baseline merge commit
+  `2ac06b131a237916432503ac67bbcada6dbea39e` are unchanged. No upstream
+  Hermes commit was rewritten.
+
 ## Baseline divergence
 
 The upstream Hermes baseline contains its own cua-driver computer-use
-integration. Hafiye has not changed or replaced it in P0; the roadmap-
-prescribed agent-sh/computer-use-linux integration remains a later Hafiye
-phase.
+integration. Hafiye retains that upstream path for platforms where it remains
+applicable, while the prescribed Linux path is now managed through the pinned
+agent-sh/computer-use-linux MCP provider above. Hafiye did not copy unrelated
+code from alternative repositories or replace the existing Hermes MCP client.

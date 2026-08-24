@@ -216,3 +216,21 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   interactive sudo once; no passwordless sudo or `NOPASSWD` sudoers rule is
   introduced. The rootd implementation and its CLI remain separate from
   Hermes' upstream agent loop and prompt-cache-sensitive tool schema.
+
+## ADR-0016 — Manage computer-use-linux through the existing Hermes MCP client
+
+- Date: 2026-08-24
+- Decision: Resolve the pinned `agent-sh/computer-use-linux` binary through
+  Hafiye's managed boundary and inject a reserved, in-memory MCP server entry
+  into Hermes' existing MCP loader and platform toolset resolver. Pass only the
+  current desktop session's display/DBus/XDG routing variables to the stdio
+  child. Do not require a user `mcp_servers` edit.
+- Reason: P9 requires computer-use-linux to be a built-in MCP provider with
+  real Wayland/GNOME readiness and Desktop diagnostics, while preserving
+  Hermes' MCP connection, registration, schema, and discovery behavior.
+- Consequence: The provider is automatically available when the pinned binary
+  is installed, exposes its real 18-tool registration to the model, and
+  surfaces doctor readiness in `Settings → Computer`. The existing Hermes
+  cua-driver integration remains intact for its other supported platforms;
+  this ADR does not override the master roadmap or change the Hermes upstream
+  pin.
