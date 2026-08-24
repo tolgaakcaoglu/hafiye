@@ -165,6 +165,9 @@ const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
 const SettingsView = lazy(async () => ({ default: (await import('../settings')).SettingsView }))
 const StarmapView = lazy(async () => ({ default: (await import('../starmap')).StarmapView }))
+const HafiyeOnboardingWizard = lazy(async () => ({
+  default: (await import('@/components/hafiye-onboarding')).HafiyeOnboardingWizard
+}))
 
 // Surfaces (the four wired panes), the render context + WiredPane, and the
 // WiringActions/WiringApi contracts all live in sibling modules — this file is
@@ -1156,6 +1159,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
           profile={activeGatewayProfile}
           requestGateway={requestGateway}
         />
+      )}
+      {!isAuxiliaryWindow() && (
+        <Suspense fallback={null}>
+          <HafiyeOnboardingWizard />
+        </Suspense>
       )}
       <ModelPickerOverlay gateway={gateway || undefined} onSelect={selectModel} profile={activeGatewayProfile} />
       <SessionPickerOverlay onResume={sessionId => openSession(sessionId, navigate)} />

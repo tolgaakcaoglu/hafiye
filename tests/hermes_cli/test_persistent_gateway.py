@@ -49,6 +49,7 @@ def test_token_rejects_group_or_world_access(monkeypatch, tmp_path):
 
 def test_systemd_unit_is_loopback_user_service(monkeypatch, tmp_path):
     gateway = _module(monkeypatch, tmp_path)
+    monkeypatch.delenv("HERMES_HOME", raising=False)
     unit = gateway.generate_systemd_unit(gateway.paths())
 
     assert "Description=Hafiye persistent Desktop backend" in unit
@@ -56,8 +57,19 @@ def test_systemd_unit_is_loopback_user_service(monkeypatch, tmp_path):
     assert "Environment=HERMES_DESKTOP=1" in unit
     assert "Environment=HAFIYE_PERSISTENT_GATEWAY=1" in unit
     assert "HAFIYE_GATEWAY_PORT=9234" in unit
+    assert 'Environment="HERMES_HOME=' not in unit
     assert "WantedBy=default.target" in unit
     assert "NoNewPrivileges=true" in unit
+
+
+def test_systemd_unit_preserves_explicit_hermes_home(monkeypatch, tmp_path):
+    gateway = _module(monkeypatch, tmp_path)
+    explicit_home = tmp_path / "legacy-hermes-home"
+    monkeypatch.setenv("HERMES_HOME", str(explicit_home))
+
+    unit = gateway.generate_systemd_unit(gateway.paths())
+
+    assert f'Environment="HERMES_HOME={explicit_home}"' in unit
 
 
 def test_persistent_restart_targets_user_service(monkeypatch):

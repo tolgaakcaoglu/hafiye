@@ -2,4 +2,5 @@
 set -eu
 
 PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+export HAFIYE_PACKAGE_ROOT="$PACKAGE_ROOT"
 exec "$PACKAGE_ROOT/bin/hafiye-python" -m hermes_cli.persistent_gateway run --foreground

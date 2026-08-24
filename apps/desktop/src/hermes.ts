@@ -22,6 +22,7 @@ export * from './api/local-runtime'
 export * from './api/mcp'
 export * from './api/messaging'
 export * from './api/models'
+export * from './api/onboarding'
 export * from './api/plugins'
 export * from './api/profiles'
 export * from './api/sessions'
@@ -62,9 +63,6 @@ export type {
   DebugShareResponse,
   ElevenLabsVoice,
   ElevenLabsVoicesResponse,
-  PiperVoice,
-  PiperVoicePreviewResponse,
-  PiperVoicesResponse,
   EnvVarInfo,
   GatewayReadyPayload,
   HermesConfig,
@@ -93,6 +91,9 @@ export type {
   PaginatedSessions,
   PairingResponse,
   PairingUser,
+  PiperVoice,
+  PiperVoicePreviewResponse,
+  PiperVoicesResponse,
   ProfileCreatePayload,
   ProfileDesktopOverlay,
   ProfileInfo,

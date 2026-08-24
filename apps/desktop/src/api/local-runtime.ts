@@ -75,7 +75,11 @@ export function installLocalRuntime(backend: LocalRuntimeBackend = 'AUTO', sourc
   return hermesApi<Record<string, unknown>>({
     path: '/api/local-runtime/install',
     method: 'POST',
-    body: { backend, source_ref: sourceRef }
+    body: { backend, source_ref: sourceRef },
+    // Building llama.cpp is an explicit first-run operation and can take many
+    // minutes on a clean host. Keep the Desktop request alive for the same
+    // bounded duration as the voice runtime installers.
+    timeoutMs: 1_800_000
   })
 }
 

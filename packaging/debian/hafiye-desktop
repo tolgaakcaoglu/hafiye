@@ -2,6 +2,7 @@
 set -eu
 
 PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+export HAFIYE_PACKAGE_ROOT="$PACKAGE_ROOT"
 DESKTOP_BINARY="$PACKAGE_ROOT/desktop/hafiye-desktop"
 
 if [ ! -x "$DESKTOP_BINARY" ]; then

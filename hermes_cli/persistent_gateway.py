@@ -26,7 +26,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from hermes_constants import get_hafiye_data_home, get_hafiye_state_home
+from hermes_constants import get_hafiye_state_home, get_hermes_home_override
 from tools.environments.local import build_subprocess_env
 
 
@@ -193,8 +193,16 @@ def _unit_environment_value(value: str | Path) -> str:
 
 def generate_systemd_unit(targets: PersistentGatewayPaths | None = None) -> str:
     targets = targets or paths()
-    data_home = get_hafiye_data_home()
     repo_root = Path(__file__).resolve().parents[1]
+    # Keep the normal installation on the XDG-compatible Hafiye roots.  An
+    # explicit HERMES_HOME is still propagated for legacy/profile-scoped
+    # installs, where upstream's single-root semantics are intentional.
+    explicit_home = os.environ.get("HERMES_HOME", "").strip() or get_hermes_home_override()
+    hermes_home_line = (
+        f'Environment="HERMES_HOME={_unit_environment_value(explicit_home)}"\n'
+        if explicit_home
+        else ""
+    )
     # Do not resolve a venv's interpreter symlink.  uv-created venvs commonly
     # point `.venv/bin/python` at a shared interpreter; resolving it removes
     # the venv prefix and makes systemd skip the venv site-packages.
@@ -208,7 +216,7 @@ def generate_systemd_unit(targets: PersistentGatewayPaths | None = None) -> str:
             "--foreground",
         )
     )
-    return (
+    unit = (
         "[Unit]\n"
         "Description=Hafiye persistent Desktop backend\n"
         "After=graphical-session.target\n"
@@ -217,7 +225,9 @@ def generate_systemd_unit(targets: PersistentGatewayPaths | None = None) -> str:
         "Type=simple\n"
         f"WorkingDirectory={shlex.quote(str(repo_root))}\n"
         f"ExecStart={exec_start}\n"
-        f'Environment="HERMES_HOME={_unit_environment_value(data_home)}"\n'
+    )
+    unit += hermes_home_line
+    unit += (
         f'Environment="HAFIYE_GATEWAY_STATE_DIR={_unit_environment_value(targets.state_dir)}"\n'
         f'Environment="HAFIYE_GATEWAY_PORT={_port()}"\n'
         "Environment=HERMES_DESKTOP=1\n"
@@ -229,6 +239,7 @@ def generate_systemd_unit(targets: PersistentGatewayPaths | None = None) -> str:
         "[Install]\n"
         "WantedBy=default.target\n"
     )
+    return unit
 
 
 def _require_linux() -> None:

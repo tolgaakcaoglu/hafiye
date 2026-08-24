@@ -2,6 +2,7 @@
 set -eu
 
 PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+export HAFIYE_PACKAGE_ROOT="$PACKAGE_ROOT"
 PYTHON_LAUNCHER="$PACKAGE_ROOT/bin/hafiye-python"
 
 # Packaging diagnostics must work before third-party Python dependencies are

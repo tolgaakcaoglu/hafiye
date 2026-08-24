@@ -7323,6 +7323,144 @@ def _local_runtime_call(operation, *args, **kwargs):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+def _voice_runtime_call(operation, *args, **kwargs):
+    from hermes_cli.voice_runtime import VoiceRuntimeError
+
+    try:
+        return operation(*args, **kwargs)
+    except VoiceRuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Hafiye first-run onboarding — non-secret state and explicit user operations.
+# The wizard uses the same runtime managers as the CLI and settings surfaces;
+# this boundary only makes the prescribed no-terminal setup sequence callable
+# from Desktop.
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/hafiye/onboarding")
+async def get_hafiye_onboarding():
+    from hafiye_onboarding import onboarding_state
+
+    return await asyncio.to_thread(onboarding_state)
+
+
+@app.put("/api/hafiye/onboarding")
+async def update_hafiye_onboarding(body: dict[str, Any]):
+    from hafiye_onboarding import update_onboarding_state
+
+    try:
+        return await asyncio.to_thread(
+            update_onboarding_state,
+            current_step=body.get("current_step"),
+            completed_steps=body.get("completed_steps"),
+            choices=body.get("choices"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/hafiye/onboarding/complete")
+async def complete_hafiye_onboarding():
+    from hafiye_onboarding import complete_onboarding
+
+    return await asyncio.to_thread(complete_onboarding)
+
+
+@app.get("/api/hafiye/onboarding/environment")
+async def get_hafiye_onboarding_environment():
+    from hafiye_onboarding import environment_probe
+
+    return await asyncio.to_thread(environment_probe)
+
+
+@app.get("/api/hafiye/onboarding/autostart")
+async def get_hafiye_onboarding_autostart():
+    from hafiye_onboarding import user_autostart_status
+
+    return await asyncio.to_thread(user_autostart_status)
+
+
+@app.post("/api/hafiye/onboarding/autostart")
+async def enable_hafiye_onboarding_autostart():
+    from hafiye_onboarding import enable_user_autostart
+
+    try:
+        return await asyncio.to_thread(enable_user_autostart)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/hafiye/onboarding/doctor")
+async def get_hafiye_onboarding_doctor():
+    def _doctor():
+        from hafiye_onboarding import environment_probe, user_autostart_status
+        from hafiye_computer_use import computer_use_linux_status
+        from hermes_cli.local_runtime import runtime_manager
+        from hermes_cli.voice_runtime import voice_runtime_doctor
+
+        environment = environment_probe()
+        computer = computer_use_linux_status()
+        local = runtime_manager().doctor()
+        voice = voice_runtime_doctor()
+        autostart = user_autostart_status()
+        blockers: list[str] = []
+        if environment.get("platform") != "Linux":
+            blockers.append("Hafiye Desktop onboarding requires Linux")
+        if not computer.get("ready"):
+            blockers.extend(str(item) for item in computer.get("blockers", []))
+        if not local.get("server", {}).get("ready"):
+            blockers.append("managed llama.cpp local model server is not ready")
+        if not voice.get("ok"):
+            blockers.extend(str(item) for item in voice.get("blockers", []))
+        if not autostart.get("enabled"):
+            blockers.append("hafiye-gateway.service is not enabled in the systemd user session")
+        return {
+            "ok": not blockers,
+            "blockers": list(dict.fromkeys(blockers)),
+            "environment": environment,
+            "computer": computer,
+            "local_runtime": local,
+            "voice": voice,
+            "autostart": autostart,
+        }
+
+    return await asyncio.to_thread(_doctor)
+
+
+@app.get("/api/voice-runtime")
+async def get_voice_runtime():
+    from hermes_cli.voice_runtime import voice_runtime_doctor
+
+    return await asyncio.to_thread(voice_runtime_doctor)
+
+
+@app.post("/api/voice-runtime/install-whisper")
+async def install_voice_runtime_whisper(body: dict[str, Any]):
+    from hermes_cli.voice_runtime import DEFAULT_WHISPER_MODEL, install_whisper
+
+    backend = str(body.get("backend", "AUTO") or "AUTO")
+    source_ref = str(body.get("source_ref", "master") or "master")
+    model = str(body.get("model", DEFAULT_WHISPER_MODEL) or DEFAULT_WHISPER_MODEL)
+    return await asyncio.to_thread(
+        _voice_runtime_call,
+        install_whisper,
+        backend=backend,
+        source_ref=source_ref,
+        model=model,
+    )
+
+
+@app.post("/api/voice-runtime/install-piper")
+async def install_voice_runtime_piper(body: dict[str, Any]):
+    from hermes_cli.voice_runtime import DEFAULT_PIPER_VOICE, install_piper
+
+    voice = str(body.get("voice", DEFAULT_PIPER_VOICE) or DEFAULT_PIPER_VOICE)
+    return await asyncio.to_thread(_voice_runtime_call, install_piper, voice=voice)
+
+
 @app.get("/api/local-runtime")
 async def get_local_runtime():
     return await asyncio.to_thread(_local_runtime_call, lambda manager: manager.doctor())

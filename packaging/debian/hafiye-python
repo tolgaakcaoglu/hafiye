@@ -6,6 +6,7 @@ set -eu
 # the system interpreter remains available for stdlib-only commands such as
 # --version and the dependency doctor.
 PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+export HAFIYE_PACKAGE_ROOT="$PACKAGE_ROOT"
 BACKEND_ROOT="$PACKAGE_ROOT/backend"
 USER_VENV="${HAFIYE_PYTHON_VENV:-${XDG_DATA_HOME:-$HOME/.local/share}/hafiye/python-venv}"
 

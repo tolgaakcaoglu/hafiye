@@ -2,6 +2,7 @@
 set -eu
 
 PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"
+export HAFIYE_PACKAGE_ROOT="$PACKAGE_ROOT"
 
 # This runs inside the user's graphical session, so the user manager can own
 # and authorize the persistent gateway without sudo or a root process.
