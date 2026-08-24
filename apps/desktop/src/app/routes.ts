@@ -9,6 +9,7 @@ type NavigateLike = (to: string, options?: { replace?: boolean }) => void
 export const SESSION_ROUTE_PREFIX = '/'
 export const NEW_CHAT_ROUTE = '/'
 export const SETTINGS_ROUTE = '/settings'
+export const CONTROL_CENTER_ROUTE = '/control-center'
 export const COMMAND_CENTER_ROUTE = '/command-center'
 export const SKILLS_ROUTE = '/skills'
 export const MESSAGING_ROUTE = '/messaging'
@@ -23,6 +24,7 @@ export type AppView =
   | 'agents'
   | 'artifacts'
   | 'chat'
+  | 'control-center'
   | 'command-center'
   | 'cron'
   // A contributed (plugin) full page at its own route — NOT chat. Without this
@@ -41,6 +43,7 @@ export type AppRouteId =
   | 'agents'
   | 'artifacts'
   | 'command-center'
+  | 'control-center'
   | 'cron'
   | 'messaging'
   | 'new'
@@ -59,6 +62,7 @@ export interface AppRoute {
 export const APP_ROUTES = [
   { id: 'new', path: NEW_CHAT_ROUTE, view: 'chat' },
   { id: 'settings', path: SETTINGS_ROUTE, view: 'settings' },
+  { id: 'control-center', path: CONTROL_CENTER_ROUTE, view: 'control-center' },
   { id: 'command-center', path: COMMAND_CENTER_ROUTE, view: 'command-center' },
   { id: 'skills', path: SKILLS_ROUTE, view: 'skills' },
   { id: 'messaging', path: MESSAGING_ROUTE, view: 'messaging' },
@@ -125,6 +129,7 @@ export interface SidebarNavContribution {
 export const OVERLAY_VIEWS: ReadonlySet<AppView> = new Set([
   'agents',
   'command-center',
+  'control-center',
   'cron',
   'profiles',
   'settings',

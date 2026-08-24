@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { NEW_CHAT_ROUTE, primaryRouteSelectedSessionId, sessionRoute, SETTINGS_ROUTE } from './routes'
+import {
+  CONTROL_CENTER_ROUTE,
+  NEW_CHAT_ROUTE,
+  primaryRouteSelectedSessionId,
+  sessionRoute,
+  SETTINGS_ROUTE
+} from './routes'
 
 const SESS_A = 'sess-a'
 const SESS_B = 'sess-b'
@@ -26,5 +32,9 @@ describe('primaryRouteSelectedSessionId', () => {
 
   it('returns null on a non-chat route with no store selection', () => {
     expect(primaryRouteSelectedSessionId(SETTINGS_ROUTE, null)).toBeNull()
+  })
+
+  it('classifies Control Center as a non-chat route', () => {
+    expect(primaryRouteSelectedSessionId(CONTROL_CENTER_ROUTE, SESS_A)).toBe(SESS_A)
   })
 })

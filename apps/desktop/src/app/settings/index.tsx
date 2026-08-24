@@ -17,6 +17,7 @@ import {
   Info,
   Keyboard,
   KeyRound,
+  LayoutDashboard,
   Monitor,
   Package,
   RefreshCw,
@@ -38,7 +39,7 @@ import { useRouteEnumParam } from '../hooks/use-route-enum-param'
 import { OverlayIconButton } from '../overlays/overlay-chrome'
 import { OverlayMain, OverlayNav, type OverlayNavGroup, OverlaySplitLayout } from '../overlays/overlay-split-layout'
 import { OverlayView } from '../overlays/overlay-view'
-import { SKILLS_ROUTE } from '../routes'
+import { CONTROL_CENTER_ROUTE, SKILLS_ROUTE } from '../routes'
 
 import { AboutSettings } from './about-settings'
 import { AppearanceSettings } from './appearance-settings'
@@ -172,6 +173,13 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
 
   const navGroups: OverlayNavGroup[] = useMemo(
     () => [
+      {
+        active: false,
+        icon: LayoutDashboard,
+        id: 'control-center',
+        label: 'Hafiye Control Center',
+        onSelect: () => navigate(CONTROL_CENTER_ROUTE)
+      },
       ...SECTIONS.map(s => {
         const view = `config:${s.id}` as SettingsViewId
 
@@ -296,7 +304,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         onSelect: () => setActiveView('about')
       }
     ],
-    [activeView, keysView, providerView, t, setActiveView, openProviderView, openKeysView]
+    [activeView, keysView, providerView, t, setActiveView, openProviderView, openKeysView, navigate]
   )
 
   // Type-to-search: printable keystrokes on the Settings surface (outside any

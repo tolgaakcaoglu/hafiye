@@ -234,6 +234,7 @@ export const ENUM_OPTIONS: Record<string, string[]> = {
   'agent.image_input_mode': ['auto', 'native', 'text'],
   'approvals.mode': ['manual', 'smart', 'off'],
   'hafiye.execution_policy': ['FULL_AUTONOMOUS', 'PRIVILEGED_CONFIRM', 'WRITE_CONFIRM', 'READ_ONLY'],
+  'hafiye.privacy_mode': ['NORMAL', 'LOCAL_ONLY', 'OFFLINE'],
   'code_execution.mode': ['project', 'strict'],
   'context.engine': ['compressor', 'default', 'custom'],
   // '' = inherit the agent's own effort; the rest is the shared scale.

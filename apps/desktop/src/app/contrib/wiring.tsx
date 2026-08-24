@@ -159,6 +159,7 @@ import type { WiringActions, WiringApi } from './types'
 // ChatRoutesSurface's and live in ./surfaces.
 const AgentsView = lazy(async () => ({ default: (await import('../agents')).AgentsView }))
 const CommandCenterView = lazy(async () => ({ default: (await import('../command-center')).CommandCenterView }))
+const ControlCenterView = lazy(async () => ({ default: (await import('../control-center')).ControlCenterView }))
 const CronView = lazy(async () => ({ default: (await import('../cron')).CronView }))
 const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).WebhooksView }))
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
@@ -260,6 +261,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     closeOverlayToPreviousRoute,
     commandCenterInitialSection,
     commandCenterOpen,
+    controlCenterOpen,
     cronOpen,
     currentView,
     openAgents,
@@ -311,6 +313,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const requestGateway = useCallback(
     <T,>(method: string, params?: Record<string, unknown>, timeoutMs?: number, signal?: AbortSignal) => {
       const routingSessionId = $focusedStoredSessionId.get() ?? selectedStoredSessionIdRef.current
+
       const owner =
         (routingSessionId ? sessionTileOwnerRoute(routingSessionId) : undefined) ??
         rememberedSessionProfile($sessions.get(), routingSessionId, $activeGatewayProfile.get())
@@ -1200,6 +1203,24 @@ export function ContribWiring({ children }: { children: ReactNode }) {
             onDeleteSession={removeSession}
             onNavigateRoute={path => navigateToWorkspacePage(navigate, path)}
             onOpenSession={sessionId => openSession(sessionId, navigate)}
+          />
+        </Suspense>
+      )}
+
+      {controlCenterOpen && (
+        <Suspense fallback={null}>
+          <ControlCenterView
+            onClose={closeOverlayToPreviousRoute}
+            onConfigSaved={() => {
+              void refreshHermesConfig()
+              void refreshCurrentModel()
+              void queryClient.invalidateQueries({ queryKey: ['model-options'] })
+            }}
+            onMainModelChanged={(provider, model) => {
+              applySavedMainModel(provider, model)
+              void refreshCurrentModel()
+              void queryClient.invalidateQueries({ queryKey: ['model-options'] })
+            }}
           />
         </Suspense>
       )}
