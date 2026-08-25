@@ -12,7 +12,14 @@ _mcp_discovery_thread: Optional[threading.Thread] = None
 
 
 def _has_configured_mcp_servers() -> bool:
-    """Cheap config probe so non-MCP users avoid importing the MCP stack."""
+    """Cheap config probe so non-MCP users avoid importing the MCP stack.
+
+    Hafiye's Linux ``computer-use-linux`` provider is injected in memory
+    rather than written to ``config.yaml``. It must still open the same
+    discovery gate as a user-configured or portable MCP server; otherwise a
+    fresh Desktop/gateway process builds its first agent before the managed
+    tools are ever registered.
+    """
     try:
         from hermes_cli.config import read_raw_config
 
@@ -22,7 +29,19 @@ def _has_configured_mcp_servers() -> bool:
             return True
         from hermes_cli.agent_plugins import has_enabled_agent_plugin_mcp
 
-        return has_enabled_agent_plugin_mcp(raw_config)
+        if has_enabled_agent_plugin_mcp(raw_config):
+            return True
+
+        # This provider is deliberately not persisted in user configuration;
+        # its availability is derived from the managed pinned binary instead.
+        # Keep the import lazy so ordinary non-Linux/non-Hafiye sessions retain
+        # the cheap startup path.
+        try:
+            from hafiye_computer_use import managed_mcp_server_config
+
+            return bool(managed_mcp_server_config())
+        except Exception:
+            return False
     except Exception:
         # Be conservative: if config probing fails, try discovery in the
         # background so startup still can't block.

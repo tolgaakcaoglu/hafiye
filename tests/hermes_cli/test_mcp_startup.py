@@ -163,6 +163,34 @@ def test_portable_only_mcp_configuration_opens_startup_gate(monkeypatch):
     assert mcp_startup._has_configured_mcp_servers() is True
 
 
+def test_managed_hafiye_mcp_configuration_opens_startup_gate(monkeypatch):
+    """The in-memory Linux desktop provider must trigger MCP discovery."""
+    monkeypatch.setitem(
+        sys.modules,
+        "hermes_cli.config",
+        types.SimpleNamespace(read_raw_config=lambda: {}),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "hermes_cli.agent_plugins",
+        types.SimpleNamespace(
+            has_enabled_agent_plugin_mcp=lambda _config: False,
+        ),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "hafiye_computer_use",
+        types.SimpleNamespace(
+            managed_mcp_server_config=lambda: {
+                "command": "/home/tolga/.local/bin/computer-use-linux",
+                "args": ["mcp"],
+            },
+        ),
+    )
+
+    assert mcp_startup._has_configured_mcp_servers() is True
+
+
 
 
 
@@ -197,5 +225,4 @@ def _install_retry_stubs(monkeypatch, *, connected: bool, calls: dict):
             get_mcp_status=lambda: [{"connected": connected}],
         ),
     )
-
 
