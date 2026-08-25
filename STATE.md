@@ -9,9 +9,10 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: f9ebf814b53b0a3c71f932713db0e217af17cb1c
-  (KI-043 privileged terminal boundary, regression tests, and local-model
-  capability metadata source/test commit)
+- Current Hafiye source HEAD: dc962963e6040f792e3f74fcd459d41da425d8d
+  (managed computer-use MCP startup-gate source/test fix; the preceding
+  KI-043 boundary and local-model capability source/test commit is
+  f9ebf814b53b0a3c71f932713db0e217af17cb1c)
 - Documentation closure HEAD: the documentation-only commit created after this
   source commit; verify the exact repository HEAD with `git rev-parse HEAD`.
 
@@ -1598,8 +1599,11 @@ claimed as passed.
 - Pinned Hermes upstream commit:
   `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
-- Current Hafiye source/test commit:
-  `f9ebf814b53b0a3c71f932713db0e217af17cb1c`.
+- Current Hafiye source/test commits:
+  `f9ebf814b53b0a3c71f932713db0e217af17cb1c` (KI-043 boundary and model
+  capability state), followed by
+  `dc962963e6040f792e3f74fcd459d41da425d8d` (managed computer-use MCP
+  startup gate).
 - The native gateway now uses the normal Hafiye XDG config root while
   retaining explicit `HERMES_HOME`/profile single-root behavior. The
   Electron/TUI `_make_agent` boundary now resolves the same Hafiye route slot,
@@ -1618,6 +1622,32 @@ claimed as passed.
   fixture is `validation=true, agent=false`; Qwen3-14B is
   `agent=true, tool_calling=true, validation=false` with `resource_warning=KI-046`.
   The default route remains `custom/qwen2.5-0.5b-instruct-q4`.
+
+### P23.2 managed computer-use MCP startup fix — 2026-08-25
+
+- After the real reboot, a fresh gateway/Desktop process skipped MCP discovery
+  because `_has_configured_mcp_servers()` only considered persisted MCP
+  configuration and portable plugins. Hafiye's prescribed
+  `hafiye-computer-use-linux` provider is injected from its managed binary in
+  memory, so this was a genuine Hafiye startup-gate defect exposed by the
+  final Composer acceptance.
+- Source/test commit:
+  `dc962963e6040f792e3f74fcd459d41da425d8d`. The shared startup probe now
+  recognizes the managed provider without writing user configuration or
+  changing the computer-use architecture.
+- Targeted verification passed: the MCP startup, Hafiye computer-use, TUI
+  MCP-owner, discovery-timing, one-shot toolset, and browser integration
+  tests returned `40 passed`; the focused gateway discovery tests returned
+  `3 passed`; Ruff and `git diff --check` were clean.
+- After `systemctl --user restart hafiye-gateway.service`, the user journal
+  recorded registration of `hafiye-computer-use-linux` with 18 tools. A real
+  packaged Electron Composer replay with the exact `Firefox'u aç.` prompt and
+  agent-qualified Qwen3 route exposed 38 core/visible tools plus 18 deferred
+  MCP tools, but Qwen3 remained in reasoning for approximately 265 seconds
+  without emitting a tool call. The replay was stopped; it is not P23.2
+  acceptance evidence. Qwen2/default route was restored and its CUDA runtime
+  remains healthy. This observed behavior is tracked as KI-047, while the
+  Qwen3 qualification and KI-046 resource warning remain unchanged.
 
 ### P23.1 reboot preflight — 2026-08-25
 
@@ -1904,7 +1934,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | Master item | Current evidence | Final status |
 |---|---|---|
 | 23.1 Boot | Real reboot/login completed: gateway started automatically and endpoint/voice/computer doctors are green, but GNOME did not start the packaged Desktop from the valid user autostart entry; no tray or Composer appeared. Manual packaged launch worked only as a diagnostic | NOT ACCEPTED / KI-013 AUTOSTART BLOCKER |
-| 23.2 Text | Rotated-key Gemini Composer opened Firefox, then attempted unapproved sudo remediation; the source boundary is now resolved, while the clean replay remains deferred (KI-042/KI-043) | TARGET OBSERVED / CLEAN REPLAY DEFERRED |
+| 23.2 Text | The managed-MCP startup gate was fixed and a fresh packaged Composer replay registered 18 computer-use tools, but the agent-qualified Qwen3 route stayed in reasoning for approximately 265 seconds without a tool call; the older Qwen2 validation replay also returned text without computer use | NOT ACCEPTED / KI-042 + KI-047 |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
@@ -1925,8 +1955,10 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 1. Keep the exact P23.1 autostart failure recorded as KI-013; do not claim
    P23.1 from the manual Desktop diagnostic launch.
-2. Continue with the remaining deferred P23 real-machine acceptance items
+2. Re-run P23.2 with an agent-qualified route after the managed-MCP startup
+   fix, and retain KI-047 until a real tool call and Firefox verification pass.
+3. Continue with the remaining deferred P23 real-machine acceptance items
    using the real packaged Desktop where a Desktop session is required.
-3. Do not mark P23 complete or create a P23 completion commit until every
+4. Do not mark P23 complete or create a P23 completion commit until every
    required acceptance row has fresh evidence. The current master roadmap
    defines no P24 phase.

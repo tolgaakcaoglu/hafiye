@@ -751,3 +751,24 @@ silently treated as passing.
   `validation=false`, and `resource_warning=KI-046`. The Qwen2.5-0.5B smoke
   fixture is recorded separately as `validation=true`, `agent=false`; these
   are registry capability states, not model-name UI hacks or route changes.
+
+## KI-047 — Qwen3 packaged Composer replay did not emit a tool call
+
+- Status: P23 VALIDATION WARNING; the managed-MCP startup defect is resolved in
+  source, Qwen3's six-workflow local-agent qualification remains complete, and
+  no new boundary regression is established.
+- After the real reboot exposed that the in-memory
+  `hafiye-computer-use-linux` provider did not open the shared MCP discovery
+  gate, source/test commit `dc962963e` fixed `_has_configured_mcp_servers()`.
+  The restarted gateway then logged registration of all 18 managed
+  computer-use tools.
+- A fresh real packaged Electron Composer replay used the exact prompt
+  `Firefox'u aç.` with the agent-qualified Qwen3 route. The session exposed 38
+  core/visible tools and 18 deferred managed MCP tools, but Qwen3 remained in
+  reasoning for approximately 265 seconds without an emitted tool call. The
+  replay was terminated to avoid further host pressure; no Firefox acceptance
+  result is claimed. The normal Qwen2 route was restored afterward.
+- This warning does not reopen KI-043, change the local-first architecture, or
+  invalidate Qwen3 qualification. KI-046 remains the separate measured
+  resource warning. P23.2 stays NOT ACCEPTED until a fresh agent-qualified
+  Composer replay produces the real computer-use call and Firefox verification.

@@ -11,9 +11,10 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (KI-043 privileged terminal boundary,
-  regression tests, and local-model capability metadata source/test commit):
-  f9ebf814b53b0a3c71f932713db0e217af17cb1c
+- Current Hafiye source HEAD (managed computer-use MCP startup-gate fix;
+  preceding KI-043 privileged terminal boundary, regression tests, and
+  local-model capability metadata source/test commit):
+  dc962963e6040f792e3f74fcd459d41da425d8d
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -590,7 +591,9 @@ P0 computer-use acceptance requires:
   followed by `ac42575db2986a2f8be677a9d1272121ff533294` (managed Qwen3
   compatibility and explicit managed-MCP toolset selection), followed by
   `f9ebf814b53b0a3c71f932713db0e217af17cb1c` (KI-043 privileged terminal
-  boundary, regression tests, and local-model capability metadata).
+  boundary, regression tests, and local-model capability metadata), followed
+  by `dc962963e6040f792e3f74fcd459d41da425d8d` (managed computer-use MCP
+  startup-gate fix and regression test).
 - The native gateway's normal configuration lookup now follows Hafiye's XDG
   config root, while explicit `HERMES_HOME` and profile/context overrides keep
   the upstream-compatible single-root behavior. The Desktop/TUI agent factory
@@ -621,6 +624,13 @@ P0 computer-use acceptance requires:
   agent=false`); Qwen3-14B is a qualified local agent
   (`agent=true, tool_calling=true, validation=false, resource_warning=KI-046`).
   This does not change the default route or the upstream pin.
+- The managed Hafiye computer-use provider is injected in memory rather than
+  persisted as a user MCP entry. The startup gate now recognizes that
+  provider, so a fresh gateway/Desktop process starts shared MCP discovery and
+  registers the managed tools. This is a narrow Hafiye integration fix in
+  `dc962963e`; Hermes upstream history and the pinned upstream state are
+  unchanged. A subsequent real Qwen3 Composer replay still failed to emit a
+  tool call and remains a P23 acceptance warning, not an upstream change.
 
 ## P17 Control Center patch group
 

@@ -663,6 +663,11 @@ E2E Suite — is now the first incomplete phase.
       XDG autostart entry exists, and voice/computer-use doctors are green.
       This is pre-reboot evidence only; it does not pass the real reboot/login
       acceptance.
+- [x] Fix the post-reboot managed computer-use MCP startup gate exposed by the
+      real Composer path: the in-memory Hafiye provider now opens shared MCP
+      discovery. Source/test commit `dc962963e`; the targeted discovery set
+      returned `40 passed`, focused gateway discovery returned `3 passed`, and
+      the restarted gateway registered 18 managed tools.
 - [ ] P23.1 real reboot/login acceptance remains open: the reboot was
       performed and gateway/doctor checks passed, but GNOME did not start the
       packaged Desktop from the valid user autostart entry, so tray/Composer
@@ -674,9 +679,11 @@ E2E Suite — is now the first incomplete phase.
 - [x] Complete the real 23.8 file organize-and-verify replay through the
       authenticated Gemini route; the required files were moved and verified.
       KI-041 retains the earlier local-Qwen multi-step tool-calling warning.
-- [ ] Complete the local-route 23.2 natural-language Desktop task; the current
-      Qwen2 validation fixture returned text without a computer-use call
-      (KI-042).
+- [ ] Complete the local-route 23.2 natural-language Desktop task; after the
+      managed-MCP startup fix, the agent-qualified Qwen3 Composer replay exposed
+      18 managed tools but produced no tool call during the approximately
+      265-second observation, while the Qwen2 validation fixture also returned
+      text without computer use. Keep KI-042 and KI-047 open.
 - [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
       quota is available.
 - [ ] Execute and record the remaining real-machine items 23.1, 23.3–23.6,
