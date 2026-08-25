@@ -1649,10 +1649,40 @@ reboot:
   evidence. The fresh post-login process must come from the packaged
   autostart entry without manual terminal startup.
 
-Next action: issue the real system reboot, wait for the graphical login, then
-re-run the gateway, packaged Desktop/tray/Composer, voice/wake, and
-computer-use checks from the new boot session. Until those post-login checks
-pass, P23.1 remains `PARTIAL / REBOOT REQUIRED`.
+The preflight next action was the real system reboot/login. Its post-login
+result is recorded immediately below; P23.1 remains unaccepted because the
+Desktop did not start from the login autostart path.
+
+### P23.1 post-reboot result — 2026-08-25
+
+The requested real reboot/login was performed with `systemctl reboot -i`.
+The post-login boot evidence is:
+
+- New boot ID: `17a11ea7-41ed-4b74-a4fc-8f4e9c3dc7eb`; boot time
+  `2026-08-25 06:14:00 +0300`.
+- `hafiye-gateway.service` is enabled and active. Its new
+  `MainPID=8925` entered active state at `06:14:19 +03`; the user
+  journal records `HERMES_BACKEND_READY port=9120`. The real
+  `/api/health` request returned HTTP 200.
+- The validated
+  `/home/tolga/.config/autostart/hafiye.desktop` remained present, but the
+  fresh GNOME login produced no packaged Hafiye process, no
+  `app-gnome-hafiye` scope, and no Hafiye window in the
+  `computer-use-linux windows` query. Consequently no post-login tray or
+  Composer was observed.
+- This is not counted as P23.1 acceptance. As a diagnostic only, the exact
+  packaged binary was then started manually from the user session; it stayed
+  alive and `/home/tolga/.local/state/hafiye/logs/desktop.log` recorded
+  `[tray] Hafiye tray ready`. This proves the binary/gateway path works but
+  does not prove autostart.
+- Voice doctor remained `ok=true`, with Piper and whisper.cpp ready and
+  AUTO selecting CUDA. Computer-use doctor remained `ok=true`, with all
+  required readiness fields true and `blockers=[]`.
+
+P23.1 status is now `NOT ACCEPTED / OPERATIONAL AUTOSTART BLOCKER (KI-013)`.
+No Hafiye source change was made; the exact GNOME user-autostart execution
+failure remains to be isolated. The manually started Desktop is being used
+only for subsequent acceptance diagnostics.
 
 ### P23 verification completed so far
 
@@ -1873,7 +1903,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 | Master item | Current evidence | Final status |
 |---|---|---|
-| 23.1 Boot | Preflight passed: user gateway is enabled/active, `/api/health` returned HTTP 200, validated packaged XDG autostart entry exists, voice/computer doctors are green; the required reboot/login replay is still pending | PARTIAL / REBOOT REQUIRED |
+| 23.1 Boot | Real reboot/login completed: gateway started automatically and endpoint/voice/computer doctors are green, but GNOME did not start the packaged Desktop from the valid user autostart entry; no tray or Composer appeared. Manual packaged launch worked only as a diagnostic | NOT ACCEPTED / KI-013 AUTOSTART BLOCKER |
 | 23.2 Text | Rotated-key Gemini Composer opened Firefox, then attempted unapproved sudo remediation; the source boundary is now resolved, while the clean replay remains deferred (KI-042/KI-043) | TARGET OBSERVED / CLEAN REPLAY DEFERRED |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
@@ -1893,12 +1923,10 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 ### Exact next actions
 
-1. Issue the real system reboot through the normal system path and wait for
-   the user to log back into the graphical Ubuntu session.
-2. From the new boot, verify gateway activation, endpoint reachability,
-   packaged Desktop/tray/Composer autostart, voice/wake initialization, and
-   computer-use readiness; only then update the P23.1 ledger.
-3. Continue with the remaining deferred P23 real-machine acceptance items.
-   Do not mark P23 complete or create a P23 completion commit until every
+1. Keep the exact P23.1 autostart failure recorded as KI-013; do not claim
+   P23.1 from the manual Desktop diagnostic launch.
+2. Continue with the remaining deferred P23 real-machine acceptance items
+   using the real packaged Desktop where a Desktop session is required.
+3. Do not mark P23 complete or create a P23 completion commit until every
    required acceptance row has fresh evidence. The current master roadmap
    defines no P24 phase.

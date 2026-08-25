@@ -189,21 +189,27 @@ silently treated as passing.
   binding (or choose another shortcut in Hafiye Desktop settings), then restart
   Desktop and verify the registration log.
 
-## KI-013 — Full reboot/login acceptance was not performed in the P3 session
+## KI-013 — GNOME did not launch the Hafiye Desktop user autostart entry after reboot
 
-- Status: OPERATIONAL FOLLOW-UP; not a source blocker.
+- Status: OPEN P23.1 OPERATIONAL BLOCKER; no Hafiye source regression has
+  been established yet.
+- On 2026-08-25 the requested real reboot/login was performed. The new boot
+  ID was `17a11ea7-41ed-4b74-a4fc-8f4e9c3dc7eb`; the gateway started
+  automatically at `06:14:19 +03` and its endpoint and supporting doctors
+  were healthy.
 - A real Wayland Desktop launch used the exact generated XDG autostart command
   with `--hidden`; the process reached persistent-backend readiness and the
   autostart file is owner-created with mode 0644.
-- On 2026-08-25 P23.1 preflight verified the packaged autostart target exists,
-  the entry passes `desktop-file-validate`, the user gateway is enabled and
-  active, `/api/health` returns HTTP 200, and the live voice/computer-use
-  doctors are green. This remains pre-reboot evidence only.
-- A full reboot was intentionally not issued from the shared development
-  session. The direct autostart invocation is recorded as the non-disruptive
-  login-equivalent check; the P23.1 reboot/login step is now the next
-  operational action and will confirm that the desktop session manager
-  consumes the entry automatically.
+- After the fresh graphical login, no Hafiye process, `app-gnome-hafiye`
+  scope, Hafiye window, tray item, or Composer was observed. The valid
+  `/home/tolga/.config/autostart/hafiye.desktop` entry remained present.
+- Starting the exact packaged binary manually in the same user session kept it
+  alive and produced `[tray] Hafiye tray ready` in
+  `~/.local/state/hafiye/logs/desktop.log`. This is diagnostic evidence only
+  and is not counted as P23.1.
+- P23.1 remains NOT ACCEPTED until the Desktop starts from the actual login
+  path without manual terminal startup. The exact GNOME autostart execution
+  cause still needs isolation; no source change has been made for this issue.
 
 ## KI-014 — Small validation GGUFs have a lower trained context window
 

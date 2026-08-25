@@ -663,9 +663,11 @@ E2E Suite — is now the first incomplete phase.
       XDG autostart entry exists, and voice/computer-use doctors are green.
       This is pre-reboot evidence only; it does not pass the real reboot/login
       acceptance.
-- [ ] Perform the real P23.1 system reboot/login replay and verify that the
-      packaged Desktop, tray, Composer, voice/wake infrastructure, gateway,
-      and computer-use doctor come up without manual terminal startup.
+- [ ] P23.1 real reboot/login acceptance remains open: the reboot was
+      performed and gateway/doctor checks passed, but GNOME did not start the
+      packaged Desktop from the valid user autostart entry, so tray/Composer
+      were absent. The exact blocker is recorded as KI-013; the manual
+      packaged launch used for diagnosis is not acceptance evidence.
 - [ ] Re-run the clean Gemini Composer text acceptance with the resolved
       KI-043 boundary; this final real-machine replay remains explicitly
       deferred below and is not represented as passed.
