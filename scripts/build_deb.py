@@ -15,6 +15,7 @@ import os
 import platform
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 from pathlib import Path
@@ -162,6 +163,18 @@ def _copy_desktop(stage: Path, desktop_dir: Path) -> None:
         )
     destination = stage / "usr" / "lib" / "hafiye" / "desktop"
     shutil.copytree(desktop_dir, destination, symlinks=True)
+
+    # Electron's Linux renderer sandbox refuses to start unless this helper is
+    # installed root-owned with the setuid bit.  The source unpacked tree is
+    # normally owned by the unprivileged build user, but dpkg preserves the
+    # mode from the staging tree and --root-owner-group supplies root:root in
+    # the resulting package.  Set the mode after copying so Debian packages
+    # built without a root build environment remain launchable after install.
+    sandbox = destination / "chrome-sandbox"
+    if sandbox.exists() or sandbox.is_symlink():
+        if sandbox.is_symlink() or not stat.S_ISREG(sandbox.stat(follow_symlinks=False).st_mode):
+            raise SystemExit(f"Electron sandbox helper must be a regular file: {sandbox}")
+        sandbox.chmod(0o4755)
 
 
 def _write_text(stage: Path, relative: str, text: str, *, mode: int = 0o644) -> Path:

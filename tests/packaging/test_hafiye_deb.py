@@ -20,6 +20,9 @@ def _fixture_desktop(tmp_path: Path) -> Path:
     binary = desktop / "hafiye-desktop"
     binary.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     binary.chmod(binary.stat().st_mode | stat.S_IXUSR)
+    sandbox = desktop / "chrome-sandbox"
+    sandbox.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    sandbox.chmod(sandbox.stat().st_mode | stat.S_IXUSR)
     (desktop / "resources" / "app.asar").write_bytes(b"fixture")
     return desktop
 
@@ -47,6 +50,7 @@ def test_deb_contains_the_roadmap_packaging_contract(tmp_path):
 
     required_paths = (
         "./usr/lib/hafiye/desktop/hafiye-desktop",
+        "./usr/lib/hafiye/desktop/chrome-sandbox",
         "./usr/lib/hafiye/backend/hermes_cli/main.py",
         "./usr/lib/hafiye/backend/hafiye_rootd.py",
         "./usr/lib/hafiye/bin/hafiye",
@@ -77,6 +81,16 @@ def test_deb_contains_the_roadmap_packaging_contract(tmp_path):
     assert "Version: 0.20.5-1\n" in control
     assert "Architecture: amd64\n" in control
     assert "Depends: python3 (>= 3.11), python3 (<< 3.14), python3-venv, systemd\n" in control
+
+
+def test_deb_preserves_electron_sandbox_setuid_mode(tmp_path):
+    package, _ = _build_fixture_package(tmp_path)
+    extracted = tmp_path / "sandbox-root"
+    extracted.mkdir()
+    subprocess.run(["dpkg-deb", "--extract", str(package), str(extracted)], check=True)
+
+    sandbox = extracted / "usr/lib/hafiye/desktop/chrome-sandbox"
+    assert stat.S_IMODE(sandbox.stat().st_mode) == 0o4755
 
 
 def test_extracted_deb_launcher_and_doctor_use_the_same_backend(tmp_path):
