@@ -11,10 +11,10 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (managed computer-use MCP startup-gate fix;
-  preceding KI-043 privileged terminal boundary, regression tests, and
-  local-model capability metadata source/test commit):
-  dc962963e6040f792e3f74fcd459d41da425d8d
+- Current Hafiye source HEAD (Electron Linux Debian packaging preserves the
+  `chrome-sandbox` setuid mode; preceding managed computer-use MCP startup-gate
+  fix and KI-043 source/test commits remain below):
+  a1271a93277e6ac0747c1c5c31b586c2e883e55a
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -594,6 +594,14 @@ P0 computer-use acceptance requires:
   boundary, regression tests, and local-model capability metadata), followed
   by `dc962963e6040f792e3f74fcd459d41da425d8d` (managed computer-use MCP
   startup-gate fix and regression test).
+- The current source/test commit is
+  `a1271a93277e6ac0747c1c5c31b586c2e883e55a`. It fixes Hafiye's Debian
+  packaging boundary exposed by P23.1: the Linux Electron `chrome-sandbox`
+  helper is staged with setuid mode `4755`, so
+  `dpkg-deb --build --root-owner-group` installs it as `root:root 4755`.
+  `tests/packaging/test_hafiye_deb.py` verifies the extracted package mode
+  (`4 passed`). This is Hafiye packaging code; the Hermes upstream pin and
+  history remain unchanged.
 - The native gateway's normal configuration lookup now follows Hafiye's XDG
   config root, while explicit `HERMES_HOME` and profile/context overrides keep
   the upstream-compatible single-root behavior. The Desktop/TUI agent factory

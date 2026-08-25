@@ -189,27 +189,26 @@ silently treated as passing.
   binding (or choose another shortcut in Hafiye Desktop settings), then restart
   Desktop and verify the registration log.
 
-## KI-013 — GNOME did not launch the Hafiye Desktop user autostart entry after reboot
+## KI-013 — Electron autostart crashed on an incorrectly installed Linux sandbox helper
 
-- Status: OPEN P23.1 OPERATIONAL BLOCKER; no Hafiye source regression has
-  been established yet.
+- Status: OPEN P23.1 RECHECK REQUIRED; the packaging defect is fixed in source,
+  but a second real reboot/login has not yet confirmed the complete acceptance.
 - On 2026-08-25 the requested real reboot/login was performed. The new boot
   ID was `17a11ea7-41ed-4b74-a4fc-8f4e9c3dc7eb`; the gateway started
   automatically at `06:14:19 +03` and its endpoint and supporting doctors
   were healthy.
-- A real Wayland Desktop launch used the exact generated XDG autostart command
-  with `--hidden`; the process reached persistent-backend readiness and the
-  autostart file is owner-created with mode 0644.
-- After the fresh graphical login, no Hafiye process, `app-gnome-hafiye`
-  scope, Hafiye window, tray item, or Composer was observed. The valid
-  `/home/tolga/.config/autostart/hafiye.desktop` entry remained present.
-- Starting the exact packaged binary manually in the same user session kept it
-  alive and produced `[tray] Hafiye tray ready` in
-  `~/.local/state/hafiye/logs/desktop.log`. This is diagnostic evidence only
-  and is not counted as P23.1.
-- P23.1 remains NOT ACCEPTED until the Desktop starts from the actual login
-  path without manual terminal startup. The exact GNOME autostart execution
-  cause still needs isolation; no source change has been made for this issue.
+- The user journal showed that GNOME did execute the valid entry as
+  `app-gnome-hafiye-10171.scope`, but Electron aborted before tray creation:
+  `The SUID sandbox helper binary was found, but is not configured correctly`;
+  the helper was `tolga:tolga` with mode `0755` instead of `root:root 4755`.
+- The current helper was verified as a regular file and repaired through the
+  existing `hafiye-rootd` boundary. A sandbox-enabled short launch then ran
+  without the fatal sandbox error. The Debian package builder now applies and
+  tests mode `4755` in source/test commit
+  `a1271a93277e6ac0747c1c5c31b586c2e883e55a` (`4 passed`).
+- P23.1 remains NOT ACCEPTED until a second real reboot/login starts the
+  Desktop from the actual login path and produces the process, tray, Composer,
+  gateway connection, and readiness checks without manual startup.
 
 ## KI-014 — Small validation GGUFs have a lower trained context window
 

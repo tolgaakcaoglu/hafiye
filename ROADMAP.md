@@ -668,11 +668,19 @@ E2E Suite — is now the first incomplete phase.
       discovery. Source/test commit `dc962963e`; the targeted discovery set
       returned `40 passed`, focused gateway discovery returned `3 passed`, and
       the restarted gateway registered 18 managed tools.
-- [ ] P23.1 real reboot/login acceptance remains open: the reboot was
-      performed and gateway/doctor checks passed, but GNOME did not start the
-      packaged Desktop from the valid user autostart entry, so tray/Composer
-      were absent. The exact blocker is recorded as KI-013; the manual
-      packaged launch used for diagnosis is not acceptance evidence.
+- [x] Isolate the P23.1 post-reboot autostart failure: GNOME did execute the
+      entry, but Electron exited because `chrome-sandbox` was `tolga:tolga
+      0755`; the journal captured the exact fatal message.
+- [x] Fix the Debian packaging boundary so `chrome-sandbox` is shipped with
+      setuid mode `4755`; source/test commit
+      `a1271a93277e6ac0747c1c5c31b586c2e883e55a`; packaging tests returned
+      `4 passed`. The current unpacked helper was repaired through rootd to
+      `root:root 4755` and a sandbox-enabled short launch passed.
+- [ ] P23.1 fresh real reboot/login acceptance remains open: the repaired
+      artefact must start from the actual login path and produce the process,
+      tray, Composer, gateway connection, and green voice/computer checks.
+      Manual launch is not acceptance evidence; KI-013 remains open until
+      this replay passes.
 - [ ] Re-run the clean Gemini Composer text acceptance with the resolved
       KI-043 boundary; this final real-machine replay remains explicitly
       deferred below and is not represented as passed.

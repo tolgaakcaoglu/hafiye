@@ -9,9 +9,11 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: dc962963e6040f792e3f74fcd459d41da425d8d
-  (managed computer-use MCP startup-gate source/test fix; the preceding
-  KI-043 boundary and local-model capability source/test commit is
+- Current Hafiye source HEAD: a1271a93277e6ac0747c1c5c31b586c2e883e55a
+  (Electron Linux Debian packaging preserves the `chrome-sandbox` setuid
+  mode; the preceding managed computer-use MCP startup-gate source/test fix
+  is dc962963e6040f792e3f74fcd459d41da425d8d, and the preceding KI-043
+  boundary/local-model capability source/test commit is
   f9ebf814b53b0a3c71f932713db0e217af17cb1c)
 - Documentation closure HEAD: the documentation-only commit created after this
   source commit; verify the exact repository HEAD with `git rev-parse HEAD`.
@@ -1726,24 +1728,28 @@ The post-login boot evidence is:
   journal records `HERMES_BACKEND_READY port=9120`. The real
   `/api/health` request returned HTTP 200.
 - The validated
-  `/home/tolga/.config/autostart/hafiye.desktop` remained present, but the
-  fresh GNOME login produced no packaged Hafiye process, no
-  `app-gnome-hafiye` scope, and no Hafiye window in the
-  `computer-use-linux windows` query. Consequently no post-login tray or
-  Composer was observed.
-- This is not counted as P23.1 acceptance. As a diagnostic only, the exact
-  packaged binary was then started manually from the user session; it stayed
-  alive and `/home/tolga/.local/state/hafiye/logs/desktop.log` recorded
-  `[tray] Hafiye tray ready`. This proves the binary/gateway path works but
-  does not prove autostart.
+  `/home/tolga/.config/autostart/hafiye.desktop` was executed by GNOME: the
+  journal contains `app-gnome-hafiye-10171.scope`. Electron then exited before
+  creating the tray because the unpacked artefact's `chrome-sandbox` was
+  `tolga:tolga 0755`; Electron reported that the helper must be root-owned and
+  setuid `4755`.
+- This is not counted as P23.1 acceptance. The exact helper was verified as a
+  regular file and repaired through `hafiye-rootd` to `root:root 4755`. A
+  short sandbox-enabled launch then stayed up without the Electron sandbox
+  fatal error. The Debian package builder was fixed in source/test commit
+  `a1271a93277e6ac0747c1c5c31b586c2e883e55a` and its packaging regression set
+  returned `4 passed`.
+- A fresh real reboot/login is still required after this repair. Until that
+  replay produces the process, tray, Composer, gateway connection, and
+  voice/computer readiness without manual startup, P23.1 remains unaccepted.
 - Voice doctor remained `ok=true`, with Piper and whisper.cpp ready and
   AUTO selecting CUDA. Computer-use doctor remained `ok=true`, with all
   required readiness fields true and `blockers=[]`.
 
-P23.1 status is now `NOT ACCEPTED / OPERATIONAL AUTOSTART BLOCKER (KI-013)`.
-No Hafiye source change was made; the exact GNOME user-autostart execution
-failure remains to be isolated. The manually started Desktop is being used
-only for subsequent acceptance diagnostics.
+P23.1 status remains `NOT ACCEPTED / FRESH REBOOT REQUIRED (KI-013)`. The
+original autostart crash is isolated and fixed at the packaging boundary, but
+the fix has not yet been proven by a second real reboot/login. No manual
+Desktop launch is acceptance evidence.
 
 ### P23 verification completed so far
 
@@ -1966,7 +1972,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 | Master item | Current evidence | Final status |
 |---|---|---|
-| 23.1 Boot | Real reboot/login completed: gateway started automatically and endpoint/voice/computer doctors are green, but GNOME did not start the packaged Desktop from the valid user autostart entry; no tray or Composer appeared. Manual packaged launch worked only as a diagnostic | NOT ACCEPTED / KI-013 AUTOSTART BLOCKER |
+| 23.1 Boot | First real reboot/login executed the valid GNOME autostart entry, but Electron exited because `chrome-sandbox` was `tolga:tolga 0755`; source/package fix `a1271a93277e6ac0747c1c5c31b586c2e883e55a` now preserves `4755`, and the current helper is `root:root 4755`. A second real reboot/login is still required | NOT ACCEPTED / KI-013; FRESH REBOOT REQUIRED |
 | 23.2 Text | The managed-MCP startup gate was fixed and a fresh packaged Composer replay registered 18 computer-use tools, but the agent-qualified Qwen3 route stayed in reasoning for approximately 265 seconds without a tool call; the older Qwen2 validation replay also returned text without computer use | NOT ACCEPTED / KI-042 + KI-047 |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed. The real disconnected-network replay was started, then explicitly skipped by the user and restored without a PASS claim | PASS FOR LOCAL ROUTE / OFFLINE ACCEPTANCE DEFERRED |
@@ -1986,8 +1992,8 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 ### Exact next actions
 
-1. Keep the exact P23.1 autostart failure recorded as KI-013; do not claim
-   P23.1 from the manual Desktop diagnostic launch.
+1. Perform a second real P23.1 reboot/login after the `chrome-sandbox`
+   packaging repair; do not claim P23.1 from the short/manual launch.
 2. Re-run P23.2 with an agent-qualified route after the managed-MCP startup
    fix, and retain KI-042/KI-047/KI-049 until a real Firefox tool call and
    clean verification pass.
