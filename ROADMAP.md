@@ -602,10 +602,10 @@ E2E Suite — is now the first incomplete phase.
 ## P23 execution status — in progress
 
 - [x] Run the P23 backend target matrix: `251 passed, 2 skipped, 1 warning`.
-- [x] Re-run the exact five-ID upstream comparison after the Qwen3 source
-      change; the direct canonical run returned `4 failed, 1 passed`, and all
-      four failures were within the exact accepted historical five-ID set.
-      No new/different failure was found.
+- [x] Re-run the exact five-ID upstream comparison after KI-043 source
+      hardening; the direct canonical run returned `3 failed, 2 passed`, with
+      only accepted historical IDs 2, 3, and 5 failing. No new/different
+      failure was found.
 - [x] Unify native gateway and Electron/TUI route resolution with the normal
       Hafiye XDG config root; source/test commit `ba113121f`.
 - [x] Launch the real packaged Composer and observe the Firefox operation under
@@ -650,9 +650,17 @@ E2E Suite — is now the first incomplete phase.
 - [x] Execute a real authenticated Desktop session before and after restarting
       `hafiye-gateway.service`; durable `session.resume` and the post-restart
       prompt completed with marker `P23_RESTART_RECONNECT_OK`.
-- [ ] Re-run the Gemini Composer text acceptance after the KI-043 unapproved
-      sudo-remediation warning is resolved or explicitly bounded by the
-      existing approval path.
+- [x] Resolve KI-043 at the shared source boundary: normal terminal/process
+      execution detects direct and wrapped privilege escalation, routes
+      FULL_AUTONOMOUS operations through `hafiye-rootd`, keeps READ_ONLY and
+      confirmation policies intact, and adds regression/audit coverage.
+- [x] Persist the evidence-backed local model capability state: Qwen2.5-0.5B
+      is `validation=true, agent=false`; Qwen3-14B is
+      `agent=true, tool_calling=true, validation=false` with `KI-046`; Qwen3
+      remains selectable and is not the default route.
+- [ ] Re-run the clean Gemini Composer text acceptance with the resolved
+      KI-043 boundary; this final real-machine replay remains explicitly
+      deferred below and is not represented as passed.
 - [x] Complete the real 23.8 file organize-and-verify replay through the
       authenticated Gemini route; the required files were moved and verified.
       KI-041 retains the earlier local-Qwen multi-step tool-calling warning.
@@ -679,8 +687,8 @@ acceptance steps are intentionally deferred. They are not passed and must be
 replayed before P23 is ever marked complete:
 
 - [ ] P23.1 reboot/login, gateway/Desktop/tray/Composer boot.
-- [ ] P23.2 clean Composer text behavior after the KI-043 safety boundary is
-      resolved or explicitly bounded.
+- [ ] P23.2 clean Composer text behavior using the resolved KI-043 safety
+      boundary.
 - [ ] P23.3 live Turkish wake-word, voice command, and spoken response.
 - [ ] P23.4 actual disconnected-network local chat and computer operation.
 - [ ] P23.5 configured OpenAI-compatible remote GPU route.

@@ -11,9 +11,9 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (Qwen3 candidate compatibility and managed-MCP
-  explicit-toolset source/test commit):
-  ac42575db2986a2f8be677a9d1272121ff533294
+- Current Hafiye source HEAD (KI-043 privileged terminal boundary,
+  regression tests, and local-model capability metadata source/test commit):
+  f9ebf814b53b0a3c71f932713db0e217af17cb1c
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -588,7 +588,9 @@ P0 computer-use acceptance requires:
   `ba113121f275bf1ff8258037bb79eed0aa36e2bf` (route/config boundary) and
   `5af73434e5ab36786a306966fa926b7cbbe08914` (managed Qwen2 compatibility),
   followed by `ac42575db2986a2f8be677a9d1272121ff533294` (managed Qwen3
-  compatibility and explicit managed-MCP toolset selection).
+  compatibility and explicit managed-MCP toolset selection), followed by
+  `f9ebf814b53b0a3c71f932713db0e217af17cb1c` (KI-043 privileged terminal
+  boundary, regression tests, and local-model capability metadata).
 - The native gateway's normal configuration lookup now follows Hafiye's XDG
   config root, while explicit `HERMES_HOME` and profile/context overrides keep
   the upstream-compatible single-root behavior. The Desktop/TUI agent factory
@@ -596,9 +598,9 @@ P0 computer-use acceptance requires:
   before creating `AIAgent`.
 - This is a Hafiye boundary adapter and test coverage change; no Hermes source
   commit, upstream pin, baseline merge, or upstream history changed. The
-  latest direct exact five-ID comparison returned `4 failed, 1 passed`; all
-  four failures were members of the accepted historical five-ID set, with no
-  new/different regression.
+  latest direct exact five-ID comparison after KI-043 returned `3 failed, 2
+  passed`; only accepted historical IDs 2, 3, and 5 failed, with no
+  new/different regression. The five-ID historical whitelist is unchanged.
 - A real packaged Composer operation under a temporarily forced Gemini route
   reached Firefox, but the provider later returned HTTP 429 free-tier quota;
   the P23 final acceptance remains open and is tracked as KI-037.
@@ -614,6 +616,11 @@ P0 computer-use acceptance requires:
   layers, and CPU KV storage at 65K. An isolated real Hafiye AIAgent replay
   passed the six local-agent workflows, while the measured VRAM/RAM/swap
   pressure remains KI-046 and keeps Qwen3 selectable rather than default.
+- The local model registry now carries capability metadata for the two
+  qualified identities. Qwen2.5-0.5B is a validation fixture (`validation=true,
+  agent=false`); Qwen3-14B is a qualified local agent
+  (`agent=true, tool_calling=true, validation=false, resource_warning=KI-046`).
+  This does not change the default route or the upstream pin.
 
 ## P17 Control Center patch group
 

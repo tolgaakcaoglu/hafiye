@@ -33,12 +33,11 @@ silently treated as passing.
 - The same exact five after future Hafiye changes are not new regressions. A
   reduction updates the baseline; any new or different failure must be
   investigated. Hafiye does not fix these upstream bugs.
-- The latest direct exact-node replay on 2026-08-25 returned `4 failed, 1
-  passed`: historical IDs 1, 2, 3, and 5 failed and ID 4 passed. This is a
-  changed observed subset inside the same accepted five-ID whitelist, not a
-  new/different regression. A separate combined `run_tests.sh` invocation
-  also produced only IDs from this same whitelist, but its file-granular
-  `-k` aggregation is not the canonical exact-node result.
+- The latest direct exact-node replay on 2026-08-25 after KI-043 source
+  hardening returned `3 failed, 2 passed`: historical IDs 2, 3, and 5 failed;
+  IDs 1 and 4 passed. This is a reduced observed subset inside the same
+  accepted five-ID whitelist, not a new/different regression. A separate
+  targeted `run_tests.sh` invocation also passed all 35 relevant tests.
 
 ## KI-002 — System Python is outside the Hermes constraint
 
@@ -644,21 +643,27 @@ silently treated as passing.
   tool-calling; the rotated-key Gemini replay is now separately tracked under
   KI-043 because of its unapproved sudo-remediation attempt.
 
-## KI-043 — Gemini Composer task attempted an unapproved sudo remediation
+## KI-043 — Privileged command boundary
 
-- Status: P23 SAFETY/ACCEPTANCE WARNING; no password was supplied and no
-  privileged command completed.
-- With the rotated Gemini credential and the exact P23.2 prompt `Firefox'u
-  aç.`, the real packaged Composer transcript reported `Firefox açıldı.` and
-  a Firefox window was observed. In the same turn, the model then explored a
-  `snap-confine` diagnostic and started a `sudo chown root:root
-  /usr/libexec/snapd/snap-confine` command, which correctly stopped at the
-  Desktop administrator-password dialog.
-- The password was not entered; the temporary Desktop process was closed,
-  `pgrep` found no lingering sudo/snap command, and the default route was
-  restored to local custom/Qwen. This prevents calling the Gemini Composer
-  replay a clean P23.2/P23.6 acceptance until the bounded/approved behavior is
-  replayed and documented.
+- Status: RESOLVED at source level on 2026-08-25; the final clean Gemini
+  Composer replay remains explicitly deferred as a P23 acceptance item.
+- The historical trigger was the rotated-key Gemini Composer task with the
+  exact prompt `Firefox'u aç.`. After opening Firefox, the model attempted
+  `sudo chown root:root /usr/libexec/snapd/snap-confine`; no password was
+  supplied and the route was restored to local custom/Qwen.
+- The shared Hafiye terminal boundary now tokenizes and detects direct,
+  absolute, `env`/`command`-wrapped, quoted, shell `-c`, and chained forms of
+  `sudo`, `sudoedit`, `su`, `pkexec`, `doas`, and `runuser`. It never sends
+  these through the ordinary terminal/process executor.
+- `FULL_AUTONOMOUS` routes the operation through `hafiye-rootd`; an unavailable
+  broker fails closed without an OS password prompt. `READ_ONLY` blocks it,
+  and `PRIVILEGED_CONFIRM`/`WRITE_CONFIRM` require the existing approval
+  surface before the broker call. Direct Python subprocess/os escalation in
+  `execute_code` is also fail-closed.
+- Regression coverage includes the Gemini command shape, normal harmless
+  terminal commands, all required escalation forms, root-broker audit output,
+  FULL_AUTONOMOUS routing, READ_ONLY, confirmation, and model-registry state.
+  The targeted matrix returned `35 passed, 0 failed`.
 
 ## KI-044 — Gemini natural-language desktop prompt selected file tools
 
@@ -731,3 +736,7 @@ silently treated as passing.
   fixed compute-backend architecture or block the completed Qwen3 acceptance
   objective; the independent deferred P23 checklist remains at the roadmap
   end.
+- The local GGUF registry records Qwen3 as `agent=true`, `tool_calling=true`,
+  `validation=false`, and `resource_warning=KI-046`. The Qwen2.5-0.5B smoke
+  fixture is recorded separately as `validation=true`, `agent=false`; these
+  are registry capability states, not model-name UI hacks or route changes.

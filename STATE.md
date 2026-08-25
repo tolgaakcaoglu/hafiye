@@ -9,9 +9,11 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: ac42575db2986a2f8be677a9d1272121ff533294
-  (Qwen3 candidate compatibility and managed-MCP explicit-toolset source/test
-  commit)
+- Current Hafiye source HEAD: f9ebf814b53b0a3c71f932713db0e217af17cb1c
+  (KI-043 privileged terminal boundary, regression tests, and local-model
+  capability metadata source/test commit)
+- Documentation closure HEAD: the documentation-only commit created after this
+  source commit; verify the exact repository HEAD with `git rev-parse HEAD`.
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -104,6 +106,12 @@ qualification subtask is complete with a measured host resource warning. On
 acceptance checks be deferred and reminded at the end of the roadmap. They
 remain unaccepted and must not be represented as passed.
 
+The KI-043 source-level privileged-command boundary is now resolved: normal
+terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
+confirmation policies remain enforced, and the normal route is not changed.
+The clean Gemini Composer replay remains one of the explicitly deferred P23
+acceptance checks.
+
 ## Verified working
 
 - Git history, remotes, upstream pin, and baseline merge are preserved.
@@ -132,6 +140,16 @@ remain unaccepted and must not be represented as passed.
   lifecycle (`start|stop|restart`), GGUF model listing/load/unload, provider
   listing, routing/privacy, Task Center, and computer-use doctor all use the
   existing Hafiye runtime/configuration boundaries.
+- The local GGUF registry exposes evidence-backed capability metadata: the
+  Qwen2.5-0.5B validation fixture is `validation=true, agent=false`; Qwen3-14B
+  is `agent=true, tool_calling=true, validation=false` with
+  `resource_warning=KI-046`. The default route remains
+  `custom/qwen2.5-0.5b-instruct-q4`; Qwen3 is selectable and not default.
+- KI-043 source hardening is present at the shared terminal boundary. Direct,
+  absolute, env/command-wrapped, quoted, shell-wrapped, and chained
+  escalation binaries are not executed by the normal terminal; FULL_AUTONOMOUS
+  uses `hafiye-rootd`, while READ_ONLY and confirmation policies retain their
+  existing semantics.
 - Native gateway and Electron/TUI Desktop agent creation now read the normal
   Hafiye XDG config root and apply the same route-slot/privacy policy before
   constructing `AIAgent`. The change is covered by native-gateway and
@@ -1581,7 +1599,7 @@ claimed as passed.
   `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
 - Current Hafiye source/test commit:
-  `ac42575db2986a2f8be677a9d1272121ff533294`.
+  `f9ebf814b53b0a3c71f932713db0e217af17cb1c`.
 - The native gateway now uses the normal Hafiye XDG config root while
   retaining explicit `HERMES_HOME`/profile single-root behavior. The
   Electron/TUI `_make_agent` boundary now resolves the same Hafiye route slot,
@@ -1590,6 +1608,16 @@ claimed as passed.
   adds a narrowly scoped Qwen2 context compatibility argument builder: above
   32K it passes YaRN scaling from 32K and an explicit Qwen2 context metadata
   override; other model families retain native metadata behavior.
+- The shared terminal boundary now detects direct, absolute, env/command-
+  wrapped, quoted, shell-wrapped, and chained `sudo`, `sudoedit`, `su`,
+  `pkexec`, `doas`, and `runuser` forms. FULL_AUTONOMOUS sends privileged
+  terminal work through `hafiye-rootd`; READ_ONLY blocks it and confirmation
+  policies require approval before the broker call. Direct Python
+  subprocess/os escalation in `execute_code` is fail-closed.
+- The local model registry now persists capability state. The Qwen2.5-0.5B
+  fixture is `validation=true, agent=false`; Qwen3-14B is
+  `agent=true, tool_calling=true, validation=false` with `resource_warning=KI-046`.
+  The default route remains `custom/qwen2.5-0.5b-instruct-q4`.
 
 ### P23 verification completed so far
 
@@ -1597,9 +1625,9 @@ claimed as passed.
   warning in 22.66s`, including the managed local-runtime compatibility test.
 - `.venv/bin/ruff check` on the route/config source and tests, Python
   compilation, and `git diff --check` passed.
-- The latest exact five-ID upstream comparison after the Qwen3 source change
+- The latest exact five-ID upstream comparison after KI-043 source hardening
   used the documented direct `.venv/bin/pytest` command and returned
-  `4 failed, 1 passed`: historical IDs 1, 2, 3, and 5 failed; ID 4 passed.
+  `3 failed, 2 passed`: historical IDs 2, 3, and 5 failed; IDs 1 and 4 passed.
   Every failure is inside the exact historical five-ID
   `ACCEPTED_UPSTREAM_BASELINE`; there is no new or different failure and no
   Qwen3/Hafiye regression. The per-file wrapper replay also produced only
@@ -1783,6 +1811,26 @@ claimed as passed.
   Firefox still exposes only a root AT-SPI node in this host path, so KI-022 is
   retained as a diagnostic even though the required P23.10 UI task passed.
 
+### P23 final source hardening — KI-043
+
+- Source/test commit: `f9ebf814b53b0a3c71f932713db0e217af17cb1c`.
+- Targeted command:
+  `scripts/run_tests.sh tests/test_hafiye_execution_policy.py
+  tests/test_hafiye_privileged_boundary.py tests/test_hafiye_rootd.py
+  tests/hermes_cli/test_local_runtime.py -q` → `35 passed, 0 failed`.
+- `.venv/bin/ruff check` on the changed source and tests passed; `git diff
+  --check` passed.
+- The regression matrix covers direct/absolute/env/command/quoted/shell-
+  wrapped/chained `sudo`, `sudoedit`, `su`, `pkexec`, and `doas`; Gemini's
+  `sudo chown root:root /usr/libexec/snapd/snap-confine` scenario; normal
+  terminal execution; FULL_AUTONOMOUS rootd routing; rootd audit; READ_ONLY;
+  confirmation; and local-model registry metadata.
+- The exact upstream comparison returned `3 failed, 2 passed`; only accepted
+  historical IDs 2, 3, and 5 failed. The five-ID historical whitelist is
+  unchanged and no new/different failure was found.
+- KI-043 is resolved at source level. The final clean Gemini Composer replay
+  remains deferred under the user's P23 checklist and is not marked passed.
+
 ### P23 final acceptance ledger
 
 The following are deliberately not marked passed merely because earlier phase
@@ -1791,11 +1839,11 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | Master item | Current evidence | Final status |
 |---|---|---|
 | 23.1 Boot | Packaged Desktop reached Composer after a real gateway restart; a fresh reboot/login replay is not recorded | PARTIAL / REBOOT REQUIRED |
-| 23.2 Text | Rotated-key Gemini Composer opened Firefox, then attempted unapproved sudo remediation; local Qwen2 still failed tool execution (KI-042/KI-043) | TARGET PASSED / SAFETY WARNING |
+| 23.2 Text | Rotated-key Gemini Composer opened Firefox, then attempted unapproved sudo remediation; the source boundary is now resolved, while the clean replay remains deferred (KI-042/KI-043) | TARGET OBSERVED / CLEAN REPLAY DEFERRED |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
 | 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
-| 23.6 Gemini | Rotated-key explicit one-shot passed; Composer reached Firefox but the same turn hit KI-043 sudo approval dialog | PASS WITH SAFETY WARNING |
+| 23.6 Gemini | Rotated-key explicit one-shot passed; the earlier Composer turn hit the KI-043 sudo approval dialog; clean Gemini Composer replay remains deferred | ONE-SHOT PASS / CLEAN REPLAY DEFERRED |
 | 23.7 Privacy | Real Gemini-configured route under global `LOCAL_ONLY` exited before provider call with the policy-block message; settings restored | PASS / FAIL-CLOSED |
 | 23.8 Files | Authenticated Gemini fixture replay performed and verified the required moves and final paths; KI-041 retains the earlier local-Qwen warning | PASS / GEMINI ROUTE |
 | 23.9 Desktop | Managed computer-use-linux MCP opened two real VS Code windows, switched focus, sent mouse/keyboard input, saved the marker, and visually verified the final UI | PASS / KI-044 MODEL WARNING |

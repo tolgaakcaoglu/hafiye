@@ -186,9 +186,9 @@ The historical post-source comparison set is this exact five-failure baseline:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The latest exact comparison command after the Qwen3 source change returned
-failures in items 1, 2, 3, and 5; item 4 passed. The current comparison
-baseline is therefore items 1, 2, 3, and 5 above, while the exact five remain
+The latest exact comparison command after KI-043 source hardening returned
+failures in items 2, 3, and 5; items 1 and 4 passed. The current comparison
+baseline is therefore items 2, 3, and 5 above, while the exact five remain
 the historical accepted whitelist. The separate
 local reconnect failure was observed only in the earlier post-P6 comparison,
 reproduced in the P6-parent checkout, and is documented as KI-019. The P19
@@ -449,7 +449,7 @@ comparison baseline, while any new or different failure requires investigation.
 | P23-RESTART-01 | Real Desktop session restart/reconnect | Authenticated `source=desktop` WebSocket fixture; local-Qwen prompt before `systemctl --user restart hafiye-gateway.service`; reconnect; `session.resume` with the durable session id; post-restart prompt; service state | Before-restart prompt completed; gateway restart completed; the same durable session resumed; post-restart prompt completed; service remained `active`; marker `P23_RESTART_RECONNECT_OK` | PASS |
 | P23-EMERGENCY-01 | Emergency shortcut desktop-action probe | `.venv/bin/hafiye ask --provider custom --model qwen2.5-0.5b-instruct-q4 --toolsets computer_use` with an explicit 60-second `computer_use` wait request; monitor for a real tool event before sending the physical chord | Local-Qwen process exited without producing a `computer_use` tool event; no chord was sent; the exact P23.15 long-running desktop sequence remains unaccepted | NOT ACCEPTED / KI-045 |
 | P23-GEMINI-01 | Rotated-key Gemini one-shot | Store new credential through `save_provider_env_credential("GOOGLE_API_KEY", ...)` into Linux Secret Service; `.venv/bin/hafiye ask --provider gemini --model gemini-flash-lite-latest 'Reply with exactly P23_GEMINI_NEW_KEY_OK'` | `P23_GEMINI_NEW_KEY_OK`; provider authenticated; raw key not recorded | PASS |
-| P23-GEMINI-DESKTOP-01 | Rotated-key packaged Composer text task | Temporarily set default route to Gemini; launch packaged Desktop; submit exact `Firefox'u aç.`; inspect transcript/window; restore local route | Transcript reported `Firefox açıldı.` and Firefox opened, then model attempted `sudo chown root:root /usr/libexec/snapd/snap-confine`; Desktop requested password; no password supplied and route restored | TARGET PASS / KI-043 SAFETY WARNING |
+| P23-GEMINI-DESKTOP-01 | Rotated-key packaged Composer text task | Temporarily set default route to Gemini; launch packaged Desktop; submit exact `Firefox'u aç.`; inspect transcript/window; restore local route | Transcript reported `Firefox açıldı.` and Firefox opened, then model attempted `sudo chown root:root /usr/libexec/snapd/snap-confine`; no password was supplied and route was restored. The source boundary is now hardened; the clean replay remains deferred | TARGET OBSERVED / KI-043 RESOLVED; FINAL REPLAY DEFERRED |
 | P23-PRIVACY-01 | LOCAL_ONLY blocks configured cloud route | Temporarily set default route to Gemini; set global `LOCAL_ONLY`; run `.venv/bin/hafiye ask 'Reply with exactly P23_LOCAL_ONLY_BLOCKED'` without explicit provider/model; restore route/privacy | Exit 1 with `Hafiye LOCAL_ONLY policy blocked provider 'gemini' ...` before provider call; route restored to custom/Qwen and privacy to `NORMAL` | PASS / FAIL-CLOSED |
 | P23-MEMORY-01 | Fresh project alias/session recheck | `.venv/bin/pytest -q tests/tools/test_project_tools.py::test_project_alias_and_session_context_survive_fresh_process` | `1 passed in 1.36s` | PASS / SUPPORTING RECHECK |
 | P23-OPENHANDS-01 | Fresh managed OpenHands readiness and P23.13 fixture delegation | `.venv/bin/hafiye runtime openhands doctor`; `.venv/bin/hafiye ask --provider gemini --model gemini-flash-lite-latest --toolsets coding ...`; `.venv/bin/python -m pytest -q` in the isolated fixture; `.venv/bin/hafiye tasks --json` | Doctor returned SDK/source `1.41.0`, `ready=true`, `blockers=[]`. Real `coding_delegate` Task Center record reached `COMPLETED` on the `coding` route with 28 progress events and terminal/file-editor history; `bug.py` was changed and independent fixture pytest returned `1 passed in 0.00s` | PASS |
@@ -457,8 +457,12 @@ comparison baseline, while any new or different failure requires investigation.
 | P23-BROWSER-01 | Structured then native browser path | Local `python -m http.server` + `browser_navigate`/`browser_snapshot`; `tools.hafiye_browser.browser_native` against exact existing Firefox Wayland window; native screenshot/state; restore prior tab | Structured navigation passed. Managed native route returned successful activation/key/type/navigation steps; real screenshot showed `Hafiye P23 Native Browser OK` and `P23_NATIVE_BROWSER_OK`; prior Kick tab was restored. Firefox's root-only AT-SPI tree remains KI-022 | PASS / KI-022 DIAGNOSTIC |
 | P23-DESKTOP-01 | Real packaged Composer text path | Packaged Electron command below, with default route temporarily forced to Gemini | Historical run opened Firefox but later hit HTTP 429; rotated-key replay is recorded in `P23-GEMINI-DESKTOP-01` and ended with KI-043 sudo approval dialog | HISTORICAL / KI-037; CURRENT WARNING KI-043 |
 | P23-DOCTOR-01 | Live supporting readiness diagnostics | `.venv/bin/hafiye voice doctor`; `.venv/bin/hafiye runtime openhands doctor`; `.venv/bin/hafiye root status`; `.venv/bin/hafiye doctor`; `.venv/bin/hafiye computer doctor --json` | Voice/OpenHands/root/computer checks green; general doctor has KI-007/KI-038 diagnostics and host has separate root ydotoold observation KI-039 | PASS WITH DIAGNOSTICS |
-| P23-BE-BASELINE | Exact five upstream comparison after P23 source change | Exact command below | Latest direct run: `4 failed, 1 passed`; historical IDs 1, 2, 3, and 5 failed and ID 4 passed. Every failure is within the accepted five-ID set; no new/different ID | ACCEPTED BASELINE / NO NEW REGRESSION |
+| P23-BE-BASELINE | Exact five upstream comparison after KI-043 source hardening | Exact command below | Latest direct run: `3 failed, 2 passed`; historical IDs 2, 3, and 5 failed and IDs 1 and 4 passed. Every failure is within the accepted five-ID set; no new/different ID | ACCEPTED BASELINE / NO NEW REGRESSION |
 | P23-ACCEPTANCE | Master P23 closure | All 23.1–23.16 real-machine checks | Remaining final E2E rows are not yet replayed; P23 remains open | NOT COMPLETE |
+
+| P23-KI043-01 | Privileged command boundary and approval semantics | `scripts/run_tests.sh tests/test_hafiye_execution_policy.py tests/test_hafiye_privileged_boundary.py tests/test_hafiye_rootd.py tests/hermes_cli/test_local_runtime.py -q` | 35 passed, 0 failed; direct/absolute/env/command/quoted/shell-wrapped/chained escalation, Gemini `sudo chown`, normal terminal, rootd routing/audit, READ_ONLY, confirmation, and registry metadata covered | PASS / KI-043 RESOLVED |
+| P23-KI043-02 | Changed-source lint and patch hygiene | `.venv/bin/ruff check hafiye_execution_policy.py hermes_cli/local_runtime.py tools/code_execution_tool.py tools/terminal_tool.py tests/test_hafiye_execution_policy.py tests/test_hafiye_privileged_boundary.py tests/hermes_cli/test_local_runtime.py`; `git diff --check` | Ruff clean; diff check clean | PASS |
+| P23-MODEL-REGISTRY-01 | Evidence-backed local model capability state | `.venv/bin/hafiye routing --json`; `.venv/bin/hafiye models --json` | Default route remains `custom/qwen2.5-0.5b-instruct-q4`; Qwen2 is `validation=true, agent=false`; Qwen3 is `agent=true, tool_calling=true, validation=false, resource_warning=KI-046` and remains selectable | PASS / KI-046 WARNING |
 
 ### P23 backend target matrix command
 
@@ -531,8 +535,8 @@ PATH="$PWD/.venv/bin:$PATH" .venv/bin/pytest -q \
   tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 ```
 
-Result on 2026-08-25: `4 failed, 1 passed`; ID 4 passed and IDs 1, 2, 3, and
-5 failed. Every failure is in the exact historical `ACCEPTED_UPSTREAM_BASELINE`
-set, so this is not a new P23 regression. The canonical historical whitelist
-remains all five IDs; the current observed comparison subset is 1, 2, 3, and
-5.
+Result on 2026-08-25 after KI-043 source hardening: `3 failed, 2 passed`; IDs 1
+and 4 passed and IDs 2, 3, and 5 failed. Every failure is in the exact
+historical `ACCEPTED_UPSTREAM_BASELINE` set, so this is not a new P23
+regression. The canonical historical whitelist remains all five IDs; the
+current observed comparison subset is 2, 3, and 5.
