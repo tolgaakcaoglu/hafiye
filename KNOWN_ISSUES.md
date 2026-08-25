@@ -544,8 +544,9 @@ silently treated as passing.
 ## KI-037 — P23 live Gemini route hit provider quota
 
 - Status: RESOLVED 2026-08-25 by credential rotation; the prior quota failure
-  is no longer the active Gemini blocker. P23.2/P23.6 still have the separate
-  KI-043 safety warning.
+  is no longer the active Gemini blocker. P23.6 now has a clean packaged file
+  task pass; the exact Firefox P23.2 replay remains separately tracked under
+  KI-049.
 - On 2026-08-25 the default route was temporarily forced to
   `gemini-flash-lite-latest` through the real Hafiye route configuration. The
   packaged Electron Composer accepted `Firefox'u aç.`, the transcript reported
@@ -656,8 +657,9 @@ silently treated as passing.
 
 ## KI-043 — Privileged command boundary
 
-- Status: RESOLVED at source level on 2026-08-25; the final clean Gemini
-  Composer replay remains explicitly deferred as a P23 acceptance item.
+- Status: RESOLVED at source level on 2026-08-25. The clean Gemini file-task
+  Composer acceptance passes without privilege escalation; the separate exact
+  Firefox replay's unrelated root remediation is tracked under KI-049.
 - The historical trigger was the rotated-key Gemini Composer task with the
   exact prompt `Firefox'u aç.`. After opening Firefox, the model attempted
   `sudo chown root:root /usr/libexec/snapd/snap-confine`; no password was
@@ -675,6 +677,10 @@ silently treated as passing.
   terminal commands, all required escalation forms, root-broker audit output,
   FULL_AUTONOMOUS routing, READ_ONLY, confirmation, and model-registry state.
   The targeted matrix returned `35 passed, 0 failed`.
+- The post-fix exact Gemini Firefox replay produced no administrator-password
+  dialog. Its privileged package command was executed only by `hafiye-rootd`,
+  as required by `FULL_AUTONOMOUS`; this confirms the boundary semantics even
+  though the overall Composer task was not clean.
 
 ## KI-044 — Gemini natural-language desktop prompt selected file tools
 
@@ -772,3 +778,33 @@ silently treated as passing.
   invalidate Qwen3 qualification. KI-046 remains the separate measured
   resource warning. P23.2 stays NOT ACCEPTED until a fresh agent-qualified
   Composer replay produces the real computer-use call and Firefox verification.
+
+## KI-048 — P23.5 self-hosted remote endpoint is not configured
+
+- Status: P23 OPERATIONAL BLOCKER; no Hafiye source defect is established.
+- The live route state has an empty `remote` task override. The active
+  `/home/tolga/.config/hafiye/config.yaml` exposes only the local
+  `http://127.0.0.1:11435/v1` OpenAI-compatible endpoint, and onboarding
+  records `remote_provider_skipped=true`. No real remote self-hosted endpoint
+  was available for the required forced-route replay.
+- P23.5 remains NOT ACCEPTED. A localhost fixture or the Gemini cloud provider
+  is not counted as the required remote self-hosted evidence.
+
+## KI-049 — Gemini exact Firefox Composer triggered unrelated package remediation
+
+- Status: P23 VALIDATION WARNING; KI-043 remains RESOLVED and no password
+  dialog was shown.
+- In the fresh real packaged Composer replay with the exact `Firefox'u aç.`
+  prompt, Gemini opened Firefox but then attempted a remediation chain through
+  the normal privileged boundary: `sudo apt install -y firefox`, apt source/
+  preference changes, and later Firefox package operations. The Hafiye root
+  broker executed the privileged work as designed; it did not expose an OS
+  password prompt. This was unrelated to the requested task, so the replay is
+  not clean P23.2 acceptance.
+- Emergency stop was engaged while the root broker operation was active. The
+  operation ended; the prior Firefox Snap revision `8763` was restored through
+  rootd, the temporary Debian Firefox package was removed, and the
+  `mozillateam` source/preferences created by the remediation were removed.
+  The host route was restored to custom/Qwen2 and the package state was
+  rechecked. This issue is model/task-selection behavior, not a reason to
+  weaken `FULL_AUTONOMOUS` or bypass `hafiye-rootd`.

@@ -684,13 +684,17 @@ E2E Suite — is now the first incomplete phase.
       18 managed tools but produced no tool call during the approximately
       265-second observation, while the Qwen2 validation fixture also returned
       text without computer use. Keep KI-042 and KI-047 open.
-- [ ] Re-run the clean Gemini-backed Composer/Text acceptance when provider
-      quota is available.
-- [ ] Execute and record the remaining real-machine items 23.1, 23.3–23.6,
+- [x] Complete a clean Gemini-backed packaged Composer task after the quota
+      recheck: the real Desktop created/read `/tmp/hafiye-p23-gemini/ok.txt`,
+      returned `P23_GEMINI_COMPOSER_OK`, and independent content verification
+      passed without a privileged command or password dialog. This passes
+      P23.6; the exact Firefox P23.2 replay remains open separately.
+- [ ] Execute and record the remaining real-machine items 23.1, 23.3, 23.5,
       23.14, and the long-running managed desktop portion of 23.15 from the
-      master roadmap. Earlier phase evidence is not silently promoted to final
-      P23 acceptance; 23.16 now has fresh authenticated restart/reconnect
-      evidence.
+      master roadmap. P23.4 was explicitly skipped by the user and is not
+      passed; P23.5 has no configured remote endpoint. Earlier phase evidence
+      is not silently promoted to final P23 acceptance; 23.16 now has fresh
+      authenticated restart/reconnect evidence.
 - [ ] Mark P23 complete and create its completion commit only after every
       acceptance row has fresh evidence.
 
@@ -710,8 +714,12 @@ replayed before P23 is ever marked complete:
       boundary.
 - [ ] P23.3 live Turkish wake-word, voice command, and spoken response.
 - [ ] P23.4 actual disconnected-network local chat and computer operation.
-- [ ] P23.5 configured OpenAI-compatible remote GPU route.
-- [ ] P23.6 clean Gemini task result.
+      User explicitly instructed to skip this replay on 2026-08-25; it remains
+      unaccepted and must not be marked PASS.
+- [ ] P23.5 configured OpenAI-compatible remote GPU route. No real endpoint is
+      currently configured; see KI-048.
+- [x] P23.6 clean Gemini task result. The packaged Composer file task returned
+      `P23_GEMINI_COMPOSER_OK` and passed independent content verification.
 - [ ] P23.14 live spoken barge-in with `Hafiye dur.`.
 - [ ] P23.15 long-running managed desktop action stopped by
       `Ctrl+Super+Escape`.

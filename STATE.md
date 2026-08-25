@@ -110,8 +110,10 @@ remain unaccepted and must not be represented as passed.
 The KI-043 source-level privileged-command boundary is now resolved: normal
 terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
 confirmation policies remain enforced, and the normal route is not changed.
-The clean Gemini Composer replay remains one of the explicitly deferred P23
-acceptance checks.
+The clean Gemini Composer file-task replay now passes P23.6. The exact
+`Firefox'u aç.` replay remains unaccepted because Gemini performed unrelated
+privileged package remediation; the local Qwen3 replay also emitted no tool
+call.
 
 ## Verified working
 
@@ -1649,6 +1651,35 @@ claimed as passed.
   remains healthy. This observed behavior is tracked as KI-047, while the
   Qwen3 qualification and KI-046 resource warning remain unchanged.
 
+### P23.4–P23.6 live rechecks — 2026-08-25
+
+- P23.4 was started with a real disconnected-network setup: `nmcli networking
+  off` reported `disabled`, the default route disappeared, and the local
+  gateway health endpoint still returned HTTP 200. The Qwen3 packaged
+  Composer task had not completed after the initial observation. The user
+  then explicitly instructed to skip the offline test, so it was stopped and
+  is **not** marked PASS. `nmcli networking on` restored connectivity, and the
+  default route/runtime were restored to Qwen2/CUDA.
+- P23.5 is not accepted: `hafiye routing --json` has an empty `remote` task
+  override, `/home/tolga/.config/hafiye/config.yaml` contains only the local
+  `127.0.0.1:11435/v1` OpenAI-compatible endpoint, and onboarding records
+  `remote_provider_skipped=true`. No real remote self-hosted endpoint was
+  available to test. This is recorded as KI-048, not replaced by a localhost
+  fixture.
+- P23.6 clean Gemini Composer acceptance passed on the real packaged Desktop.
+  With the default route temporarily set to Gemini, the task created and read
+  `/tmp/hafiye-p23-gemini/ok.txt`, returned `P23_GEMINI_COMPOSER_OK`, and an
+  independent filesystem check confirmed the exact 22-byte content. No
+  privileged command or password dialog occurred; route was restored to
+  Qwen2/CUDA afterward.
+- The separate exact Gemini `Firefox'u aç.` replay is not clean: Gemini opened
+  Firefox, then started an unrelated `sudo apt`/`sudo snap` remediation. The
+  command crossed `hafiye-rootd` (no OS password dialog), but it changed the
+  host package state. Emergency stop was engaged, the root operation ended,
+  and the prior Firefox Snap revision `8763` was restored through rootd; the
+  temporary Mozilla apt source/preference files were removed. This remains
+  NOT ACCEPTED for P23.2 and is tracked as KI-049; KI-043 remains RESOLVED.
+
 ### P23.1 reboot preflight — 2026-08-25
 
 The real reboot/login acceptance has not been claimed yet. The read-only
@@ -1845,8 +1876,9 @@ only for subsequent acceptance diagnostics.
   aç.` prompt, reported `Firefox açıldı.` and opened Firefox, but then attempted
   an unapproved `sudo chown` remediation and stopped at the password dialog.
   No password was supplied, no privileged command completed, and the route was
-  restored to local custom/Qwen. KI-043 records why this is not a clean final
-  P23.2/P23.6 acceptance.
+  restored to local custom/Qwen. KI-049 records why this is not a clean final
+  P23.2 acceptance; the later clean Gemini file-task replay separately passed
+  P23.6.
 - Fresh supporting rechecks passed: the real project alias/session test
   returned `1 passed in 1.36s`; `hafiye runtime openhands doctor` returned
   `ready=true` with `blockers=[]` for OpenHands SDK `1.41.0`; `hafiye root exec
@@ -1923,8 +1955,9 @@ only for subsequent acceptance diagnostics.
 - The exact upstream comparison returned `3 failed, 2 passed`; only accepted
   historical IDs 2, 3, and 5 failed. The five-ID historical whitelist is
   unchanged and no new/different failure was found.
-- KI-043 is resolved at source level. The final clean Gemini Composer replay
-  remains deferred under the user's P23 checklist and is not marked passed.
+- KI-043 is resolved at source level. The exact Firefox Gemini replay remains
+  unaccepted under KI-049; the separate clean Gemini file-task replay is
+  recorded as P23.6 PASS.
 
 ### P23 final acceptance ledger
 
@@ -1936,9 +1969,9 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.1 Boot | Real reboot/login completed: gateway started automatically and endpoint/voice/computer doctors are green, but GNOME did not start the packaged Desktop from the valid user autostart entry; no tray or Composer appeared. Manual packaged launch worked only as a diagnostic | NOT ACCEPTED / KI-013 AUTOSTART BLOCKER |
 | 23.2 Text | The managed-MCP startup gate was fixed and a fresh packaged Composer replay registered 18 computer-use tools, but the agent-qualified Qwen3 route stayed in reasoning for approximately 265 seconds without a tool call; the older Qwen2 validation replay also returned text without computer use | NOT ACCEPTED / KI-042 + KI-047 |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
-| 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
-| 23.5 Remote inference | P5/P6 remote endpoint coverage exists; exact P23 forced-route replay is not recorded here | NOT FINAL-CHECKED |
-| 23.6 Gemini | Rotated-key explicit one-shot passed; the earlier Composer turn hit the KI-043 sudo approval dialog; clean Gemini Composer replay remains deferred | ONE-SHOT PASS / CLEAN REPLAY DEFERRED |
+| 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed. The real disconnected-network replay was started, then explicitly skipped by the user and restored without a PASS claim | PASS FOR LOCAL ROUTE / OFFLINE ACCEPTANCE DEFERRED |
+| 23.5 Remote inference | No real self-hosted endpoint is configured: remote route override is empty and onboarding records the remote provider was skipped | NOT ACCEPTED / KI-048 OPERATIONAL BLOCKER |
+| 23.6 Gemini | Real packaged Composer with Gemini created/read `/tmp/hafiye-p23-gemini/ok.txt`, returned `P23_GEMINI_COMPOSER_OK`, and independent content verification passed without privilege escalation | PASS / CLEAN FILE TASK |
 | 23.7 Privacy | Real Gemini-configured route under global `LOCAL_ONLY` exited before provider call with the policy-block message; settings restored | PASS / FAIL-CLOSED |
 | 23.8 Files | Authenticated Gemini fixture replay performed and verified the required moves and final paths; KI-041 retains the earlier local-Qwen warning | PASS / GEMINI ROUTE |
 | 23.9 Desktop | Managed computer-use-linux MCP opened two real VS Code windows, switched focus, sent mouse/keyboard input, saved the marker, and visually verified the final UI | PASS / KI-044 MODEL WARNING |
@@ -1947,7 +1980,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.12 Memory | Fresh `test_project_alias_and_session_context_survive_fresh_process` returned `1 passed in 1.36s` | PASS / FRESH PROCESS |
 | 23.13 OpenHands | Fresh managed doctor plus Gemini-backed `coding_delegate` fixture; Task Center `COMPLETED`, 28 progress events, `bug.py` changed, independent `pytest -q` returned `1 passed` | PASS |
 | 23.14 Barge-in | P13 real stop evidence remains green; exact final phrase is not replayed here | INHERITED / RECHECK |
-| 23.15 Emergency shortcut | Real `Ctrl+Super+Escape` reached the GNOME fallback, paused the emergency state, and `emergency.resume` restored it; the model selected `terminal` instead of a long-running managed desktop action | PARTIAL / KI-045 |
+| 23.15 Emergency shortcut | Real `Ctrl+Super+Escape` reached the GNOME fallback, paused the emergency state, and `emergency.resume` restored it; the model selected `terminal` instead of a long-running managed desktop action. The later Gemini remediation was stopped through the same emergency path, but that was not the required desktop-action acceptance | PARTIAL / KI-045 |
 | 23.16 Restart recovery | Authenticated desktop session completed before restart; service restarted; same durable session resumed; post-restart prompt completed; service remained active; marker `P23_RESTART_RECONNECT_OK` | PASS / REAL SESSION RESUME |
 | Qwen3 local-agent qualification | Isolated managed Qwen3 Q4_K_M AIAgent replay passed exact Firefox, file organize/read/move, real VS Code MCP input, multi-step terminal, OpenHands delegation, and same-session multi-turn tool workflows; resource envelope recorded separately | PASS / RESOURCE WARNING KI-046 |
 
@@ -1956,9 +1989,12 @@ tests exist. The master roadmap requires the final real-machine sequence.
 1. Keep the exact P23.1 autostart failure recorded as KI-013; do not claim
    P23.1 from the manual Desktop diagnostic launch.
 2. Re-run P23.2 with an agent-qualified route after the managed-MCP startup
-   fix, and retain KI-047 until a real tool call and Firefox verification pass.
-3. Continue with the remaining deferred P23 real-machine acceptance items
-   using the real packaged Desktop where a Desktop session is required.
+   fix, and retain KI-042/KI-047/KI-049 until a real Firefox tool call and
+   clean verification pass.
+3. Complete the physical P23.3 voice, P23.14 barge-in, and P23.15
+   long-running managed-desktop emergency-stop replays; keep P23.4 deferred
+   by the user's instruction and P23.5 blocked until a real remote endpoint is
+   configured.
 4. Do not mark P23 complete or create a P23 completion commit until every
    required acceptance row has fresh evidence. The current master roadmap
    defines no P24 phase.
