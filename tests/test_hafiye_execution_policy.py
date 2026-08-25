@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 from hafiye_execution_policy import (
     DEFAULT_EXECUTION_POLICY,
+    contains_obvious_python_privilege_escalation,
+    contains_privilege_escalation,
     evaluate_tool_call,
     normalize_execution_policy,
     resolve_execution_policy,
@@ -64,7 +66,45 @@ def test_privileged_confirm_only_requires_confirmation_for_privileged_calls():
         "terminal", {"command": "sudo id"}, config=config
     )
     assert privileged is not None
+    assert privileged.allowed is False
     assert privileged.requires_confirmation
+    assert privileged.requires_root_broker
+
+
+def test_privilege_detection_covers_direct_absolute_wrapped_and_chained_forms():
+    detected = (
+        "sudo id",
+        "/usr/bin/sudo id",
+        "env HAFIYE_TEST=1 sudo id",
+        "command sudo id",
+        "printf ok; sudo id",
+        "'sudo' id",
+        "sh -c 'sudo id'",
+        "bash -lc \"env X=Y /bin/pkexec id\"",
+        "timeout 10 doas id",
+        "su -c 'id'",
+    )
+    harmless = (
+        "echo sudo",
+        "echo 'sudo id'",
+        "printf '%s' \"/usr/bin/sudo\"",
+        "pwd",
+        "id",
+    )
+    assert all(contains_privilege_escalation(command) for command in detected)
+    assert all(not contains_privilege_escalation(command) for command in harmless)
+
+
+def test_execute_code_direct_process_escalation_is_detected_without_false_positive():
+    assert contains_obvious_python_privilege_escalation(
+        "import subprocess\nsubprocess.run(['/usr/bin/sudo', 'id'])"
+    )
+    assert contains_obvious_python_privilege_escalation(
+        "import os\nos.system(\"sh -c 'sudo id'\")"
+    )
+    assert not contains_obvious_python_privilege_escalation(
+        "import subprocess\nsubprocess.run(['echo', 'sudo'])"
+    )
 
 
 def test_write_confirm_leaves_reads_unprompted_and_confirms_writes():

@@ -61,6 +61,69 @@ def _redact_terminal_error_text(value: Any) -> str:
     return redact_sensitive_text("" if value is None else str(value), force=True)
 
 
+def _execute_privileged_via_rootd(
+    command: str,
+    *,
+    cwd: str | None,
+    timeout: int | float | None,
+) -> str:
+    """Execute a privileged terminal command only through ``hafiye-rootd``.
+
+    This helper is intentionally fail-closed: an unavailable broker never
+    falls back to the normal terminal environment, ``sudo``, or an OS prompt.
+    The root broker owns the privileged process and its redacted audit record.
+    """
+    from hafiye_rootd import RootBrokerClient, RootBrokerError
+
+    try:
+        result = RootBrokerClient().exec(
+            command,
+            cwd=cwd,
+            timeout=timeout,
+        )
+    except RootBrokerError as exc:
+        logger.warning("Privileged command refused by hafiye-rootd: %s", exc)
+        return json.dumps(
+            {
+                "output": "",
+                "exit_code": -1,
+                "error": _redact_terminal_error_text(
+                    f"Privileged command was not executed: hafiye-rootd {exc}"
+                ),
+                "status": "blocked",
+                "privileged_via": "hafiye-rootd",
+            },
+            ensure_ascii=False,
+        )
+
+    stdout = str(result.get("stdout") or "")
+    stderr = str(result.get("stderr") or "")
+    output = stdout
+    if stderr:
+        output = f"{output}\n{stderr}" if output else stderr
+    try:
+        from agent.redact import redact_terminal_output
+
+        output = redact_terminal_output(output.strip(), command) if output else ""
+    except Exception:
+        output = output.strip()
+    try:
+        returncode = int(result.get("returncode", -1))
+    except (TypeError, ValueError):
+        returncode = -1
+    result_data: dict[str, Any] = {
+        "output": output,
+        "exit_code": returncode,
+        "error": _redact_terminal_error_text(stderr) if returncode != 0 and stderr else None,
+        "privileged_via": "hafiye-rootd",
+    }
+    if result.get("timed_out"):
+        result_data["error"] = f"Privileged command timed out after {timeout} seconds"
+    if result.get("stdout_truncated") or result.get("stderr_truncated"):
+        result_data["output_truncated"] = True
+    return json.dumps(result_data, ensure_ascii=False)
+
+
 # ---------------------------------------------------------------------------
 # Global interrupt event: set by the agent when a user interrupt arrives.
 # The terminal tool polls this during command execution so it can kill
@@ -2689,8 +2752,10 @@ def terminal_tool(
         env_type = config["env_type"]
 
         # Hafiye policy is layered before Hermes' existing dangerous-command
-        # guard. FULL_AUTONOMOUS has no extra decision here; the normal
-        # Hermes hardline/tirith/approval checks below still apply.
+        # guard. Privileged terminal commands are never handed to the normal
+        # environment: FULL_AUTONOMOUS routes them to hafiye-rootd, while the
+        # confirmation policies keep the existing approval surface and route
+        # only after approval.
         from hafiye_execution_policy import evaluate_tool_call
 
         policy_decision = evaluate_tool_call(
@@ -2704,6 +2769,14 @@ def terminal_tool(
                 # the existing dangerous-command checks, so one user prompt
                 # authorizes the complete terminal operation.
                 policy_warning = policy_decision.warning
+            elif (
+                policy_decision.requires_root_broker
+                and policy_decision.policy == "FULL_AUTONOMOUS"
+            ):
+                # The root broker route is selected after cwd/timeout
+                # validation below. Do not let this fall through to the
+                # normal terminal environment.
+                pass
             else:
                 return json.dumps({
                     "output": "",
@@ -2798,6 +2871,49 @@ def terminal_tool(
                     "error": guidance,
                     "status": "error",
                 }, ensure_ascii=False)
+
+        # FULL_AUTONOMOUS does not mean "run sudo in the user's terminal".
+        # Route the operation before creating a normal environment, so there
+        # is no path from the agent to an OS password dialog. The broker is a
+        # host operation and therefore cannot be silently applied to a remote
+        # or container backend.
+        if (
+            policy_decision is not None
+            and policy_decision.requires_root_broker
+            and policy_decision.policy == "FULL_AUTONOMOUS"
+        ):
+            if env_type != "local":
+                return json.dumps({
+                    "output": "",
+                    "exit_code": -1,
+                    "error": (
+                        "Privileged terminal commands require the local "
+                        "hafiye-rootd boundary; remote/container execution is blocked."
+                    ),
+                    "status": "blocked",
+                    "privileged_via": "hafiye-rootd",
+                }, ensure_ascii=False)
+            if workdir:
+                workdir_error = _validate_workdir(workdir)
+                if workdir_error:
+                    return json.dumps({
+                        "output": "",
+                        "exit_code": -1,
+                        "error": workdir_error,
+                        "status": "blocked",
+                        "privileged_via": "hafiye-rootd",
+                    }, ensure_ascii=False)
+            broker_cwd = _resolve_command_cwd(
+                workdir=workdir,
+                default_cwd=cwd,
+                session_key=task_id or "",
+                env_type=env_type,
+            )
+            return _execute_privileged_via_rootd(
+                command,
+                cwd=broker_cwd,
+                timeout=effective_timeout,
+            )
 
         # Start cleanup thread
         _start_cleanup_thread()
@@ -3100,6 +3216,39 @@ def terminal_tool(
             elif approval.get("smart_approved"):
                 desc = approval.get("description", "flagged as dangerous")
                 approval_note = f"Command was flagged ({desc}) and auto-approved by smart approval."
+
+        # Confirmation policies preserve their existing prompt/approval path,
+        # but the approved privileged operation still crosses rootd rather than
+        # executing in the ordinary terminal environment.
+        if (
+            policy_decision is not None
+            and policy_decision.requires_root_broker
+        ):
+            if env_type != "local":
+                return json.dumps({
+                    "output": "",
+                    "exit_code": -1,
+                    "error": (
+                        "Privileged terminal commands require the local "
+                        "hafiye-rootd boundary; remote/container execution is blocked."
+                    ),
+                    "status": "blocked",
+                    "privileged_via": "hafiye-rootd",
+                }, ensure_ascii=False)
+            effective_cwd = _resolve_command_cwd(
+                workdir=workdir,
+                default_cwd=cwd,
+                session_key=session_key,
+                env_type=env_type,
+            )
+            result_data = json.loads(_execute_privileged_via_rootd(
+                command,
+                cwd=effective_cwd,
+                timeout=effective_timeout,
+            ))
+            if approval_note:
+                result_data["approval"] = approval_note
+            return json.dumps(result_data, ensure_ascii=False)
 
         # Prepare command for execution
         pty_disabled_reason = None

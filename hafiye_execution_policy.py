@@ -8,6 +8,7 @@ Hermes approval surfaces handle confirmation when required.
 
 from __future__ import annotations
 
+import ast
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -86,10 +87,14 @@ _READ_ONLY_GIT_SUBCOMMANDS = frozenset(
     }
 )
 _SHELL_MUTATION_MARKERS = re.compile(r"(?:[;&|]|>>?|<<?|`|\$\(|\n|\r)")
-_PRIVILEGED_COMMAND = re.compile(
-    r"(?:^|\s|[;&|])(?:[\w./-]+/)?(?:sudo|sudoedit|doas|pkexec|su|runuser)(?:\s|$)",
-    re.IGNORECASE,
+_PRIVILEGE_ESCALATION_BINARIES = frozenset(
+    {"sudo", "sudoedit", "su", "pkexec", "doas", "runuser"}
 )
+_SHELL_TOKEN_PUNCTUATION = ";|&()<>$"
+_SHELL_WRAPPERS = frozenset(
+    {"command", "env", "exec", "nice", "nohup", "setsid", "stdbuf", "time", "timeout", "xargs"}
+)
+_SHELL_INTERPRETERS = frozenset({"bash", "dash", "fish", "ksh", "sh", "zsh"})
 _PRIVILEGED_EXECUTABLES = frozenset(
     {
         "apt",
@@ -139,6 +144,7 @@ class ExecutionDecision:
     reason: str = ""
     confirmation_key: str = ""
     confirmation_command: str = ""
+    requires_root_broker: bool = False
 
     @property
     def warning(self) -> tuple[str, str] | None:
@@ -239,10 +245,195 @@ def _is_read_only_shell_command(command: Any) -> bool:
     return True
 
 
+def _shell_tokens(command: str) -> list[str] | None:
+    """Tokenize enough shell syntax to inspect wrapped command words.
+
+    This is deliberately not a shell parser and is never used to execute a
+    command.  Quoting is handled by ``shlex``; punctuation is kept as tokens
+    so a chained command cannot hide an escalation binary after the first
+    command word.
+    """
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=_SHELL_TOKEN_PUNCTUATION)
+        lexer.whitespace_split = True
+        return list(lexer)
+    except ValueError:
+        return None
+
+
+def _without_assignments(tokens: list[str]) -> list[str]:
+    remaining = list(tokens)
+    while remaining and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", remaining[0]):
+        remaining.pop(0)
+    return remaining
+
+
+def _wrapped_command(tokens: list[str], executable: str) -> list[str]:
+    """Return the likely child command after a common shell wrapper."""
+    remaining = list(tokens[1:])
+    if executable == "env":
+        while remaining:
+            if remaining[0] == "--":
+                remaining.pop(0)
+                break
+            if remaining[0].startswith("-"):
+                remaining.pop(0)
+                continue
+            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", remaining[0]):
+                remaining.pop(0)
+                continue
+            break
+        return remaining
+    if executable == "timeout":
+        while remaining and remaining[0].startswith("-"):
+            remaining.pop(0)
+        if remaining:
+            remaining.pop(0)  # duration
+        return remaining
+    if executable == "nice":
+        if remaining and remaining[0] in {"-n", "--adjustment"}:
+            remaining = remaining[2:]
+        return remaining
+    if executable == "stdbuf":
+        while remaining and remaining[0].startswith("-"):
+            remaining.pop(0)
+        return remaining
+    if executable in {"command", "exec", "nohup", "setsid", "time"}:
+        while remaining and remaining[0].startswith("-"):
+            remaining.pop(0)
+        if remaining and remaining[0] == "--":
+            remaining.pop(0)
+        return remaining
+    if executable == "xargs":
+        while remaining and remaining[0].startswith("-"):
+            remaining.pop(0)
+        return remaining
+    return remaining
+
+
+def _contains_privilege_escalation_tokens(tokens: list[str], *, depth: int = 0) -> bool:
+    if not tokens or depth > 8:
+        return False
+
+    # A shell separator starts a new command word.  Parentheses and command
+    # substitution punctuation are treated as boundaries as well, while
+    # quoted punctuation remains part of one shlex token.
+    separators = {";", "&&", "||", "|", "&", "(", ")", "$", "<", ">", ">>", "<<"}
+    segments: list[list[str]] = []
+    segment: list[str] = []
+    for token in tokens:
+        if token in separators:
+            segments.append(segment)
+            segment = []
+        else:
+            segment.append(token)
+    segments.append(segment)
+
+    for segment in segments:
+        segment = _without_assignments(segment)
+        if not segment:
+            continue
+        executable = segment[0].rsplit("/", 1)[-1].lower()
+        if executable in _PRIVILEGE_ESCALATION_BINARIES:
+            return True
+
+        if executable in _SHELL_INTERPRETERS:
+            for index, token in enumerate(segment[1:], start=1):
+                if token == "--":
+                    continue
+                is_command_flag = token in {"-c", "--command"}
+                if not is_command_flag and token.startswith("-") and not token.startswith("--"):
+                    is_command_flag = "c" in token[1:]
+                if is_command_flag and index + 1 < len(segment):
+                    nested = _shell_tokens(segment[index + 1])
+                    if nested is None:
+                        return bool(re.search(r"(?:^|[^A-Za-z0-9_])(?:sudo|sudoedit|su|pkexec|doas|runuser)(?:$|[^A-Za-z0-9_])", segment[index + 1], re.IGNORECASE))
+                    if _contains_privilege_escalation_tokens(nested, depth=depth + 1):
+                        return True
+                    break
+            continue
+
+        if executable in _SHELL_WRAPPERS and _contains_privilege_escalation_tokens(
+            _wrapped_command(segment, executable), depth=depth + 1
+        ):
+            return True
+    return False
+
+
+def contains_privilege_escalation(command: Any) -> bool:
+    """Return whether a shell command visibly invokes an escalation binary.
+
+    Detection is token- and wrapper-aware rather than a string-prefix check.
+    It intentionally ignores ordinary arguments such as ``echo 'sudo'`` while
+    recognizing absolute paths, assignments, command wrappers, quoted
+    executables, shell ``-c`` payloads, and command chaining.
+    """
+    if not isinstance(command, str) or not command.strip():
+        return False
+    tokens = _shell_tokens(command)
+    if tokens is None:
+        return bool(re.search(
+            r"(?:^|[^A-Za-z0-9_])(?:sudo|sudoedit|su|pkexec|doas|runuser)(?:$|[^A-Za-z0-9_])",
+            command,
+            re.IGNORECASE,
+        ))
+    return _contains_privilege_escalation_tokens(tokens)
+
+
+def contains_obvious_python_privilege_escalation(code: Any) -> bool:
+    """Detect direct subprocess/os command launches of escalation binaries."""
+    if not isinstance(code, str) or not code.strip():
+        return False
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return bool(re.search(
+            r"(?:subprocess|os)\.[A-Za-z_]+\s*\([^\n]*(?:sudo|sudoedit|pkexec|doas|runuser|(?:^|\W)su(?:\W|$))",
+            code,
+            re.IGNORECASE,
+        ))
+
+    process_call_names = {
+        "os.execv", "os.execve", "os.execl", "os.execlp", "os.execlpe",
+        "os.execle", "os.system", "os.popen", "subprocess.call",
+        "subprocess.check_call", "subprocess.check_output", "subprocess.Popen",
+        "subprocess.run",
+    }
+
+    def call_name(node: ast.Call) -> str:
+        parts: list[str] = []
+        current: ast.AST = node.func
+        while isinstance(current, ast.Attribute):
+            parts.append(current.attr)
+            current = current.value
+        if isinstance(current, ast.Name):
+            parts.append(current.id)
+        return ".".join(reversed(parts))
+
+    def literal_text(node: ast.AST) -> str | None:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, (ast.List, ast.Tuple)):
+            values: list[str] = []
+            for item in node.elts:
+                if not isinstance(item, ast.Constant) or not isinstance(item.value, str):
+                    return None
+                values.append(item.value)
+            return " ".join(values)
+        return None
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or call_name(node) not in process_call_names:
+            continue
+        if node.args and contains_privilege_escalation(literal_text(node.args[0])):
+            return True
+    return False
+
+
 def _is_privileged_command(command: Any) -> bool:
     if not isinstance(command, str):
         return False
-    if _PRIVILEGED_COMMAND.search(command):
+    if contains_privilege_escalation(command):
         return True
     if _SHELL_MUTATION_MARKERS.search(command):
         return False
@@ -325,7 +516,25 @@ def evaluate_tool_call(
         return None
 
     policy = resolve_execution_policy(config)
-    if policy == "FULL_AUTONOMOUS" or operation == "read":
+    requires_root_broker = tool_name == "terminal" and operation == "privileged"
+    root_broker_reason = (
+        "Direct privileged execution through the normal terminal is blocked; "
+        "use the hafiye-rootd broker boundary."
+    )
+
+    if requires_root_broker and policy == "FULL_AUTONOMOUS":
+        return ExecutionDecision(
+            policy=policy,
+            tool_name=tool_name,
+            operation=operation,
+            allowed=False,
+            requires_confirmation=False,
+            reason=root_broker_reason,
+            confirmation_command=_confirmation_command(tool_name, call_args),
+            requires_root_broker=True,
+        )
+
+    if operation == "read":
         return ExecutionDecision(
             policy=policy,
             tool_name=tool_name,
@@ -345,6 +554,7 @@ def evaluate_tool_call(
                 f"Hafiye execution policy READ_ONLY blocks {tool_name} "
                 f"because it is a {operation} operation."
             ),
+            requires_root_broker=requires_root_broker,
         )
 
     requires_confirmation = policy == "WRITE_CONFIRM" or (
@@ -372,6 +582,7 @@ def evaluate_tool_call(
         reason=reason,
         confirmation_key=_confirmation_key(policy, tool_name, operation, call_args),
         confirmation_command=_confirmation_command(tool_name, call_args),
+        requires_root_broker=requires_root_broker,
     )
 
 

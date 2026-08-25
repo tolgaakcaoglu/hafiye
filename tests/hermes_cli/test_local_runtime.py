@@ -98,6 +98,45 @@ def test_qwen3_large_context_uses_yarn_override_and_cpu_kv():
     ) == "auto"
 
 
+def test_local_model_registry_exposes_evidence_backed_capability_state(tmp_path: Path):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    qwen2_source = tmp_path / "qwen2.5-0.5b-instruct-q4.gguf"
+    qwen3_source = tmp_path / "qwen3-14b-q4_k_m.gguf"
+    qwen2_source.write_bytes(b"qwen2-validation-fixture")
+    qwen3_source.write_bytes(b"qwen3-agent-fixture")
+
+    qwen2 = manager.import_model(qwen2_source, "qwen2.5-0.5b-instruct-q4")
+    qwen3 = manager.import_model(qwen3_source, "qwen3-14b-q4_k_m")
+
+    assert qwen2["capabilities"] == {
+        "validation": True,
+        "agent": False,
+        "tool_calling": False,
+        "resource_warning": None,
+    }
+    assert qwen3["capabilities"] == {
+        "validation": False,
+        "agent": True,
+        "tool_calling": True,
+        "resource_warning": "KI-046",
+    }
+    persisted = json.loads(manager.paths.registry.read_text(encoding="utf-8"))
+    by_id = {item["id"]: item for item in persisted["models"]}
+    assert by_id["qwen2.5-0.5b-instruct-q4"]["capabilities"]["agent"] is False
+    assert by_id["qwen3-14b-q4_k_m"]["capabilities"]["agent"] is True
+
+
+def test_unknown_local_model_stays_unqualified(tmp_path: Path):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    source = tmp_path / "unknown.gguf"
+    source.write_bytes(b"unknown-fixture")
+
+    item = manager.import_model(source, "unknown")
+
+    assert "capabilities" not in item
+    assert local_runtime.model_capabilities("unknown") == {}
+
+
 def test_import_model_is_checksum_registered_and_private(tmp_path: Path):
     manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
     source = tmp_path / "tiny.gguf"

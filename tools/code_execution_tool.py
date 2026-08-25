@@ -1297,6 +1297,7 @@ def execute_code(
     # approval passes one short-lived grant into this handler; direct callers
     # perform the same check here as a defense-in-depth boundary.
     from hafiye_execution_policy import (
+        contains_obvious_python_privilege_escalation,
         consume_policy_approval_grant,
         evaluate_tool_call,
     )
@@ -1330,6 +1331,22 @@ def execute_code(
                     "tool_calls_made": 0,
                     "duration_seconds": 0,
                 }, ensure_ascii=False)
+
+    # execute_code's Python child is not a privileged-operation broker. Never
+    # allow a script to bypass the terminal/rootd boundary with a direct
+    # subprocess/os.system escalation, even after a generic code-execution
+    # approval. A privileged shell operation must be issued through terminal,
+    # whose policy path routes it to hafiye-rootd.
+    if contains_obvious_python_privilege_escalation(code):
+        return json.dumps({
+            "status": "error",
+            "error": (
+                "Direct privilege escalation from execute_code is blocked. "
+                "Use terminal for the operation so it is routed through hafiye-rootd."
+            ),
+            "tool_calls_made": 0,
+            "duration_seconds": 0,
+        }, ensure_ascii=False)
 
     if _policy_granted:
         _guard = {"approved": True, "policy_approved": True}

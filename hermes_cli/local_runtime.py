@@ -45,6 +45,30 @@ GPU_BACKENDS = ("CUDA", "VULKAN")
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 GGUF_SUFFIX = ".gguf"
 
+# Qualification is model-registry state, not a UI/model-name special case.
+# Keep this table limited to the two Hafiye local qualification identities;
+# unknown GGUFs remain unqualified until they have their own evidence.
+_MODEL_CAPABILITY_PROFILES: tuple[tuple[re.Pattern[str], dict[str, Any]], ...] = (
+    (
+        re.compile(r"^qwen2\.5-0\.5b(?:[._-].*)?$", re.IGNORECASE),
+        {
+            "validation": True,
+            "agent": False,
+            "tool_calling": False,
+            "resource_warning": None,
+        },
+    ),
+    (
+        re.compile(r"^qwen3-14b(?:[._-].*)?$", re.IGNORECASE),
+        {
+            "validation": False,
+            "agent": True,
+            "tool_calling": True,
+            "resource_warning": "KI-046",
+        },
+    ),
+)
+
 
 class LocalRuntimeError(RuntimeError):
     """An actionable local-runtime failure."""
@@ -91,6 +115,26 @@ class RuntimePaths:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def model_capabilities(model_id: str | None) -> dict[str, Any]:
+    """Return the evidence-backed capability state for a local model id."""
+    identity = str(model_id or "").strip()
+    for pattern, profile in _MODEL_CAPABILITY_PROFILES:
+        if pattern.fullmatch(identity):
+            return dict(profile)
+    return {}
+
+
+def _apply_model_capabilities(item: dict[str, Any]) -> bool:
+    """Apply known qualification state and report whether the entry changed."""
+    capabilities = model_capabilities(str(item.get("id") or ""))
+    if not capabilities:
+        return False
+    if item.get("capabilities") == capabilities:
+        return False
+    item["capabilities"] = capabilities
+    return True
 
 
 def _ensure_private_dir(path: Path) -> None:
@@ -415,6 +459,8 @@ class LocalRuntimeManager:
             path = Path(str(item.get("path", "")))
             item = dict(item)
             item["available"] = path.is_file()
+            if _apply_model_capabilities(item):
+                changed = True
             result.append(item)
         if changed:
             payload["models"] = result
@@ -470,6 +516,7 @@ class LocalRuntimeManager:
             "source": "import",
             "updated_at": _now(),
         }
+        _apply_model_capabilities(item)
         payload = self._registry()
         payload["models"] = [entry for entry in payload["models"] if entry.get("id") != selected_id]
         payload["models"].append(item)
