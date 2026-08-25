@@ -9,8 +9,9 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 5af73434e5ab36786a306966fa926b7cbbe08914
-  (P23 managed Qwen2 long-context compatibility source/test commit)
+- Current Hafiye source HEAD: ac42575db2986a2f8be677a9d1272121ff533294
+  (Qwen3 candidate compatibility and managed-MCP explicit-toolset source/test
+  commit)
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
