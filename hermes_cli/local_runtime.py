@@ -116,16 +116,72 @@ def _context_compatibility_args(model_id: str, model_path: Path, context_size: i
     if requested <= 32768:
         return []
     identity = f"{model_id} {model_path.name}".lower()
-    if not re.search(r"qwen2(?:[._-]|$)", identity):
-        return []
-    return [
-        "--rope-scaling",
-        "yarn",
-        "--yarn-orig-ctx",
-        "32768",
-        "--override-kv",
-        f"qwen2.context_length=int:{requested}",
-    ]
+    if re.search(r"qwen2(?:[._-]|$)", identity):
+        return [
+            "--rope-scaling",
+            "yarn",
+            "--yarn-orig-ctx",
+            "32768",
+            "--override-kv",
+            f"qwen2.context_length=int:{requested}",
+        ]
+    if re.search(r"qwen3(?:[._-]|$)", identity) and requested > 40960:
+        # Official Qwen3 GGUFs advertise a 40,960-token training window.
+        # Keep Hermes' 64K contract explicit while using the model's native
+        # context as the YaRN origin and overriding llama.cpp's slot cap.
+        scale = requested / 40960
+        scale_text = f"{scale:.6g}"
+        return [
+            "--rope-scaling",
+            "yarn",
+            "--rope-scale",
+            scale_text,
+            "--yarn-orig-ctx",
+            "40960",
+            "--override-kv",
+            f"qwen3.context_length=int:{requested}",
+        ]
+    return []
+
+
+def _chat_template_args(model_id: str, model_path: Path) -> list[str]:
+    """Return explicit chat-parser flags for model families needing them.
+
+    Qwen3 GGUFs carry the authoritative Jinja template in their metadata.
+    llama-server's Jinja path also exposes its reasoning/tool-call parser, so
+    make that path explicit for managed Qwen3 servers and ask it to separate
+    the model's ``<think>`` content from the assistant message.  Do not force
+    a template name: the official Qwen3 GGUF metadata is the source of truth.
+    """
+    identity = f"{model_id} {model_path.name}".lower()
+    if re.search(r"qwen3(?:[._-]|$)", identity):
+        return ["--jinja", "--reasoning-format", "deepseek"]
+    return []
+
+
+def _memory_compatibility_args(
+    model_id: str,
+    model_path: Path,
+    context_size: int,
+    selected_backend: str,
+) -> list[str]:
+    """Keep large Qwen3 KV caches in host RAM when CUDA memory is tight."""
+    identity = f"{model_id} {model_path.name}".lower()
+    if (
+        selected_backend == "CUDA"
+        and int(context_size) > 40960
+        and re.search(r"qwen3(?:[._-]|$)", identity)
+    ):
+        return ["--no-kv-offload"]
+    return []
+
+
+def _default_gpu_layers(model_id: str, model_path: Path, selected_backend: str) -> int | str:
+    """Use llama.cpp's fit-aware GPU selection for large Qwen3 GGUFs."""
+    identity = f"{model_id} {model_path.name}".lower()
+    if selected_backend == "CUDA" and re.search(r"qwen3(?:[._-]|$)", identity):
+        return "auto"
+    return 99 if selected_backend in GPU_BACKENDS else 0
 
 
 def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -680,7 +736,11 @@ class LocalRuntimeManager:
             self.stop_server()
         _ensure_private_dir(self.paths.runtime_state)
         log_stream = self.paths.server_log.open("ab")
-        actual_gpu_layers = int(gpu_layers) if gpu_layers is not None else (99 if selected in GPU_BACKENDS else 0)
+        actual_gpu_layers: int | str = (
+            int(gpu_layers)
+            if gpu_layers is not None
+            else _default_gpu_layers(model_id, Path(str(item["path"])), selected)
+        )
         device = "CUDA0" if selected == "CUDA" else ("Vulkan0" if selected == "VULKAN" else "none")
         command = [
             str(binary),
@@ -696,7 +756,14 @@ class LocalRuntimeManager:
             device,
             "-ngl",
             str(actual_gpu_layers),
+            *_chat_template_args(model_id, Path(str(item["path"]))),
             *_context_compatibility_args(model_id, Path(str(item["path"])), int(context_size)),
+            *_memory_compatibility_args(
+                model_id,
+                Path(str(item["path"])),
+                int(context_size),
+                selected,
+            ),
         ]
         try:
             process = subprocess.Popen(command, stdout=log_stream, stderr=subprocess.STDOUT, start_new_session=True)

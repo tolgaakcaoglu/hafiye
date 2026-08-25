@@ -689,3 +689,27 @@ silently treated as passing.
   `computer_use` wait request exited without producing a `computer_use` tool
   event. No emergency chord was sent in that probe, and no P23.15 acceptance
   is claimed.
+
+## KI-046 — Qwen3-14B candidate needs full local/offline qualification
+
+- Status: P23 MODEL QUALIFICATION WARNING; Qwen2 default route remains healthy
+  and no Hafiye source regression is established.
+- The official `Qwen/Qwen3-14B-GGUF` Q4_K_M file was registered from revision
+  `530227a7d994db8eca5ab5ced2fb692b614357fd` as
+  `/home/tolga/.local/share/hafiye/models/qwen3-14b-q4_k_m.gguf`,
+  9,001,752,960 bytes, SHA-256
+  `500a8806e85ee9c83f3ae08420295592451379b4f8cf2d0f41c15dffeb6b81f0`.
+- The managed runtime uses Qwen3's embedded Jinja template and DeepSeek
+  reasoning parser. For 65K it uses YaRN from the 40,960 native context,
+  `qwen3.context_length` metadata override, fit-aware CUDA layer selection,
+  and CPU KV storage. Full-GPU 65K and 4K probes hit CUDA OOM; the managed
+  compatibility path itself reached 65,536 context and selected CUDA.
+- A direct parser smoke and a real Hafiye `AIAgent` managed-MCP run passed:
+  the agent found the live Firefox window, activated it, and ended with a
+  normal `text_response`. The real `hafiye ask` 4K path still rejects the
+  model below Hermes' 64K minimum; a full managed-MCP oneshot was bounded at
+  180 seconds and did not complete under concurrent local service load.
+- The 65K Qwen3 process used roughly 8.7 GiB of 10 GiB VRAM and about 10.9
+  GiB RSS on this 14 GiB host, with swap pressure. Qwen3 is therefore a
+  registered candidate, not the default model, until the user-authorized
+  deferred P23 local/offline/resource qualification is replayed in isolation.

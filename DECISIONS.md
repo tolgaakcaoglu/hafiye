@@ -593,3 +593,27 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   context extrapolation guarantee; long-context quality and offline/full P23
   replay remain acceptance work. This records implementation detail only and
   does not override the master roadmap or compute-backend policy.
+
+## ADR-0036 — Keep Qwen3 compatibility explicit and candidate-scoped
+
+- Date: 2026-08-25
+- Decision: For official Qwen3 GGUFs in the managed llama.cpp runtime, use the
+  embedded Jinja template with the DeepSeek reasoning parser. When the
+  requested context exceeds Qwen3's 40,960-token native window, pass YaRN from
+  that origin and override `qwen3.context_length` to the requested Hafiye
+  context. On CUDA, use fit-aware `-ngl auto` and keep the large KV cache in
+  host memory with `--no-kv-offload`; retain CUDA as the selected compute
+  backend. Explicit oneshot selection also accepts Hafiye's managed MCP
+  provider without requiring a user `mcp_servers` entry.
+- Reason: The official Qwen3 GGUF metadata and current llama.cpp parser path
+  are the prescribed local runtime boundary. On the RTX 3080 host, full-GPU
+  65K KV allocation does not fit, while the fit-aware managed command reaches
+  the required 65K server context and real tool calls. The managed MCP
+  provider was already available to normal discovery but was not selectable
+  by explicit oneshot validation because it is intentionally absent from user
+  config.
+- Consequence: Qwen3 remains a registered candidate and does not replace the
+  default Qwen2 smoke model until the deferred full local/offline P23
+  qualification and resource envelope pass. This records implementation
+  detail only and does not change Hafiye's fixed architecture or compute
+  backend policy.

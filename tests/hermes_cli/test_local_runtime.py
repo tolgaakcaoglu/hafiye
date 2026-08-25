@@ -59,6 +59,45 @@ def test_qwen2_context_extension_is_explicit_and_narrow():
     ) == []
 
 
+def test_qwen3_uses_embedded_jinja_and_reasoning_parser():
+    assert local_runtime._chat_template_args(
+        "qwen3-14b-q4_k_m",
+        Path("Qwen3-14B-Q4_K_M.gguf"),
+    ) == ["--jinja", "--reasoning-format", "deepseek"]
+    assert local_runtime._chat_template_args(
+        "qwen2.5-0.5b-instruct-q4",
+        Path("qwen2.5-0.5b-instruct-q4.gguf"),
+    ) == []
+
+
+def test_qwen3_large_context_uses_yarn_override_and_cpu_kv():
+    model_path = Path("Qwen3-14B-Q4_K_M.gguf")
+    assert local_runtime._context_compatibility_args(
+        "qwen3-14b-q4_k_m", model_path, 65536
+    ) == [
+        "--rope-scaling",
+        "yarn",
+        "--rope-scale",
+        "1.6",
+        "--yarn-orig-ctx",
+        "40960",
+        "--override-kv",
+        "qwen3.context_length=int:65536",
+    ]
+    assert local_runtime._context_compatibility_args(
+        "qwen3-14b-q4_k_m", model_path, 40960
+    ) == []
+    assert local_runtime._memory_compatibility_args(
+        "qwen3-14b-q4_k_m", model_path, 65536, "CUDA"
+    ) == ["--no-kv-offload"]
+    assert local_runtime._memory_compatibility_args(
+        "qwen3-14b-q4_k_m", model_path, 65536, "CPU"
+    ) == []
+    assert local_runtime._default_gpu_layers(
+        "qwen3-14b-q4_k_m", model_path, "CUDA"
+    ) == "auto"
+
+
 def test_import_model_is_checksum_registered_and_private(tmp_path: Path):
     manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
     source = tmp_path / "tiny.gguf"

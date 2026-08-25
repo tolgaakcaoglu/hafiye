@@ -628,6 +628,10 @@ E2E Suite — is now the first incomplete phase.
 - [x] Add and test the narrowly scoped managed Qwen2 YaRN/context-metadata
       compatibility path; verify the live CUDA runtime reports 65,536 context
       and that direct AIAgent plus packaged Desktop terminal calls pass.
+- [x] Register the official Qwen3-14B Q4_K_M GGUF candidate and add the
+      managed llama.cpp Jinja/reasoning, 65K YaRN metadata, fit-aware CUDA,
+      and CPU-KV compatibility path. The direct parser and managed MCP desktop
+      smoke pass; full Qwen3 local/offline qualification remains deferred.
 - [x] Freshly recheck project alias/session persistence, OpenHands readiness,
       root-broker UID, and voice-runtime readiness; the exact P23.13 OpenHands
       fixture delegation also completed through the Gemini coding route and
@@ -679,6 +683,9 @@ replayed before P23 is ever marked complete:
 - [ ] P23.14 live spoken barge-in with `Hafiye dur.`.
 - [ ] P23.15 long-running managed desktop action stopped by
       `Ctrl+Super+Escape`.
+- [ ] Qwen3-14B full local/offline qualification, including the P23 local
+      workflows and a measured RAM/VRAM/latency envelope under isolated
+      conditions.
 
 This reminder is deliberately at the end of the execution roadmap. The master
 roadmap currently ends at P23; no P24 phase is defined, and these deferred

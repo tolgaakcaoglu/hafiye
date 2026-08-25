@@ -1638,6 +1638,33 @@ claimed as passed.
   Electron session then rendered an actual tool block for `/bin/printf
   P23_DESKTOP_DOM_OK`, with exit code 0 and the exact marker in the DOM. This
   is fresh local-route evidence; disconnected-network replay is still open.
+- The official Qwen3-14B Q4_K_M candidate was downloaded through the managed
+  Hafiye model boundary from `Qwen/Qwen3-14B-GGUF` revision
+  `530227a7d994db8eca5ab5ced2fb692b614357fd`. The registered file is
+  `/home/tolga/.local/share/hafiye/models/qwen3-14b-q4_k_m.gguf`,
+  `9001752960` bytes, SHA-256
+  `500a8806e85ee9c83f3ae08420295592451379b4f8cf2d0f41c15dffeb6b81f0`.
+  The model remains registered for acceptance work but is not the default
+  route; Qwen2 was restored after the probe.
+- Managed Qwen3 startup now uses the official embedded Jinja template and
+  DeepSeek reasoning parser, and for a requested 65,536-token context uses
+  YaRN from the model's 40,960-token native context, an explicit
+  `qwen3.context_length` override, fit-aware `-ngl auto`, and CPU KV storage.
+  Full-GPU 65K and 4K fit probes were CUDA-OOM diagnostics; the managed
+  compatibility command reached `n_ctx=65536`, `n_ctx_train=65536`, and
+  `ready=true` on CUDA.
+- A direct Qwen3 parser probe produced a real `tool_calls` response for
+  `open_application`. A real Hafiye `AIAgent` run with the managed
+  `hafiye-computer-use-linux` toolset then completed
+  `tool_search → tool_describe → list_windows → activate_window` against the
+  live Firefox window and ended with
+  `text_response(finish_reason=stop)`, `api_calls=4`. This is candidate-model
+  evidence, not a claim that all P23 local/offline workflows pass.
+- The Qwen3 65K probe measured approximately 8.7 GiB VRAM used on the 10 GiB
+  RTX 3080, about 10.9 GiB server RSS on a 14 GiB host, and swap pressure. The
+  full P23 Qwen3 qualification and remaining real-machine checks are deferred
+  per the user's explicit instruction and remain listed in the roadmap-end
+  reminder.
 - A real isolated file-organizing fixture was attempted through the same local
   AIAgent with `terminal` and `file` toolsets. The Qwen2 validation fixture did
   not complete the prescribed multi-step sequence: one run only created the
@@ -1756,7 +1783,8 @@ tests exist. The master roadmap requires the final real-machine sequence.
 2. At the end of the roadmap, return to the deferred checklist in
    `ROADMAP.md`: P23.1, clean P23.2/P23.6 Gemini Composer behavior, P23.3
    voice, P23.4 offline, P23.5 remote endpoint, P23.14 barge-in, and the
-   long-running managed desktop portion of P23.15.
+   long-running managed desktop portion of P23.15. Also requalify the Qwen3
+   candidate across the full local/offline workflow and resource envelope.
 3. The current master roadmap defines no P24 phase. Do not invent one while
    treating the deferred P23 acceptance as complete; the roadmap-end reminder
    is the next recorded action.

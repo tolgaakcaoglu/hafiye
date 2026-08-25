@@ -133,6 +133,16 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
                     mcp_names.add(str(name))
                 else:
                     mcp_disabled.add(str(name))
+
+            # Include MCP providers that are registered by Hafiye or a
+            # portable plugin at runtime.  In particular, the managed
+            # computer-use-linux provider is deliberately not written to
+            # user config, but explicit oneshot toolsets must still be able
+            # to select it.  Keep this in sync with the platform resolver so
+            # explicit and config-derived toolsets have the same MCP view.
+            from hermes_cli.tools_config import enabled_mcp_server_names
+
+            mcp_names.update(enabled_mcp_server_names(cfg))
         except Exception:
             mcp_names = set()
             mcp_disabled = set()
