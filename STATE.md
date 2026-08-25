@@ -31,8 +31,8 @@ P1 — Hafiye external identity and data root: complete.
 
 P2 — Persistent gateway + Desktop connection: complete.
 
-P3 — Hafiye Composer + tray + autostart: complete with host warnings KI-012
-and KI-013.
+P3 — Hafiye Composer + tray + autostart: complete with host warning KI-012;
+KI-013 is resolved by the P23.1 packaging fix and real reboot/login replay.
 
 P4 — llama.cpp managed local runtime: complete. The source implementation,
 real CUDA runtime validation, corrected full backend regression comparison, and
@@ -104,10 +104,9 @@ P22 — CLI: complete. The product command vocabulary, shared backend adapters,
 real service/model/computer checks, explicit Gemini one-shot, and accepted
 upstream-baseline comparison are recorded below. P23 — Final E2E Suite — is
 now the first incomplete phase. The isolated Qwen3-14B local-agent
-qualification subtask is complete with a measured host resource warning. On
-2026-08-25 the user explicitly instructed that the remaining real-machine
-acceptance checks be deferred and reminded at the end of the roadmap. They
-remain unaccepted and must not be represented as passed.
+qualification subtask is complete with a measured host resource warning.
+P23.4 remains explicitly user-deferred; the other unaccepted final-machine
+rows remain open and must not be represented as passed.
 
 The KI-043 source-level privileged-command boundary is now resolved: normal
 terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
@@ -1746,10 +1745,49 @@ The post-login boot evidence is:
   AUTO selecting CUDA. Computer-use doctor remained `ok=true`, with all
   required readiness fields true and `blockers=[]`.
 
-P23.1 status remains `NOT ACCEPTED / FRESH REBOOT REQUIRED (KI-013)`. The
-original autostart crash is isolated and fixed at the packaging boundary, but
-the fix has not yet been proven by a second real reboot/login. No manual
-Desktop launch is acceptance evidence.
+This first replay remains unaccepted and is retained as the KI-013 defect
+discovery. The repaired second real reboot/login acceptance is recorded below;
+the short sandbox-enabled launch in this section is not used as reboot
+acceptance evidence.
+
+### P23.1 second real reboot/login acceptance — PASS — 2026-08-25
+
+The repaired packaged artefact was verified through a second real operating
+system reboot/login. This replay is the acceptance evidence; the earlier
+failed replay above remains recorded as the defect discovery.
+
+- New boot ID: `db40c0c5-f5b3-4dcf-8d01-7cf425e15323`.
+- GNOME launched the owner-created entry as
+  `app-gnome-hafiye-3143760.scope`; no manual terminal launch was used.
+- `hafiye-gateway.service` was `enabled` and `active/running`, with
+  `MainPID=3142580` and `ExecMainStartTimestamp=Tue 2026-08-25 21:32:51 +03`.
+  The real health request returned
+  `{"ok":true,"version":"0.20.5","auth_required":false}`.
+- The packaged Desktop process remained alive as
+  `.../release/linux-unpacked/hafiye-desktop --hidden`. The journal and
+  `/home/tolga/.local/state/hafiye/logs/desktop.log` recorded
+  `[tray] Hafiye tray ready`, backend resolution, and persistent backend
+  readiness. The StatusNotifier item had tooltip `Hafiye`, status `Active`,
+  and was independently mapped to Desktop PID `3143760` over the user D-Bus.
+- The live helper was `root:root 4755`; the Electron child
+  `chrome-sandbox` was alive, and the new-boot journal contained no SUID
+  sandbox fatal error.
+- A real packaged Desktop startup observation after the reboot captured the
+  configured login Composer window through
+  `computer-use-linux windows --json`: title `Hafiye`, app id `window:30`,
+  PID `3212308`, bounds `640x220`. The observation used the packaged app and
+  did not alter the Composer mode; the app source/default remains
+  `SHOW_ON_LOGIN` with the brief welcome reveal.
+- `hafiye voice doctor` returned `ok=true`, `blockers=[]`, Piper ready,
+  whisper.cpp ready, and AUTO selecting CUDA. `hafiye computer doctor --json`
+  returned `ok=true`, `blockers=[]`, and all required readiness fields true:
+  `can_register_mcp_tools`, `can_build_accessibility_tree`,
+  `can_send_development_input`, and `can_query_windows`.
+
+P23.1 is accepted. KI-013 is resolved: the Debian packaging fix preserves
+the Linux Electron sandbox helper's `4755` mode, and the second real
+reboot/login proved the autostart path, tray, Composer, gateway, and readiness
+checks without manual Desktop startup.
 
 ### P23 verification completed so far
 
@@ -1972,7 +2010,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 | Master item | Current evidence | Final status |
 |---|---|---|
-| 23.1 Boot | First real reboot/login executed the valid GNOME autostart entry, but Electron exited because `chrome-sandbox` was `tolga:tolga 0755`; source/package fix `a1271a93277e6ac0747c1c5c31b586c2e883e55a` now preserves `4755`, and the current helper is `root:root 4755`. A second real reboot/login is still required | NOT ACCEPTED / KI-013; FRESH REBOOT REQUIRED |
+| 23.1 Boot | Second real reboot/login boot `db40c0c5-f5b3-4dcf-8d01-7cf425e15323`; GNOME autostart launched packaged Desktop PID `3143760`, tray D-Bus item reported `Hafiye`/`Active`, gateway was enabled/active and health returned `ok=true`, packaged Composer window was observed, voice/computer doctors were green, and `chrome-sandbox` was `root:root 4755` without a fatal error | PASS / KI-013 RESOLVED |
 | 23.2 Text | The managed-MCP startup gate was fixed and a fresh packaged Composer replay registered 18 computer-use tools, but the agent-qualified Qwen3 route stayed in reasoning for approximately 265 seconds without a tool call; the older Qwen2 validation replay also returned text without computer use | NOT ACCEPTED / KI-042 + KI-047 |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed. The real disconnected-network replay was started, then explicitly skipped by the user and restored without a PASS claim | PASS FOR LOCAL ROUTE / OFFLINE ACCEPTANCE DEFERRED |
@@ -1992,15 +2030,13 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 ### Exact next actions
 
-1. Perform a second real P23.1 reboot/login after the `chrome-sandbox`
-   packaging repair; do not claim P23.1 from the short/manual launch.
-2. Re-run P23.2 with an agent-qualified route after the managed-MCP startup
+1. Re-run P23.2 with an agent-qualified route after the managed-MCP startup
    fix, and retain KI-042/KI-047/KI-049 until a real Firefox tool call and
    clean verification pass.
-3. Complete the physical P23.3 voice, P23.14 barge-in, and P23.15
+2. Complete the physical P23.3 voice, P23.14 barge-in, and P23.15
    long-running managed-desktop emergency-stop replays; keep P23.4 deferred
    by the user's instruction and P23.5 blocked until a real remote endpoint is
    configured.
-4. Do not mark P23 complete or create a P23 completion commit until every
+3. Do not mark P23 complete or create a P23 completion commit until every
    required acceptance row has fresh evidence. The current master roadmap
    defines no P24 phase.

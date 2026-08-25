@@ -191,8 +191,8 @@ silently treated as passing.
 
 ## KI-013 — Electron autostart crashed on an incorrectly installed Linux sandbox helper
 
-- Status: OPEN P23.1 RECHECK REQUIRED; the packaging defect is fixed in source,
-  but a second real reboot/login has not yet confirmed the complete acceptance.
+- Status: RESOLVED after the source packaging fix and second real reboot/login
+  acceptance on 2026-08-25.
 - On 2026-08-25 the requested real reboot/login was performed. The new boot
   ID was `17a11ea7-41ed-4b74-a4fc-8f4e9c3dc7eb`; the gateway started
   automatically at `06:14:19 +03` and its endpoint and supporting doctors
@@ -206,9 +206,12 @@ silently treated as passing.
   without the fatal sandbox error. The Debian package builder now applies and
   tests mode `4755` in source/test commit
   `a1271a93277e6ac0747c1c5c31b586c2e883e55a` (`4 passed`).
-- P23.1 remains NOT ACCEPTED until a second real reboot/login starts the
-  Desktop from the actual login path and produces the process, tray, Composer,
-  gateway connection, and readiness checks without manual startup.
+- The second real boot ID was
+  `db40c0c5-f5b3-4dcf-8d01-7cf425e15323`. GNOME launched the packaged
+  Desktop from the real autostart entry; gateway health, tray/StatusNotifier,
+  Composer observation, voice doctor, and computer-use doctor all passed.
+  The helper was `root:root 4755`, and the new-boot journal contained no SUID
+  sandbox fatal error. No manual Desktop startup was used.
 
 ## KI-014 — Small validation GGUFs have a lower trained context window
 

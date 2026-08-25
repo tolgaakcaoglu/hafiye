@@ -676,11 +676,12 @@ E2E Suite — is now the first incomplete phase.
       `a1271a93277e6ac0747c1c5c31b586c2e883e55a`; packaging tests returned
       `4 passed`. The current unpacked helper was repaired through rootd to
       `root:root 4755` and a sandbox-enabled short launch passed.
-- [ ] P23.1 fresh real reboot/login acceptance remains open: the repaired
-      artefact must start from the actual login path and produce the process,
-      tray, Composer, gateway connection, and green voice/computer checks.
-      Manual launch is not acceptance evidence; KI-013 remains open until
-      this replay passes.
+- [x] P23.1 fresh real reboot/login acceptance passed on boot
+      `db40c0c5-f5b3-4dcf-8d01-7cf425e15323`: GNOME launched the packaged
+      Desktop from `~/.config/autostart/hafiye.desktop` without manual
+      startup; gateway/health, tray, Composer, voice doctor, and computer-use
+      doctor were green. `chrome-sandbox` was `root:root 4755` and no SUID
+      sandbox fatal was recorded. KI-013 is RESOLVED.
 - [ ] Re-run the clean Gemini Composer text acceptance with the resolved
       KI-043 boundary; this final real-machine replay remains explicitly
       deferred below and is not represented as passed.
@@ -697,12 +698,12 @@ E2E Suite — is now the first incomplete phase.
       returned `P23_GEMINI_COMPOSER_OK`, and independent content verification
       passed without a privileged command or password dialog. This passes
       P23.6; the exact Firefox P23.2 replay remains open separately.
-- [ ] Execute and record the remaining real-machine items 23.1, 23.3, 23.5,
+- [ ] Execute and record the remaining real-machine items 23.3, 23.5,
       23.14, and the long-running managed desktop portion of 23.15 from the
       master roadmap. P23.4 was explicitly skipped by the user and is not
       passed; P23.5 has no configured remote endpoint. Earlier phase evidence
-      is not silently promoted to final P23 acceptance; 23.16 now has fresh
-      authenticated restart/reconnect evidence.
+      is not silently promoted to final P23 acceptance; 23.1 and 23.16 now
+      have fresh real reboot/reconnect evidence.
 - [ ] Mark P23 complete and create its completion commit only after every
       acceptance row has fresh evidence.
 
@@ -711,13 +712,14 @@ and unverified acceptance rows are recorded in `STATE.md` and `TEST_MATRIX.md`.
 
 ## Deferred P23 acceptance — mandatory roadmap-end reminder
 
-Per the user's explicit instruction on 2026-08-25, the following real-machine
-acceptance steps are intentionally deferred. They are not passed and must be
+Per the user's explicit instruction on 2026-08-25, the following remaining
+real-machine acceptance steps are intentionally deferred. The completed P23.1
+row is retained for the audit trail; open rows are not passed and must be
 replayed before P23 is ever marked complete:
 
-- [ ] P23.1 reboot/login, gateway/Desktop/tray/Composer boot. The
-      preflight is recorded above; the actual reboot/login evidence is still
-      required.
+- [x] P23.1 reboot/login, gateway/Desktop/tray/Composer boot. The second
+      real replay passed on boot `db40c0c5-f5b3-4dcf-8d01-7cf425e15323`; see
+      the execution record above and `TEST_MATRIX.md`.
 - [ ] P23.2 clean Composer text behavior using the resolved KI-043 safety
       boundary.
 - [ ] P23.3 live Turkish wake-word, voice command, and spoken response.
