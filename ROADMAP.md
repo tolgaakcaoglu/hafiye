@@ -658,6 +658,14 @@ E2E Suite — is now the first incomplete phase.
       is `validation=true, agent=false`; Qwen3-14B is
       `agent=true, tool_calling=true, validation=false` with `KI-046`; Qwen3
       remains selectable and is not the default route.
+- [x] Complete the P23.1 reboot preflight: `hafiye-gateway.service` is
+      enabled/active, `/api/health` returned HTTP 200, the validated packaged
+      XDG autostart entry exists, and voice/computer-use doctors are green.
+      This is pre-reboot evidence only; it does not pass the real reboot/login
+      acceptance.
+- [ ] Perform the real P23.1 system reboot/login replay and verify that the
+      packaged Desktop, tray, Composer, voice/wake infrastructure, gateway,
+      and computer-use doctor come up without manual terminal startup.
 - [ ] Re-run the clean Gemini Composer text acceptance with the resolved
       KI-043 boundary; this final real-machine replay remains explicitly
       deferred below and is not represented as passed.
@@ -686,7 +694,9 @@ Per the user's explicit instruction on 2026-08-25, the following real-machine
 acceptance steps are intentionally deferred. They are not passed and must be
 replayed before P23 is ever marked complete:
 
-- [ ] P23.1 reboot/login, gateway/Desktop/tray/Composer boot.
+- [ ] P23.1 reboot/login, gateway/Desktop/tray/Composer boot. The
+      preflight is recorded above; the actual reboot/login evidence is still
+      required.
 - [ ] P23.2 clean Composer text behavior using the resolved KI-043 safety
       boundary.
 - [ ] P23.3 live Turkish wake-word, voice command, and spoken response.

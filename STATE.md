@@ -1619,6 +1619,41 @@ claimed as passed.
   `agent=true, tool_calling=true, validation=false` with `resource_warning=KI-046`.
   The default route remains `custom/qwen2.5-0.5b-instruct-q4`.
 
+### P23.1 reboot preflight — 2026-08-25
+
+The real reboot/login acceptance has not been claimed yet. The read-only
+preflight completed at `2026-08-25T06:10:10+03:00`, before the required
+reboot:
+
+- `systemctl --user is-enabled hafiye-gateway.service` returned `enabled`.
+- `systemctl --user is-active hafiye-gateway.service` returned `active`.
+  `MainPID=3033612`, `ExecMainStartTimestamp=Tue 2026-08-25 04:28:40 +03`,
+  and the unit is loaded from
+  `/home/tolga/.config/systemd/user/hafiye-gateway.service`.
+- `curl --fail-with-body --silent --show-error
+  http://127.0.0.1:9120/api/health` returned HTTP 200 with
+  `{"ok":true,"version":"0.20.5","auth_required":false}`.
+- `/home/tolga/.config/autostart/hafiye.desktop` exists, is owner-owned with
+  mode `0644`, passes `desktop-file-validate`, and contains the packaged
+  executable entry
+  `Exec="/home/tolga/projects/hafiye/apps/desktop/release/linux-unpacked/hafiye-desktop" --hidden`.
+  The target is an executable x86-64 ELF (`0755`, SHA-256
+  `86be74e1f15b848f32112a994a381363a1f295ea50f0b2a761da86017f8b5109`).
+- The live session is Ubuntu GNOME 50.1 on Wayland. `hafiye voice doctor`
+  returned `ok=true`, `blockers=[]`, Piper `ready=true`, and whisper.cpp
+  `selected_auto_backend=CUDA`. `hafiye computer doctor --json` returned
+  all four required P0 readiness fields true and `blockers=[]`.
+- The machine had been up since `2026-08-23 18:29:15 +0300`, with boot ID
+  `d5d3b71c-b8f2-4975-9131-c06e449ab1cc`. A currently running development
+  Electron process was observed before reboot; that is explicitly not P23.1
+  evidence. The fresh post-login process must come from the packaged
+  autostart entry without manual terminal startup.
+
+Next action: issue the real system reboot, wait for the graphical login, then
+re-run the gateway, packaged Desktop/tray/Composer, voice/wake, and
+computer-use checks from the new boot session. Until those post-login checks
+pass, P23.1 remains `PARTIAL / REBOOT REQUIRED`.
+
 ### P23 verification completed so far
 
 - The P23 backend target matrix completed with `251 passed, 2 skipped, 1
@@ -1838,7 +1873,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 | Master item | Current evidence | Final status |
 |---|---|---|
-| 23.1 Boot | Packaged Desktop reached Composer after a real gateway restart; a fresh reboot/login replay is not recorded | PARTIAL / REBOOT REQUIRED |
+| 23.1 Boot | Preflight passed: user gateway is enabled/active, `/api/health` returned HTTP 200, validated packaged XDG autostart entry exists, voice/computer doctors are green; the required reboot/login replay is still pending | PARTIAL / REBOOT REQUIRED |
 | 23.2 Text | Rotated-key Gemini Composer opened Firefox, then attempted unapproved sudo remediation; the source boundary is now resolved, while the clean replay remains deferred (KI-042/KI-043) | TARGET OBSERVED / CLEAN REPLAY DEFERRED |
 | 23.3 Voice | P11/P12 real microphone, STT, TTS, and wake evidence exists; exact P23 spoken command is not replayed here | NOT FINAL-CHECKED |
 | 23.4 Local inference | Managed Qwen2 compatibility path reports 65,536 context; direct AIAgent and packaged Desktop terminal markers passed | PASS FOR LOCAL ROUTE / OFFLINE REPLAY REQUIRED |
@@ -1858,14 +1893,12 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 ### Exact next actions
 
-1. Defer the remaining real-machine P23 checks by explicit user instruction;
-   do not mark them passed or create a P23 completion commit.
-2. At the end of the roadmap, return to the deferred checklist in
-   `ROADMAP.md`: P23.1, clean P23.2/P23.6 Gemini Composer behavior, P23.3
-   voice, P23.4 offline, P23.5 remote endpoint, P23.14 barge-in, and the
-   long-running managed desktop portion of P23.15. Qwen3's isolated
-   local-agent qualification is complete, but its KI-046 resource warning
-   remains recorded and does not close those independent P23 checks.
-3. The current master roadmap defines no P24 phase. Do not invent one while
-   treating the deferred P23 acceptance as complete; the roadmap-end reminder
-   is the next recorded action.
+1. Issue the real system reboot through the normal system path and wait for
+   the user to log back into the graphical Ubuntu session.
+2. From the new boot, verify gateway activation, endpoint reachability,
+   packaged Desktop/tray/Composer autostart, voice/wake initialization, and
+   computer-use readiness; only then update the P23.1 ledger.
+3. Continue with the remaining deferred P23 real-machine acceptance items.
+   Do not mark P23 complete or create a P23 completion commit until every
+   required acceptance row has fresh evidence. The current master roadmap
+   defines no P24 phase.

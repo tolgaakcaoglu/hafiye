@@ -195,10 +195,15 @@ silently treated as passing.
 - A real Wayland Desktop launch used the exact generated XDG autostart command
   with `--hidden`; the process reached persistent-backend readiness and the
   autostart file is owner-created with mode 0644.
+- On 2026-08-25 P23.1 preflight verified the packaged autostart target exists,
+  the entry passes `desktop-file-validate`, the user gateway is enabled and
+  active, `/api/health` returns HTTP 200, and the live voice/computer-use
+  doctors are green. This remains pre-reboot evidence only.
 - A full reboot was intentionally not issued from the shared development
   session. The direct autostart invocation is recorded as the non-disruptive
-  login-equivalent check; a later reboot/login should confirm the desktop
-  session manager consumes the entry automatically.
+  login-equivalent check; the P23.1 reboot/login step is now the next
+  operational action and will confirm that the desktop session manager
+  consumes the entry automatically.
 
 ## KI-014 — Small validation GGUFs have a lower trained context window
 
