@@ -586,16 +586,19 @@ P0 computer-use acceptance requires:
 
 - Hafiye source/test commits:
   `ba113121f275bf1ff8258037bb79eed0aa36e2bf` (route/config boundary) and
-  `5af73434e5ab36786a306966fa926b7cbbe08914` (managed Qwen2 compatibility).
+  `5af73434e5ab36786a306966fa926b7cbbe08914` (managed Qwen2 compatibility),
+  followed by `ac42575db2986a2f8be677a9d1272121ff533294` (managed Qwen3
+  compatibility and explicit managed-MCP toolset selection).
 - The native gateway's normal configuration lookup now follows Hafiye's XDG
   config root, while explicit `HERMES_HOME` and profile/context overrides keep
   the upstream-compatible single-root behavior. The Desktop/TUI agent factory
   applies the same Hafiye route slot, privacy mode, and fallback resolution
   before creating `AIAgent`.
 - This is a Hafiye boundary adapter and test coverage change; no Hermes source
-  commit, upstream pin, baseline merge, or upstream history changed. The exact
-  five-ID comparison remained `3 failed, 2 passed`, with no new/different
-  regression.
+  commit, upstream pin, baseline merge, or upstream history changed. The
+  latest direct exact five-ID comparison returned `4 failed, 1 passed`; all
+  four failures were members of the accepted historical five-ID set, with no
+  new/different regression.
 - A real packaged Composer operation under a temporarily forced Gemini route
   reached Firefox, but the provider later returned HTTP 429 free-tier quota;
   the P23 final acceptance remains open and is tracked as KI-037.
@@ -606,6 +609,11 @@ P0 computer-use acceptance requires:
   runtime reported 65,536 context, and direct AIAgent plus packaged Desktop
   terminal calls passed. This is a Hafiye integration patch; the pinned Hermes
   source, baseline merge, and upstream history did not change.
+- The Qwen3 patch is likewise identity-scoped: the managed runtime uses the
+  official Jinja/DeepSeek path, Qwen3 YaRN/context metadata, fit-aware CUDA
+  layers, and CPU KV storage at 65K. An isolated real Hafiye AIAgent replay
+  passed the six local-agent workflows, while the measured VRAM/RAM/swap
+  pressure remains KI-046 and keeps Qwen3 selectable rather than default.
 
 ## P17 Control Center patch group
 

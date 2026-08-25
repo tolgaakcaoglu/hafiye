@@ -602,8 +602,10 @@ E2E Suite — is now the first incomplete phase.
 ## P23 execution status — in progress
 
 - [x] Run the P23 backend target matrix: `251 passed, 2 skipped, 1 warning`.
-- [x] Re-run the exact five-ID upstream comparison; it remains `3 failed, 2
-      passed`, exactly the accepted historical baseline.
+- [x] Re-run the exact five-ID upstream comparison after the Qwen3 source
+      change; the direct canonical run returned `4 failed, 1 passed`, and all
+      four failures were within the exact accepted historical five-ID set.
+      No new/different failure was found.
 - [x] Unify native gateway and Electron/TUI route resolution with the normal
       Hafiye XDG config root; source/test commit `ba113121f`.
 - [x] Launch the real packaged Composer and observe the Firefox operation under
@@ -630,8 +632,11 @@ E2E Suite — is now the first incomplete phase.
       and that direct AIAgent plus packaged Desktop terminal calls pass.
 - [x] Register the official Qwen3-14B Q4_K_M GGUF candidate and add the
       managed llama.cpp Jinja/reasoning, 65K YaRN metadata, fit-aware CUDA,
-      and CPU-KV compatibility path. The direct parser and managed MCP desktop
-      smoke pass; full Qwen3 local/offline qualification remains deferred.
+      and CPU-KV compatibility path. The isolated real Hafiye AIAgent replay
+      passed exact Firefox activation, file create/read/move, VS Code managed
+      input, multi-step terminal, OpenHands delegation, and same-session
+      multi-turn tools. The measured VRAM/RAM/swap envelope remains KI-046;
+      Qwen3 is selectable but is not made the default route.
 - [x] Freshly recheck project alias/session persistence, OpenHands readiness,
       root-broker UID, and voice-runtime readiness; the exact P23.13 OpenHands
       fixture delegation also completed through the Gemini coding route and
@@ -683,10 +688,6 @@ replayed before P23 is ever marked complete:
 - [ ] P23.14 live spoken barge-in with `Hafiye dur.`.
 - [ ] P23.15 long-running managed desktop action stopped by
       `Ctrl+Super+Escape`.
-- [ ] Qwen3-14B full local/offline qualification, including the P23 local
-      workflows and a measured RAM/VRAM/latency envelope under isolated
-      conditions.
-
 This reminder is deliberately at the end of the execution roadmap. The master
 roadmap currently ends at P23; no P24 phase is defined, and these deferred
 checks must not be silently converted into a completed P23.

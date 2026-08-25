@@ -33,6 +33,12 @@ silently treated as passing.
 - The same exact five after future Hafiye changes are not new regressions. A
   reduction updates the baseline; any new or different failure must be
   investigated. Hafiye does not fix these upstream bugs.
+- The latest direct exact-node replay on 2026-08-25 returned `4 failed, 1
+  passed`: historical IDs 1, 2, 3, and 5 failed and ID 4 passed. This is a
+  changed observed subset inside the same accepted five-ID whitelist, not a
+  new/different regression. A separate combined `run_tests.sh` invocation
+  also produced only IDs from this same whitelist, but its file-granular
+  `-k` aggregation is not the canonical exact-node result.
 
 ## KI-002 — System Python is outside the Hermes constraint
 
@@ -690,10 +696,11 @@ silently treated as passing.
   event. No emergency chord was sent in that probe, and no P23.15 acceptance
   is claimed.
 
-## KI-046 — Qwen3-14B candidate needs full local/offline qualification
+## KI-046 — Qwen3-14B resource envelope warning
 
-- Status: P23 MODEL QUALIFICATION WARNING; Qwen2 default route remains healthy
-  and no Hafiye source regression is established.
+- Status: P23 MODEL QUALIFICATION WARNING; the isolated Qwen3 local-agent
+  acceptance objective passed, no Hafiye source regression is established, and
+  the normal Qwen2 route remains healthy after restoration.
 - The official `Qwen/Qwen3-14B-GGUF` Q4_K_M file was registered from revision
   `530227a7d994db8eca5ab5ced2fb692b614357fd` as
   `/home/tolga/.local/share/hafiye/models/qwen3-14b-q4_k_m.gguf`,
@@ -704,12 +711,23 @@ silently treated as passing.
   `qwen3.context_length` metadata override, fit-aware CUDA layer selection,
   and CPU KV storage. Full-GPU 65K and 4K probes hit CUDA OOM; the managed
   compatibility path itself reached 65,536 context and selected CUDA.
-- A direct parser smoke and a real Hafiye `AIAgent` managed-MCP run passed:
-  the agent found the live Firefox window, activated it, and ended with a
-  normal `text_response`. The real `hafiye ask` 4K path still rejects the
-  model below Hermes' 64K minimum; a full managed-MCP oneshot was bounded at
-  180 seconds and did not complete under concurrent local service load.
-- The 65K Qwen3 process used roughly 8.7 GiB of 10 GiB VRAM and about 10.9
-  GiB RSS on this 14 GiB host, with swap pressure. Qwen3 is therefore a
-  registered candidate, not the default model, until the user-authorized
-  deferred P23 local/offline/resource qualification is replayed in isolation.
+- The direct parser smoke and the six isolated real Hafiye AIAgent workflows
+  passed: exact `Firefox'u aç.` managed activation, file create/read/move,
+  real VS Code managed keyboard/input and screenshot, multi-step terminal
+  verification, OpenHands `coding_delegate` (`custom/qwen3-14b-q4_k_m`, worker
+  `completed`, 14 progress events, independent pytest `1 passed`), and a
+  same-session multi-turn terminal workflow. Measured task wall times were
+  51.303s, 73.703s, 48.849s, 58.319s, 423.879s, and 71.845s respectively.
+- The 65K Qwen3 sample used 8,614 MiB of 10,240 MiB VRAM; the server reported
+  `VmRSS=7,749,188 kB` and `VmSwap=7,609,128 kB`, while the host showed
+  11 GiB/14 GiB RAM in use. Earlier loading reached approximately 11.3 GiB
+  RSS. llama-server logs showed cache-dependent prompt processing of roughly
+  228–827 tokens/s and generation of roughly 4.59–5.39 tokens/s.
+- Full-GPU Qwen3 65K and 4K fit probes hit CUDA OOM. The managed compatibility
+  path uses fit-aware `-ngl auto` and `--no-kv-offload`, reaches the Hafiye
+  65,536 context contract, and passes the six functional workflows. Because
+  of the measured swap/resource pressure, Qwen3 remains registered and
+  selectable but is not the default route. This warning does not reopen the
+  fixed compute-backend architecture or block the completed Qwen3 acceptance
+  objective; the independent deferred P23 checklist remains at the roadmap
+  end.

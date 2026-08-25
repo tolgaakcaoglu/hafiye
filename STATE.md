@@ -98,10 +98,11 @@ replay are accepted.
 P22 — CLI: complete. The product command vocabulary, shared backend adapters,
 real service/model/computer checks, explicit Gemini one-shot, and accepted
 upstream-baseline comparison are recorded below. P23 — Final E2E Suite — is
-now the first incomplete phase. On 2026-08-25 the user explicitly instructed
-that the remaining real-machine acceptance checks be deferred and reminded at
-the end of the roadmap. They remain unaccepted and must not be represented as
-passed.
+now the first incomplete phase. The isolated Qwen3-14B local-agent
+qualification subtask is complete with a measured host resource warning. On
+2026-08-25 the user explicitly instructed that the remaining real-machine
+acceptance checks be deferred and reminded at the end of the roadmap. They
+remain unaccepted and must not be represented as passed.
 
 ## Verified working
 
@@ -291,9 +292,9 @@ passed.
 
 The P7 full backend comparison covered 3,219 files and reported 37,160 passed,
 7 failed, and 244 skipped in 598.3 seconds. The historical five failures are
-the `ACCEPTED_UPSTREAM_BASELINE`; the latest exact comparison reproduces only
+the `ACCEPTED_UPSTREAM_BASELINE`; the P7 exact comparison reproduced only
 items 2, 3, and 5 (Hermes state FTS, execution-flag detection, and Vercel
-doctor diagnostics). Items 1 and 4 pass in the latest comparison. The two
+doctor diagnostics). Items 1 and 4 passed in that P7 comparison. The two
 cold-start failures passed 2/2 when the persistent Hafiye service was stopped
 and are the existing KI-016 topology diagnostic. The browser reconnect test
 is the existing KI-019 scheduling diagnostic; it passed on an immediate
@@ -1580,7 +1581,7 @@ claimed as passed.
   `f293e7206b4ddd66042329442c6afebc19a8808d`.
 - Baseline merge commit: `2ac06b131a237916432503ac67bbcada6dbea39e`.
 - Current Hafiye source/test commit:
-  `5af73434e5ab36786a306966fa926b7cbbe08914`.
+  `ac42575db2986a2f8be677a9d1272121ff533294`.
 - The native gateway now uses the normal Hafiye XDG config root while
   retaining explicit `HERMES_HOME`/profile single-root behavior. The
   Electron/TUI `_make_agent` boundary now resolves the same Hafiye route slot,
@@ -1596,10 +1597,14 @@ claimed as passed.
   warning in 22.66s`, including the managed local-runtime compatibility test.
 - `.venv/bin/ruff check` on the route/config source and tests, Python
   compilation, and `git diff --check` passed.
-- The exact five-ID upstream comparison after this source change returned
-  `3 failed, 2 passed`: IDs 2, 3, and 5 failed, IDs 1 and 4 passed. This is
-  exactly the accepted upstream baseline; no new or different failure was
-  found.
+- The latest exact five-ID upstream comparison after the Qwen3 source change
+  used the documented direct `.venv/bin/pytest` command and returned
+  `4 failed, 1 passed`: historical IDs 1, 2, 3, and 5 failed; ID 4 passed.
+  Every failure is inside the exact historical five-ID
+  `ACCEPTED_UPSTREAM_BASELINE`; there is no new or different failure and no
+  Qwen3/Hafiye regression. The per-file wrapper replay also produced only
+  failures from that same five-ID set, but its file-granular `-k` behavior is
+  not used as the canonical exact-node result.
 - The real packaged Electron Composer path was launched from
   `apps/desktop/release/linux-unpacked/hafiye-desktop`. With the default
   route temporarily forced to `gemini-flash-lite-latest`, entering
@@ -1645,8 +1650,8 @@ claimed as passed.
   `/home/tolga/.local/share/hafiye/models/qwen3-14b-q4_k_m.gguf`,
   `9001752960` bytes, SHA-256
   `500a8806e85ee9c83f3ae08420295592451379b4f8cf2d0f41c15dffeb6b81f0`.
-  The model remains registered for acceptance work but is not the default
-  route; Qwen2 was restored after the probe.
+  The model remains registered and selectable; the normal route was restored
+  to the Qwen2 smoke fixture after the isolated qualification run.
 - Managed Qwen3 startup now uses the official embedded Jinja template and
   DeepSeek reasoning parser, and for a requested 65,536-token context uses
   YaRN from the model's 40,960-token native context, an explicit
@@ -1654,18 +1659,43 @@ claimed as passed.
   Full-GPU 65K and 4K fit probes were CUDA-OOM diagnostics; the managed
   compatibility command reached `n_ctx=65536`, `n_ctx_train=65536`, and
   `ready=true` on CUDA.
-- A direct Qwen3 parser probe produced a real `tool_calls` response for
-  `open_application`. A real Hafiye `AIAgent` run with the managed
-  `hafiye-computer-use-linux` toolset then completed
-  `tool_search → tool_describe → list_windows → activate_window` against the
-  live Firefox window and ended with
-  `text_response(finish_reason=stop)`, `api_calls=4`. This is candidate-model
-  evidence, not a claim that all P23 local/offline workflows pass.
-- The Qwen3 65K probe measured approximately 8.7 GiB VRAM used on the 10 GiB
-  RTX 3080, about 10.9 GiB server RSS on a 14 GiB host, and swap pressure. The
-  full P23 Qwen3 qualification and remaining real-machine checks are deferred
-  per the user's explicit instruction and remain listed in the roadmap-end
-  reminder.
+- The isolated Qwen3 local-agent acceptance replay used the actual Hafiye
+  `AIAgent` path against the managed CUDA endpoint, with `LOCAL_ONLY` on the
+  parent agent and the managed computer-use-linux MCP boundary where needed.
+  All six required workflows passed:
+  - exact `Firefox'u aç.`: `list_apps`, `list_windows`, and
+    `activate_window`; Firefox was focused; 51.303 seconds;
+  - isolated create/read/move fixture: real terminal/file calls moved
+    `notes.txt` and `photo.jpg`, preserved `keep.bin`, and independent content
+    verification passed in 73.703 seconds. The model first sent `read_file` to
+    the `.jpg` fixture and received the expected binary-file error; it then
+    completed the operation and the external verification is the acceptance
+    authority for that binary content;
+  - real VS Code Wayland action: managed `list_windows`, exact activation,
+    Ctrl+A, `type_text`, Ctrl+S, and targeted screenshot; the saved marker was
+    independently verified; 48.849 seconds;
+  - multi-step terminal task: five successful terminal calls created two
+    inputs, performed sorted-unique aggregation, read the result, and the
+    independent comparison passed; 58.319 seconds;
+  - OpenHands coding delegation: `coding_delegate` used the Hafiye coding
+    route `custom/qwen3-14b-q4_k_m`; the managed worker returned
+    `status=completed`, 14 progress events, changed `bug.py`, and the
+    independent fixture pytest returned `1 passed`; 423.879 seconds;
+  - multi-turn workflow: the same `AIAgent` kept session
+    `20260825_042420_3f0fe8`, completed two terminal turns, and the independent
+    two-line file verification passed; 71.845 seconds.
+- Qwen3 runtime evidence: Q4_K Medium, 14,768,307,200 parameters,
+  `n_ctx=65536`, `n_ctx_train=65536`, managed llama.cpp commit
+  `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`, selected backend `CUDA`,
+  `-ngl auto`, and `--no-kv-offload`. The final Qwen3 sample recorded 8,614
+  MiB of 10,240 MiB VRAM, server `VmRSS=7,749,188 kB`,
+  `VmSwap=7,609,128 kB`, and host memory `11 GiB/14 GiB` in use; an earlier
+  load sample reached approximately 11.3 GiB RSS. llama-server timing logs
+  showed prompt processing about 228–827 tokens/s (cache-dependent) and
+  generation about 4.59–5.39 tokens/s. The full workflow is therefore
+  functionally qualified for this local-agent acceptance objective, but the
+  measured VRAM/RAM/swap pressure and full-GPU CUDA-OOM diagnostics remain a
+  resource warning; Qwen3 stays selectable and is not made the default route.
 - A real isolated file-organizing fixture was attempted through the same local
   AIAgent with `terminal` and `file` toolsets. The Qwen2 validation fixture did
   not complete the prescribed multi-step sequence: one run only created the
@@ -1776,6 +1806,7 @@ tests exist. The master roadmap requires the final real-machine sequence.
 | 23.14 Barge-in | P13 real stop evidence remains green; exact final phrase is not replayed here | INHERITED / RECHECK |
 | 23.15 Emergency shortcut | Real `Ctrl+Super+Escape` reached the GNOME fallback, paused the emergency state, and `emergency.resume` restored it; the model selected `terminal` instead of a long-running managed desktop action | PARTIAL / KI-045 |
 | 23.16 Restart recovery | Authenticated desktop session completed before restart; service restarted; same durable session resumed; post-restart prompt completed; service remained active; marker `P23_RESTART_RECONNECT_OK` | PASS / REAL SESSION RESUME |
+| Qwen3 local-agent qualification | Isolated managed Qwen3 Q4_K_M AIAgent replay passed exact Firefox, file organize/read/move, real VS Code MCP input, multi-step terminal, OpenHands delegation, and same-session multi-turn tool workflows; resource envelope recorded separately | PASS / RESOURCE WARNING KI-046 |
 
 ### Exact next actions
 
@@ -1784,8 +1815,9 @@ tests exist. The master roadmap requires the final real-machine sequence.
 2. At the end of the roadmap, return to the deferred checklist in
    `ROADMAP.md`: P23.1, clean P23.2/P23.6 Gemini Composer behavior, P23.3
    voice, P23.4 offline, P23.5 remote endpoint, P23.14 barge-in, and the
-   long-running managed desktop portion of P23.15. Also requalify the Qwen3
-   candidate across the full local/offline workflow and resource envelope.
+   long-running managed desktop portion of P23.15. Qwen3's isolated
+   local-agent qualification is complete, but its KI-046 resource warning
+   remains recorded and does not close those independent P23 checks.
 3. The current master roadmap defines no P24 phase. Do not invent one while
    treating the deferred P23 acceptance as complete; the roadmap-end reminder
    is the next recorded action.

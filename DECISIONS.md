@@ -612,8 +612,12 @@ These ADRs record implementation details only. They do not override `HAFIYE_MAST
   provider was already available to normal discovery but was not selectable
   by explicit oneshot validation because it is intentionally absent from user
   config.
-- Consequence: Qwen3 remains a registered candidate and does not replace the
-  default Qwen2 smoke model until the deferred full local/offline P23
-  qualification and resource envelope pass. This records implementation
-  detail only and does not change Hafiye's fixed architecture or compute
-  backend policy.
+- Consequence: The isolated real Hafiye AIAgent qualification now passes the
+  exact Firefox request, file create/read/move, real VS Code MCP input,
+  multi-step terminal verification, OpenHands delegation, and same-session
+  multi-turn workflow. Qwen3 remains registered and selectable, but does not
+  replace the default Qwen2 smoke route because the measured 65K run used
+  8,614 MiB VRAM, about 7.4 GiB server RSS plus about 7.3 GiB swap, and the
+  full-GPU fit probes hit CUDA OOM. This records implementation detail only
+  and does not change Hafiye's fixed architecture, compute-backend policy, or
+  the independent deferred P23 acceptance list.
