@@ -824,3 +824,29 @@ silently treated as passing.
   GGUF produced outside Hafiye before using Import GGUF.
 - This records the existing fixed runtime boundary; it does not add an Ollama
   runtime, create a new phase, or change the local-first architecture.
+
+## KI-051 — Ubuntu system Python 3.14 blocked the Debian package bootstrap
+
+- Status: RESOLVED 2026-08-26 in source/test commit
+  `fd435cc85fe018ca238256fb19547db2e7064565`.
+- The real host now exposes `/usr/bin/python3` as Python `3.14.4`. The original
+  Debian control file required both `python3 (>= 3.11)` and
+  `python3 (<< 3.14)`, so a real `apt install --simulate` of the Hafiye `.deb`
+  failed before the user-scoped dependency installer could create the
+  supported managed environment. Earlier P20/P21 rootless package checks did
+  not use the live host apt database and therefore did not expose this conflict.
+- The package now allows the distro Python 3.14 interpreter to serve only as
+  the stdlib bootstrap. `hafiye package install` still enforces the actual
+  Hafiye runtime range `>=3.11,<3.14` and provisions managed Python 3.11 with
+  `uv` when the distro interpreter is too new. Existing supported 3.11–3.13
+  interpreters remain preferred.
+- The committed packaging/metadata suite returned 13 passed; Ruff, bytecode
+  compilation, and patch hygiene passed. A rebuilt real artifact records the
+  new source HEAD, resolves successfully through current-host
+  `apt install --reinstall --simulate`, preserves `chrome-sandbox` mode 4755,
+  and returns extracted package doctor `ok=true`, `blockers=[]` under managed
+  Python 3.11. The post-fix exact upstream comparison remained 3 failed/2
+  passed with only accepted historical IDs 2, 3, and 5.
+- No live package install or sudo mutation was performed. This is resolved at
+  the package dependency/bootstrap boundary and does not change P23's open
+  final real-machine acceptance rows.

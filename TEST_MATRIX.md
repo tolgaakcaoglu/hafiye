@@ -550,3 +550,14 @@ and 4 passed and IDs 2, 3, and 5 failed. Every failure is in the exact
 historical `ACCEPTED_UPSTREAM_BASELINE` set, so this is not a new P23
 regression. The canonical historical whitelist remains all five IDs; the
 current observed comparison subset is 2, 3, and 5.
+
+## README and current-host package bootstrap validation — 2026-08-26
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| DOC-README-01 | Hafiye root README | Bash-fence extraction piped to `bash -n`; local Markdown targets checked; stale Windows/Hermes and obsolete computer-use URL patterns searched; relevant Hafiye CLI `--help` surfaces exercised | Shell syntax and local links passed; obsolete patterns absent; source/package distinction and GUI GGUF path documented | PASS |
+| PKG-PY314-DIAG-01 | Original real-host Debian dependency resolution | `/usr/bin/python3 --version`; `apt install --reinstall --simulate` against the pre-fix real `.deb` | System Python was 3.14.4; apt rejected `python3 (<< 3.14)` before package bootstrap | HISTORICAL DEFECT / KI-051 |
+| PKG-PY314-01 | Python 3.14 bootstrap source boundary | `.venv/bin/python -m pytest -q tests/packaging/test_hafiye_deb.py tests/test_packaging_metadata.py`; Ruff; `py_compile` | 13 passed in 48.19s; lint and bytecode checks passed; tests prove 3.14 selects managed Python 3.11 | PASS / KI-051 RESOLVED |
+| PKG-PY314-02 | Real rebuilt `.deb` on current apt database | `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; `apt install --reinstall --simulate` | Artifact manifest source `fd435cc85fe018ca238256fb19547db2e7064565`; apt selected/configured Hafiye without the prior dependency conflict | PASS / SIMULATION; NO LIVE `/usr` MUTATION |
+| PKG-PY314-03 | Extracted real package doctor | Extract rebuilt artifact; run packaged `hafiye package doctor --json` with the supported managed Python 3.11 environment | `ok=true`, `blockers=[]`; package/backend/Desktop/service/rootd/XDG paths present; optional `cargo` warning only | PASS WITH DIAGNOSTIC |
+| PKG-PY314-04 | Exact upstream five-ID comparison after package bootstrap source fix | Canonical five nodes from the P23 command above, using managed Python 3.11 | `3 failed, 2 passed`; only historical IDs 2, 3, and 5 failed; no new/different regression | ACCEPTED BASELINE UNCHANGED |

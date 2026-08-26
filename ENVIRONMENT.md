@@ -447,3 +447,24 @@ package boundary:
 - No sudo password, passwordless sudo/NOPASSWD rule, credential, system
   package, group, device permission, or logout/login state was changed during
   this revalidation.
+
+## README/install revalidation (2026-08-26)
+
+- The distro interpreter changed since the P21 record:
+  `/usr/bin/python3 --version` now returns Python `3.14.4`, and
+  `/usr/bin/python3` resolves to `/usr/bin/python3.14`. The Hafiye source venv
+  used for the package validation is managed CPython `3.11.16`; Hafiye's full
+  runtime constraint remains `>=3.11,<3.14`.
+- Current Ubuntu repository package names on this host are
+  `libgtk-3-0t64` and `libasound2t64`; the older non-`t64` names have no apt
+  candidate. The README records both modern and older Ubuntu naming paths.
+- The pre-fix `.deb` could not resolve against the current apt database because
+  its control metadata capped the bootstrap interpreter below 3.14. Source
+  commit `fd435cc85fe018ca238256fb19547db2e7064565` now permits system Python
+  3.14 as a stdlib bootstrap and provisions managed Python 3.11 for the actual
+  Hafiye dependency environment.
+- The rebuilt real artifact passed `apt install --reinstall --simulate`; its
+  extracted package doctor returned `ok=true`, `blockers=[]` under managed
+  Python 3.11. This was a simulation/extracted-root verification only: no live
+  package, sudo, service, group, device, credential, route, or login state was
+  changed.

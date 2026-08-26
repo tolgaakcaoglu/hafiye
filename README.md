@@ -3,288 +3,584 @@
 </p>
 
 # Hafiye
+
 <p align="center">
-  Hafiye Agent | Hafiye Desktop
-</p>
-<p align="center">
-  <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
-  <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
-  <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
-  <a href="README.ur-pk.md"><img src="https://img.shields.io/badge/Lang-اردو-green?style=for-the-badge" alt="اردو"></a>
-  <a href="README.es.md"><img src="https://img.shields.io/badge/Lang-Español-orange?style=for-the-badge" alt="Español"></a>
+  Ubuntu/Linux için yerel öncelikli masaüstü yapay zekâ ajanı
 </p>
 
-**Hafiye is a maintained fork of [Nous Research's Hermes Agent](https://github.com/NousResearch/hermes-agent).** It keeps the upstream agent core while presenting the Hafiye product identity and Hafiye XDG data roots. Hafiye has a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions.
+<p align="center">
+  <a href="HAFIYE_MASTER_ROADMAP.md"><img src="https://img.shields.io/badge/Architecture-Master%20Roadmap-7c3aed?style=for-the-badge" alt="Master Roadmap"></a>
+  <a href="STATE.md"><img src="https://img.shields.io/badge/Status-P23%20in%20progress-f59e0b?style=for-the-badge" alt="P23 in progress"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge" alt="MIT License"></a>
+</p>
 
-Use any model you want — [Nous Portal](https://portal.nousresearch.com), OpenRouter, OpenAI, your own endpoint, and [many others](https://hermes-agent.nousresearch.com/docs/integrations/providers). Switch with `hafiye model` — no code changes, no lock-in.
+Hafiye; [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)
+üzerinde geliştirilen, masaüstü uygulaması ve kalıcı yerel servisi bulunan bir
+kişisel ajandır. Hafiye Desktop, Composer, CLI ve mesajlaşma yüzeyleri aynı
+agent çekirdeğini, aynı yapılandırmayı, aynı model yönlendirmesini ve aynı görev
+durumunu kullanır.
 
-<table>
-<tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
-<tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI — all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
-<tr><td><b>A closed learning loop</b></td><td>Agent-curated memory with periodic nudges. Autonomous skill creation after complex tasks. Skills self-improve during use. FTS5 session search with LLM summarization for cross-session recall. <a href="https://github.com/plastic-labs/honcho">Honcho</a> dialectic user modeling. Compatible with the <a href="https://agentskills.io">agentskills.io</a> open standard.</td></tr>
-<tr><td><b>Scheduled automations</b></td><td>Built-in cron scheduler with delivery to any platform. Daily reports, nightly backups, weekly audits — all in natural language, running unattended.</td></tr>
-<tr><td><b>Delegates and parallelizes</b></td><td>Spawn isolated subagents for parallel workstreams. Write Python scripts that call tools via RPC, collapsing multi-step pipelines into zero-context-cost turns.</td></tr>
-<tr><td><b>Runs anywhere, not just your laptop</b></td><td>Seven terminal backends — local, Docker, SSH, Singularity, Modal, Daytona, and Vercel Sandbox. Daytona and Modal offer serverless persistence — your agent's environment hibernates when idle and wakes on demand, costing nearly nothing between sessions. Run it on a $5 VPS or a GPU cluster.</td></tr>
-<tr><td><b>Research-ready</b></td><td>Batch trajectory generation, trajectory compression for training the next generation of tool-calling models.</td></tr>
-</table>
+Hafiye'nin ana hedefi Ubuntu/Linux üzerinde yerel model, Türkçe ses, gerçek
+masaüstü kontrolü, kalıcı hafıza ve gerektiğinde denetimli root işlemlerini tek
+ürün içinde birleştirmektir. Ana Hafiye prosesi root olarak çalışmaz.
 
----
+> **Geliştirme durumu:** P0–P22 tamamlanmıştır. P23 gerçek-makine final kabul
+> süreci devam etmektedir; henüz final release etiketi yoktur. Güncel ve
+> doğrulanmış durum için [STATE.md](STATE.md) ve [ROADMAP.md](ROADMAP.md)
+> dosyalarını okuyun.
 
-## Development Install
+## Temel özellikler
 
-Hafiye is currently developed from this maintained upstream checkout:
+- Electron + React tabanlı Hafiye Desktop, tray ve `Super+Shift+Space`
+  kısayollu Hafiye Composer.
+- Kullanıcı oturumunda kalıcı çalışan `hafiye-gateway.service`.
+- Hafiye tarafından yönetilen `llama.cpp` ve tek dosyalı GGUF modeller.
+- Varsayılan `AUTO` compute politikası: CUDA → Vulkan → CPU.
+- GUI üzerinden Hugging Face GGUF indirme, yerel GGUF içe aktarma,
+  yükleme/boşaltma ve compute backend seçimi.
+- İsteğe bağlı Gemini ve OpenAI-uyumlu uzak model endpoint'leri.
+- `NORMAL`, `LOCAL_ONLY` ve `OFFLINE` gizlilik modları.
+- `agent-sh/computer-use-linux` ile AT-SPI tabanlı gerçek Linux masaüstü
+  kontrolü.
+- openWakeWord + `whisper.cpp` + Piper tabanlı yerel Türkçe ses zinciri.
+- OpenHands coding delegate, Task Center, scheduler, skills ve MCP desteği.
+- Ayrı ve yerel Unix socket kullanan `hafiye-rootd` ayrıcalıklı işlem sınırı.
+- Linux Secret Service/keyring içinde provider credential saklama.
+- Acil durdurma: `Ctrl+Super+Escape`.
+
+## Desteklenen ana ortam
+
+Mevcut doğrulanmış hedef Ubuntu GNOME/Wayland'dir. X11 ve başka Linux masaüstü
+ortamları upstream bileşenler tarafından kısmen desteklenebilir; bunlar mevcut
+Hafiye final kabul ortamı değildir.
+
+Kaynak ve paket build'i için:
+
+- Ubuntu/Debian tabanlı Linux,
+- Hafiye runtime için Python `>=3.11,<3.14` — proje varsayılanı Python 3.11,
+- Node.js `>=22.22.0`,
+- proje `package.json` dosyasındaki aralığı sağlayan npm,
+- `uv`, Git ve standart C/C++ build araçları,
+- Desktop build'i için Electron'un Linux runtime kütüphaneleri,
+- yerel CUDA kullanımı için çalışan NVIDIA driver/CUDA ortamı gerekir.
+
+Dağıtımın sistem Python'ı 3.14 olabilir. Birleşik `.deb`, bu interpreter'ı
+yalnız stdlib bootstrap için kullanır; `hafiye package install` desteklenen
+managed Python 3.11 ortamını `uv` ile ayrıca oluşturur. Sistem Python'ını elle
+downgrade etmeyin.
+
+Sürüm kontrolü:
 
 ```bash
-uv sync
-source .venv/bin/activate
-hafiye setup
+python3 --version
+node --version
+npm --version
+uv --version
+git --version
 ```
 
-The upstream Hermes installer and documentation remain available as [upstream attribution and reference](https://hermes-agent.nousresearch.com/docs/). They are not the Hafiye product installer.
+## İlk kurulum
 
-> **Upstream Windows reference:** Native Windows support, the PowerShell installer, and the Termux guide below are retained from Hermes for upstream reference. Hafiye's supported development path in this phase is the local Linux checkout.
+Hafiye henüz final release etiketiyle yayımlanmadığı için desteklenen kurulum
+yolu, yetkili Hafiye kaynak kopyasındaki `hafiye/p0` geliştirme dalından birleşik
+Ubuntu/Debian paketini üretmektir. Bu repository zaten mevcutsa aşağıdaki
+komutları repository kökünde çalıştırın.
 
-The upstream Windows installer is available for reference:
-
-```powershell
-iex (irm https://hermes-agent.nousresearch.com/install.ps1)
-```
-
-The upstream installer handles uv, Python 3.11, Node.js, ripgrep, ffmpeg, and a portable Git Bash. It installs the upstream Hermes runtime, not the Hafiye launcher.
-
-If you already have Git installed, the upstream installer detects it and uses that instead.
-
-> **Android / Termux:** The tested manual path is documented in the [upstream Termux guide](https://hermes-agent.nousresearch.com/docs/getting-started/termux).
->
-> **Windows:** The paths and commands in this subsection describe the upstream Hermes installer and are not Hafiye's Linux XDG paths.
-
-After the development environment is ready:
+### 1. Sistem ve geliştirme bağımlılıkları
 
 ```bash
-hafiye              # start chatting
-hafiye doctor       # diagnose the installation
+sudo apt update
+sudo apt install -y \
+  build-essential cmake ninja-build pkg-config \
+  git curl ca-certificates python3 python3-venv \
+  ripgrep ffmpeg \
+  libgtk-3-0t64 libasound2t64 libnss3 libgbm1 \
+  libnotify4 libxss1 libxtst6 xdg-utils
 ```
 
-Hafiye's normal Linux data roots are:
+Modern Ubuntu sürümleri GTK/ALSA paketlerini `libgtk-3-0t64` ve
+`libasound2t64` adıyla sunar. Daha eski Ubuntu sürümlerinde bunları sırasıyla
+`libgtk-3-0` ve `libasound2` ile değiştirin. Eksik Electron kütüphanelerini
+paket yöneticinizin bildirdiği ada göre kurun.
+
+`uv` kurulu değilse:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Node.js için dağıtımın eski `nodejs` paketini kullanmayın; `node --version`
+çıktısının en az `22.22.0` olduğundan emin olun.
+
+### 2. Kaynak bağımlılıklarını kurun
+
+```bash
+cd /path/to/hafiye
+uv sync --locked --python 3.11 --extra all --extra dev
+npm ci
+```
+
+Python ortamı `.venv/` altında oluşur. `npm ci` repository workspace'lerini ve
+Desktop bağımlılıklarını lockfile'dan kurar.
+
+### 3. Desktop ve birleşik `.deb` paketini üretin
+
+```bash
+cd apps/desktop
+npm run pack
+cd ../..
+
+.venv/bin/python scripts/build_deb.py --json
+```
+
+`npm run pack`, `apps/desktop/release/linux-unpacked/` ağacını üretir.
+`scripts/build_deb.py` bunun üzerine Hafiye backend'ini, launchers, systemd user
+unit'ini, root broker aktivasyon yolunu, XDG girişlerini ve paket manifestini
+ekler. Son paket `dist/hafiye_<sürüm>_<mimari>.deb` altında oluşur.
+
+### 4. Paketi ve kilitli Python bağımlılıklarını kurun
+
+```bash
+HAFIYE_DEB="$(realpath "$(ls -t dist/hafiye_*_"$(dpkg --print-architecture)".deb | head -n 1)")"
+test -n "$HAFIYE_DEB"
+sudo apt install "$HAFIYE_DEB"
+
+hafiye package install
+hafiye package doctor
+```
+
+`hafiye package install` root kullanmadan, kilitli Python bağımlılıklarını
+`~/.local/share/hafiye/python-venv` içine kurar. `hafiye package doctor` sonucu
+`OK` olmalı; required blocker varsa ilk açılıştan önce giderin.
+Sistem Python'ı 3.14 ise installer bunun yalnız bootstrap interpreter olduğunu
+bildirir ve managed Python 3.11'i otomatik provision eder.
+
+### 5. Root broker'ı etkinleştirin
+
+```bash
+hafiye root install
+hafiye root status
+```
+
+Bu adım normal interaktif `sudo` ile bir kez parola isteyebilir. Komutu gerçek
+bir sistem terminalinde çalıştırın. Passwordless sudo veya `NOPASSWD` kuralı
+eklemeyin. Normal Hafiye agent/terminal yolu `sudo`, `sudoedit`, `su`, `pkexec`
+ve `doas` çalıştırmaz; ayrıcalıklı işler yalnız `hafiye-rootd` sınırından geçer.
+
+### 6. Hafiye Desktop'ı başlatın
+
+Uygulama menüsünden **Hafiye**'yi açın veya:
+
+```bash
+systemctl --user enable --now hafiye-gateway.service
+hafiye-desktop
+```
+
+İlk açılış sihirbazı şu gerçek kurulum sınırlarını yönetir:
+
+1. ortam ve `computer-use-linux` doctor kontrolü;
+2. `AUTO`, CUDA, Vulkan veya CPU compute seçimi;
+3. Hafiye-managed `llama.cpp` build'i;
+4. GGUF model indirme ya da içe aktarma;
+5. yerel model server'ı ve varsayılan route;
+6. isteğe bağlı uzak endpoint ve Gemini;
+7. mikrofon, `whisper.cpp`, Piper ve wake word;
+8. execution policy, autostart ve final doctor.
+
+Normal kullanımda Desktop'ı kapatmak kalıcı gateway'i durdurmaz. Tray menüsünü
+kullanın; Composer varsayılan olarak `Super+Shift+Space` ile açılır.
+
+### 7. Final kurulum kontrolü
+
+```bash
+hafiye status --all
+hafiye doctor
+hafiye runtime doctor
+hafiye voice doctor
+hafiye computer doctor --json
+hafiye root status
+systemctl --user is-enabled hafiye-gateway.service
+systemctl --user is-active hafiye-gateway.service
+```
+
+`computer doctor` için şu dört readiness alanı `true`, `blockers` ise boş
+olmalıdır:
 
 ```text
-~/.config/hafiye       configuration and secrets reference
-~/.local/share/hafiye  persistent data, skills, and profiles
-~/.local/state/hafiye  sessions, logs, and runtime state
-~/.cache/hafiye        disposable cache data
+can_register_mcp_tools
+can_build_accessibility_tree
+can_send_development_input
+can_query_windows
 ```
 
-If an existing Hermes profile is present, preview and then apply the
-non-destructive import with:
+## computer-use-linux ilk host hazırlığı
+
+Onboarding doctor `computer-use-linux` blocker'ı gösterirse Hafiye'nin pinlediği
+kaynak checkout üzerinden upstream'in resmi setup yolunu kullanın:
+
+```bash
+mkdir -p "$HOME/.cache/hafiye"
+git clone https://github.com/agent-sh/computer-use-linux.git \
+  "$HOME/.cache/hafiye/computer-use-linux"
+git -C "$HOME/.cache/hafiye/computer-use-linux" checkout --detach \
+  94736dc3e0dca56acfc89752c26869fb9ed01202
+
+cd "$HOME/.cache/hafiye/computer-use-linux"
+./install.sh
+computer-use-linux setup
+computer-use-linux setup-window-targeting
+computer-use-linux doctor
+```
+
+Installer; Rust/Cargo, system dependencies, AT-SPI, `ydotool/ydotoold`, GNOME
+Wayland window-targeting extension ve `/dev/uinput` erişimini hazırlar.
+Sistem paketi veya grup/cihaz izni için normal `sudo` prompt'u açılabilir.
+GNOME extension ya da grup üyeliği değiştiyse oturumu kapatıp yeniden giriş
+yapın; sonra `hafiye computer doctor --json` komutunu tekrar çalıştırın.
+
+## GUI'den yerel model ekleme
+
+İlk kurulumdan sonra yeni bir model için terminal kullanmak gerekmez:
+
+1. Hafiye Desktop'ta **Settings → Models** sayfasını açın.
+2. **Local GGUF Runtime** bölümünde backend olarak normalde `AUTO` seçin.
+3. Runtime kurulu değilse **Install / rebuild runtime** düğmesini kullanın.
+4. Hugging Face üzerinden indirmek için repository ve tam `.gguf` dosya adını
+   girin. Model ID, revision ve SHA-256 alanları isteğe bağlıdır.
+5. Bilgisayardaki bir dosya için `.gguf` yolunu girip **Import GGUF** kullanın.
+6. Kayıtlı modeli seçin ve **Load / start** ile llama-server'ı başlatın.
+7. Gerekirse aynı Models sayfasının ana model bölümünde `custom` provider ve
+   yüklediğiniz model ID'sini seçip uygulayın.
+
+Hafiye'nin yerel engine'i `llama.cpp + GGUF` olarak sabittir. Ollama'nın
+manifest/blob model deposu doğrudan içe aktarılmaz ve `ollama pull` Hafiye'ye
+model kurmuş sayılmaz. İstenen modelin tek dosyalı GGUF sürümünü GUI'den
+Hugging Face üzerinden indirin veya **Import GGUF** ile ekleyin.
+
+Qwen3-14B bu hostta agent-qualified ve seçilebilirdir; ancak KI-046 kaynak
+uyarısı nedeniyle varsayılan route değildir. Modelin selectable olması,
+otomatik olarak default yapılacağı anlamına gelmez.
+
+## Provider ve gizlilik ayarları
+
+Provider, model, route ve privacy ayarlarını Desktop içinden değiştirmek
+önerilen yoldur:
+
+- **Settings → Providers:** Gemini veya OpenAI-uyumlu uzak endpoint.
+- **Settings → Models:** ana model, yardımcı modeller ve yerel GGUF runtime.
+- **Settings → Routing:** default/fast/strong/vision/coding/long-context route.
+- **Settings → Privacy:** `NORMAL`, `LOCAL_ONLY`, `OFFLINE`.
+
+API anahtarları normal ürün akışında plaintext `.env` içine değil Linux Secret
+Service/keyring'e yazılır. Anahtarları komut geçmişine, loglara veya repository
+dosyalarına koymayın.
+
+## Temel CLI kullanımı
+
+Desktop ve CLI aynı backend/business logic'i kullanır.
+
+```bash
+hafiye                              # etkileşimli konuşma
+hafiye ask "Firefox'u aç."          # tek seferlik gerçek agent isteği
+hafiye start                        # kalıcı backend'i başlat
+hafiye stop                         # kalıcı backend'i durdur
+hafiye restart                      # backend kodunu yeniden yükle
+hafiye models                       # kayıtlı GGUF modeller
+hafiye model load MODEL_ID --backend AUTO
+hafiye model unload
+hafiye providers
+hafiye routing
+hafiye privacy
+hafiye tasks
+hafiye computer doctor --json
+hafiye voice doctor
+hafiye root status
+hafiye logs -f
+```
+
+Tüm komutlar için:
+
+```bash
+hafiye --help
+hafiye <komut> --help
+```
+
+## Kod değişikliğinden sonra değişiklikleri uygulama
+
+Kaynak checkout'ta dosyayı değiştirmek, kurulu `/usr/lib/hafiye` paketini veya
+zaten açık Desktop prosesini kendiliğinden güncellemez. Önce hangi çalışma
+modunda olduğunuzu kontrol edin:
+
+```bash
+systemctl --user cat hafiye-gateway.service
+ps -eo pid,args | grep '[h]afiye-desktop'
+```
+
+Unit içindeki `ExecStart` repository `.venv` yolunu gösteriyorsa **kaynak
+geliştirme modu**, `/usr/lib/hafiye` gösteriyorsa **kurulu paket modu** aktiftir.
+
+### Kaynak geliştirme modunda hızlı uygulama
+
+Python/backend değişiklikleri için:
+
+```bash
+uv sync --locked --python 3.11 --extra all --extra dev
+.venv/bin/hafiye restart
+curl --fail http://127.0.0.1:9120/api/health
+journalctl --user -u hafiye-gateway.service -n 100 --no-pager
+```
+
+Kaynak user unit'i henüz kurulmamışsa bir kez:
+
+```bash
+.venv/bin/python -m hermes_cli.persistent_gateway install
+```
+
+Desktop/React/Electron değişikliklerini geliştirme modunda görmek için açık
+Hafiye Desktop'ı tray üzerinden tamamen kapatın ve:
+
+```bash
+npm ci
+cd apps/desktop
+npm run dev
+```
+
+Bu yol hızlı geliştirme içindir; final paket davranışının kanıtı değildir.
+
+### Kurulu ürüne güncel kodu uygulama
+
+Backend, Desktop veya packaging değişikliğinden sonra birleşik paketi yeniden
+üretip yeniden kurun:
+
+```bash
+uv sync --locked --python 3.11 --extra all --extra dev
+npm ci
+
+git diff --check
+git status --short
+
+cd apps/desktop
+npm run typecheck
+npm run pack
+cd ../..
+
+.venv/bin/python scripts/build_deb.py --json
+HAFIYE_DEB="$(realpath "$(ls -t dist/hafiye_*_"$(dpkg --print-architecture)".deb | head -n 1)")"
+sudo apt install --reinstall "$HAFIYE_DEB"
+
+hafiye package install
+systemctl --user daemon-reload
+systemctl --user restart hafiye-gateway.service
+hafiye package doctor
+```
+
+Dağıtılabilir paket manifestinin doğru source commit'i göstermesi için intended
+source değişikliklerini package build'inden önce commit edin. Dirty worktree ile
+üretilen bir test paketi dosya değişikliklerini içerebilir, fakat manifestte
+yalnız son commit SHA'sı yer alır; bunu final artefact olarak kullanmayın.
+
+Açık Desktop eski bundle'ı bellekte tutar. Tray üzerinden tamamen çıkın ve
+uygulama menüsünden Hafiye'yi yeniden açın.
+
+Aynı makinede daha önce kaynak geliştirme unit'i oluşturulduysa
+`~/.config/systemd/user/hafiye-gateway.service`, paket içindeki
+`/usr/lib/systemd/user/hafiye-gateway.service` dosyasını gölgeler. Paket moduna
+geçmeden önce unit'i yedekleyin:
+
+```bash
+systemctl --user disable --now hafiye-gateway.service
+mv "$HOME/.config/systemd/user/hafiye-gateway.service" \
+  "$HOME/.config/systemd/user/hafiye-gateway.service.source-backup"
+systemctl --user daemon-reload
+systemctl --user enable --now hafiye-gateway.service
+systemctl --user cat hafiye-gateway.service
+```
+
+Son komutta `ExecStart=/usr/lib/hafiye/bin/hafiye-gateway-run` görülmelidir.
+
+Root broker source'u değiştiyse paket yeniden kurulduktan sonra ayrıca:
+
+```bash
+hafiye root install
+hafiye root restart
+```
+
+`llama.cpp` pin/build flag'i değişmedikçe her source değişikliğinde modeli veya
+runtime'ı yeniden indirmeyin. Runtime değiştiyse bilinçli olarak:
+
+```bash
+hafiye runtime install --backend AUTO
+hafiye runtime doctor
+```
+
+### Uygulanan commit'i doğrulama
+
+Birleşik paket, source ve upstream kimliklerini manifestte ayrı tutar:
+
+```bash
+python3 -m json.tool /usr/lib/hafiye/package-manifest.json
+git rev-parse HEAD
+```
+
+Manifestteki `source_commit`, kurmak istediğiniz Hafiye source commit'iyle
+eşleşmelidir. Dokümantasyon-only HEAD'in source HEAD yerine yazılmaması
+gerektiği için commit kimliklerinin güncel kaydı [UPSTREAM.md](UPSTREAM.md) ve
+[STATE.md](STATE.md) içindedir.
+
+## Geliştirme ve test
+
+Değişiklikten sonra en küçük hedefli testi çalıştırın; ardından değişen sınırın
+integration/acceptance testine geçin.
+
+```bash
+# Python örneği
+.venv/bin/python -m pytest -q tests/hermes_cli/test_hafiye_cli.py
+.venv/bin/python -m ruff check hermes_cli/hafiye_cli.py
+
+# Desktop örneği
+cd apps/desktop
+npm run typecheck
+npm run test:ui -- src/app/settings/local-runtime-settings.test.tsx
+cd ../..
+
+git diff --check
+```
+
+Packaging, gateway, root broker, model runtime, voice veya computer-use
+değişikliklerinde yalnız unit mock'ları yeterli değildir; gerçek service,
+paket, cihaz veya Desktop acceptance testi gerekir. Exact upstream karşılaştırma
+komutu ve kabul edilen historical failure seti [TEST_MATRIX.md](TEST_MATRIX.md)
+ile [STATE.md](STATE.md) içinde tutulur. Mevcut kabul edilen sonuç `3 failed, 2
+passed`; yalnız historical whitelist ID 2, 3 ve 5 fail etmektedir. Yeni veya
+farklı bir failure regression'dır.
+
+## Veri, yapılandırma ve log yolları
+
+```text
+~/.config/hafiye       yapılandırma ve Secret Service referansları
+~/.local/share/hafiye  modeller, managed runtimes, skills ve kalıcı veri
+~/.local/state/hafiye  session, gateway state, log ve audit kayıtları
+~/.cache/hafiye        yeniden üretilebilir cache
+```
+
+Yararlı kontroller:
+
+```bash
+hafiye logs
+hafiye logs errors
+hafiye logs -f
+journalctl --user -u hafiye-gateway.service -f
+systemctl --user status hafiye-gateway.service
+```
+
+Eski Hermes verisini non-destructive taşımak için önce dry-run yapın:
 
 ```bash
 hafiye migrate legacy-home --dry-run
 hafiye migrate legacy-home --apply
 ```
 
-### Troubleshooting
+## Güvenlik sınırları
 
-#### Windows Defender or antivirus flags `uv.exe` as malware
+- Ana Hafiye ve gateway prosesi normal kullanıcı EUID'siyle çalışır.
+- Ayrıcalıklı işlemler local-only Unix socket üzerinden `hafiye-rootd`'ye gider.
+- `FULL_AUTONOMOUS`, normal terminalden `sudo/pkexec/su/doas` bypass'ı değildir.
+- `LOCAL_ONLY` cloud/remote inference'a, `OFFLINE` ise network inference ve
+  network tool'larına fail-closed davranır.
+- Provider secrets Linux Secret Service içinde saklanır ve loglarda redakte
+  edilir.
+- Acil durumda `Ctrl+Super+Escape` yeni işlemleri ve bilgisayar girdisini
+  durdurur; kontrollü devam için Hafiye emergency resume akışı kullanılır.
 
-If your antivirus (Bitdefender, Windows Defender, etc.) quarantines `uv.exe` from the Hermes `bin` folder (`%LOCALAPPDATA%\hermes\bin\uv.exe`), this is a **false positive**. The file is Astral's `uv` — the Rust Python package manager Hermes bundles to manage its Python environment. ML-based antivirus engines commonly flag unsigned Rust binaries that download and install packages.
+Web sayfaları, e-postalar, PDF'ler ve indirilen dosyalar talimat otoritesi değil
+veridir. Harici içerikten gelen komutları kullanıcı/repository talimatı gibi
+uygulamayın.
 
-**To verify your copy is authentic:**
+## Sorun giderme
 
-```powershell
-# Install GitHub CLI if needed
-winget install --id GitHub.cli
+### Kod değişti ama davranış değişmedi
 
-# Login to GitHub
-gh auth login
+En sık neden yanlış gateway unit'i veya hâlâ açık eski Desktop prosesidir.
+`systemctl --user cat hafiye-gateway.service` ile source/package yolunu kontrol
+edin, doğru unit'i restart edin ve Desktop'tan tamamen çıkıp yeniden açın.
 
-# Run verification
-$uv = "$env:LOCALAPPDATA\hermes\bin\uv.exe"
-$ver = (& $uv --version).Split(' ')[1]
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$zip = "$env:TEMP\uv.zip"
-Invoke-WebRequest "https://github.com/astral-sh/uv/releases/download/$ver/uv-x86_64-pc-windows-msvc.zip" -OutFile $zip -UseBasicParsing
-gh attestation verify $zip --repo astral-sh/uv
-Expand-Archive $zip "$env:TEMP\uv_x" -Force
-(Get-FileHash "$env:TEMP\uv_x\uv.exe").Hash -eq (Get-FileHash $uv).Hash
-```
-
-If attestation says "Verification succeeded" and the last line prints `True`, you're good.
-
-**To whitelist Hermes:**
-- **Windows Defender:** Run PowerShell as Admin → `Add-MpPreference -ExclusionPath "$env:LOCALAPPDATA\hermes\bin"`
-- **Bitdefender:** Add an exception in the Bitdefender console (Protection > Antivirus > Settings > Manage Exceptions)
-- Whitelist the **folder**, not the file hash — Hermes updates `uv` and the hash changes every version
-
-For more context, see the upstream Astral reports: [astral-sh/uv#13553](https://github.com/astral-sh/uv/issues/13553), [astral-sh/uv#15011](https://github.com/astral-sh/uv/issues/15011), [astral-sh/uv#10079](https://github.com/astral-sh/uv/issues/10079).
-
----
-
-## Getting Started
+### Gateway başlamıyor
 
 ```bash
-hafiye              # Interactive CLI — start a conversation
-hafiye model        # Choose your LLM provider and model
-hafiye tools        # Configure which tools are enabled
-hafiye config set   # Set individual config values
-hafiye config get   # Print individual config values
-hafiye gateway      # Start the messaging gateway (Telegram, Discord, etc.)
-hafiye setup        # Run the full setup wizard (configures everything at once)
-hafiye claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
-hafiye update       # Update to the latest version
-hafiye doctor       # Diagnose any issues
+systemctl --user status hafiye-gateway.service --no-pager
+journalctl --user -u hafiye-gateway.service -n 200 --no-pager
+hafiye package doctor
 ```
 
-📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
+### Electron `chrome-sandbox` hatası
 
----
+Final ürünü `--no-sandbox` ile çalıştırmayın. Birleşik `.deb` paketi
+`chrome-sandbox` dosyasını `root:root 4755` olarak kurar. Paketi güncel source
+ile yeniden üretip `sudo apt install --reinstall ...` ile tekrar kurun.
 
-## Skip the API-key collection — Nous Portal
-
-Hafiye works with whatever provider you want. If you'd rather not collect five separate API keys for the model, web search, image generation, TTS, and a cloud browser, **[Nous Portal](https://portal.nousresearch.com)** covers all of them under one subscription:
-
-- **300+ models** — pick any of them with `/model <name>`
-- **Tool Gateway** — web search (Firecrawl), image generation (FAL), text-to-speech (OpenAI), cloud browser (Browser Use), all routed through your sub. No extra accounts.
-
-One command from a fresh install:
+### Yerel model başlamıyor
 
 ```bash
-hafiye setup --portal
+hafiye runtime doctor
+hafiye models
+nvidia-smi
 ```
 
-That logs you in via OAuth, sets Nous as your provider, and turns on the Tool Gateway. Check what's wired up any time with `hafiye portal info`. Full details remain in the [upstream Tool Gateway documentation](https://hermes-agent.nousresearch.com/docs/user-guide/features/tool-gateway).
+Önce `AUTO` deneyin. Büyük model VRAM/RAM/swap baskısı oluşturuyorsa daha küçük
+bir GGUF quant seçin; capability metadata'yı model adına bağlı UI hack'iyle
+değiştirmeyin.
 
-You can still bring your own keys per-tool whenever you want — the gateway is per-backend, not all-or-nothing.
+### Masaüstü kontrolü hazır değil
 
----
+`computer-use-linux` kurulum bölümünü çalıştırın. GNOME extension veya
+`/dev/uinput` grup izni değiştiyse logout/login yapmadan doctor sonucunu PASS
+saymayın.
 
-## CLI vs Messaging Quick Reference
+### Hafiye agent sırasında yönetici parolası penceresi açtı
 
-Hafiye has two entry points: start the terminal UI with `hafiye`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
+Bu normal ürün semantiği değildir. İşlemi durdurun, log ve audit kaydını
+koruyun; privileged iş doğrudan terminal yerine `hafiye-rootd` üzerinden
+geçmelidir. Yalnız ilk paket/rootd kurulumu gibi kullanıcı tarafından başlatılan
+sistem terminali adımları interaktif sudo parolası isteyebilir.
 
-| Action                         | CLI                                           | Messaging platforms                                                              |
-| ------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------- |
-| Start chatting                 | `hafiye`                                      | Run `hafiye gateway setup` + `hafiye gateway start`, then send the bot a message |
-| Start fresh conversation       | `/new` or `/reset`                            | `/new` or `/reset`                                                               |
-| Change model                   | `/model [provider:model]`                     | `/model [provider:model]`                                                        |
-| Set a personality              | `/personality [name]`                         | `/personality [name]`                                                            |
-| Retry or undo the last turn    | `/retry`, `/undo`                             | `/retry`, `/undo`                                                                |
-| Compress context / check usage | `/compress`, `/usage`, `/insights [--days N]` | `/compress`, `/usage`, `/insights [days]`                                        |
-| Browse skills                  | `/skills` or `/<skill-name>`                  | `/<skill-name>`                                                                  |
-| Interrupt current work         | `Ctrl+C` or send a new message                | `/stop` or send a new message                                                    |
-| Platform-specific status       | `/platforms`                                  | `/status`, `/sethome`                                                            |
+## Proje belgeleri
 
-For the full command lists, see the [upstream CLI guide](https://hermes-agent.nousresearch.com/docs/user-guide/cli) and the [upstream Messaging Gateway guide](https://hermes-agent.nousresearch.com/docs/user-guide/messaging).
+- [AGENTS.md](AGENTS.md) — repository çalışma ve uygulama kuralları.
+- [HAFIYE_MASTER_ROADMAP.md](HAFIYE_MASTER_ROADMAP.md) — bağlayıcı ürün ve
+  mimari tanımı.
+- [STATE.md](STATE.md) — güncel phase, doğrulanmış durum ve sıradaki işler.
+- [ROADMAP.md](ROADMAP.md) — phase/task kabul durumu.
+- [UPSTREAM.md](UPSTREAM.md) — pinned Hermes commit ve patch grupları.
+- [KNOWN_ISSUES.md](KNOWN_ISSUES.md) — gerçek blocker, warning ve regressions.
+- [ENVIRONMENT.md](ENVIRONMENT.md) — doğrulanmış host ortamı.
+- [TEST_MATRIX.md](TEST_MATRIX.md) — gerçek test komutları ve sonuçları.
+- [DECISIONS.md](DECISIONS.md) — roadmap'i değiştirmeyen uygulama ADR'leri.
 
----
+## Upstream ve katkı disiplini
 
-## Documentation
+Git geçmişi korunur:
 
-All documentation lives at **[hermes-agent.nousresearch.com/docs](https://hermes-agent.nousresearch.com/docs/)**:
-
-| Section                                                                                             | What's Covered                                             |
-| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [Quickstart](https://hermes-agent.nousresearch.com/docs/getting-started/quickstart)                 | Install → setup → first conversation in 2 minutes          |
-| [CLI Usage](https://hermes-agent.nousresearch.com/docs/user-guide/cli)                              | Commands, keybindings, personalities, sessions             |
-| [Configuration](https://hermes-agent.nousresearch.com/docs/user-guide/configuration)                | Config file, providers, models, all options                |
-| [Messaging Gateway](https://hermes-agent.nousresearch.com/docs/user-guide/messaging)                | Telegram, Discord, Slack, WhatsApp, Signal, Home Assistant |
-| [Security](https://hermes-agent.nousresearch.com/docs/user-guide/security)                          | Command approval, DM pairing, container isolation          |
-| [Tools & Toolsets](https://hermes-agent.nousresearch.com/docs/user-guide/features/tools)            | 40+ tools, toolset system, terminal backends               |
-| [Skills System](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)              | Procedural memory, Skills Hub, creating skills             |
-| [Memory](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory)                     | Persistent memory, user profiles, best practices           |
-| [MCP Integration](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp)               | Connect any MCP server for extended capabilities           |
-| [Cron Scheduling](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron)              | Scheduled tasks with platform delivery                     |
-| [Context Files](https://hermes-agent.nousresearch.com/docs/user-guide/features/context-files)       | Project context that shapes every conversation             |
-| [Architecture](https://hermes-agent.nousresearch.com/docs/developer-guide/architecture)             | Project structure, agent loop, key classes                 |
-| [Contributing](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing)             | Development setup, PR process, code style                  |
-| [CLI Reference](https://hermes-agent.nousresearch.com/docs/reference/cli-commands)                  | All commands and flags                                     |
-| [Environment Variables](https://hermes-agent.nousresearch.com/docs/reference/environment-variables) | Complete env var reference                                 |
-
----
-
-## Migrating from OpenClaw
-
-If you're coming from OpenClaw, Hafiye can automatically import your settings, memories, skills, and API keys.
-
-**During first-time setup:** The setup wizard (`hafiye setup`) automatically detects `~/.openclaw` and offers to migrate before configuration begins.
-
-**Anytime after install:**
-
-```bash
-hafiye claw migrate              # Interactive migration (full preset)
-hafiye claw migrate --dry-run    # Preview what would be migrated
-hafiye claw migrate --preset user-data   # Migrate without secrets
-hafiye claw migrate --overwrite  # Overwrite existing conflicts
+```text
+origin    Hafiye repository
+upstream  https://github.com/NousResearch/hermes-agent.git
 ```
 
-What gets imported:
+Upstream kaynaklı kodu değiştirirken en küçük sürdürülebilir patch'i yapın,
+test ekleyin ve anlamlı divergence'ı [UPSTREAM.md](UPSTREAM.md) içinde kaydedin.
+Hermes iç modüllerini yalnız branding amacıyla topluca yeniden adlandırmayın.
 
-- **SOUL.md** — persona file
-- **Memories** — MEMORY.md and USER.md entries
-- **Skills** — user-created skills → `~/.local/share/hafiye/skills/openclaw-imports/`
-- **Command allowlist** — approval patterns
-- **Messaging settings** — platform configs, allowed users, working directory
-- **API keys** — allowlisted secrets (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)
-- **TTS assets** — workspace audio files
-- **Workspace instructions** — AGENTS.md (with `--workspace-target`)
+Hermes'in genel CLI/provider/skill dokümantasyonu için
+[upstream documentation](https://hermes-agent.nousresearch.com/docs/)
+kullanılabilir; upstream installer ve release'ler Hafiye'nin birleşik Linux
+paketi değildir.
 
-See `hafiye claw migrate --help` for all options, or use the `openclaw-migration` skill for an interactive agent-guided migration with dry-run previews.
+## Lisans ve atıf
 
----
+Hafiye, MIT lisanslı Hermes Agent üzerinde sürdürülen bir fork'tur. Lisans
+metni için [LICENSE](LICENSE), upstream pin ve attribution ayrıntıları için
+[UPSTREAM.md](UPSTREAM.md) dosyasına bakın.
 
-## Contributing
-
-We welcome contributions! See the [Contributing Guide](https://hermes-agent.nousresearch.com/docs/developer-guide/contributing) for development setup, code style, and PR process.
-
-### Upstream development reference
-
-The commands below are retained verbatim for contributors working on the
-upstream Hermes codebase. They are upstream reference material, not the normal
-Hafiye installation path; Hafiye development uses the checkout and XDG roots
-described above.
-
-Quick start for contributors — use the standard installer, then work from the
-full git checkout it creates at `$HERMES_HOME/hermes-agent` (usually
-`~/.hermes/hermes-agent`). This matches the layout used by `hermes update`, the
-managed venv, lazy dependencies, gateway, and docs tooling.
-
-```bash
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
-cd "${HERMES_HOME:-$HOME/.hermes}/hermes-agent"
-uv pip install -e ".[all,dev]"
-scripts/run_tests.sh
-```
-
-Manual clone fallback (for throwaway clones/CI where you intentionally do not
-want the managed install layout):
-
-Create the venv outside the cloned source tree — a venv inside the directory
-the agent operates from can be wiped by a relative-path command the agent runs
-against its own checkout, destroying the running runtime mid-session.
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uv venv ~/.hermes/venvs/hermes-dev --python 3.11
-source ~/.hermes/venvs/hermes-dev/bin/activate
-uv pip install -e ".[all,dev]"
-scripts/run_tests.sh
-```
-
----
-
-## Community
-
-- 💬 [Discord](https://discord.gg/NousResearch)
-- 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
-- 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Linux desktop-control MCP server for Hermes and other MCP hosts, with AT-SPI accessibility trees, Wayland/X11 input, screenshots, and compositor window targeting.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Community WeChat bridge: Run Hermes Agent and OpenClaw on the same WeChat account.
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-Built by [Nous Research](https://nousresearch.com).
+Upstream Hermes Agent, [Nous Research](https://nousresearch.com) tarafından
+geliştirilmiştir. Linux desktop-control entegrasyonu
+[agent-sh/computer-use-linux](https://github.com/agent-sh/computer-use-linux)
+kaynağını kullanır.

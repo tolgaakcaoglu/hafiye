@@ -703,6 +703,15 @@ E2E Suite — is now the first incomplete phase.
       returned `P23_GEMINI_COMPOSER_OK`, and independent content verification
       passed without a privileged command or password dialog. This passes
       P23.6; the exact Firefox P23.2 replay remains open separately.
+- [x] Replace the inherited root README with Hafiye-specific first-install,
+      source-update, package-reinstall, GUI model, security, diagnostics, and
+      contribution guidance. The documented install dry-run exposed and fixed
+      the current Ubuntu Python 3.14 Debian bootstrap conflict in source/test
+      commit `fd435cc85`; targeted packaging/metadata tests returned 13 passed,
+      the rebuilt real artifact resolved under `apt --simulate`, and extracted
+      package doctor returned no blockers. The exact upstream comparison
+      remained 3 failed/2 passed with only historical IDs 2, 3, and 5. This
+      maintenance does not complete any open P23 final-machine row.
 - [ ] Execute and record the remaining real-machine items 23.3, 23.5,
       23.14, and the long-running managed desktop portion of 23.15 from the
       master roadmap. P23.4 was explicitly skipped by the user and is not

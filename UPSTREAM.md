@@ -11,10 +11,11 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (Desktop Models exposes the managed local GGUF
-  download flow; preceding Electron packaging, computer-use MCP startup-gate,
-  and KI-043 source/test commits remain below):
-  213247d70804ffe9350ad5d0874f79a494fd7dc0
+- Current Hafiye source HEAD (the Debian package can bootstrap a managed
+  Python 3.11 runtime on distro Python 3.14; the preceding Desktop local-GGUF
+  download, Electron packaging, computer-use MCP startup-gate, and KI-043
+  source/test commits remain below):
+  fd435cc85fe018ca238256fb19547db2e7064565
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -541,6 +542,13 @@ P0 computer-use acceptance requires:
   `ok=true` with `blockers=[]`, and rootless fakeroot dpkg unpack/configure
   passed. The exact five-ID comparison remained historical IDs 2, 3, and 5
   only. No Hermes upstream commit changed and no upstream history was rewritten.
+- Current-host package-bootstrap hardening commit
+  `fd435cc85fe018ca238256fb19547db2e7064565` removes only the Debian system
+  Python `<3.14` bootstrap conflict and provisions managed Python 3.11 through
+  the existing package installer. The rebuilt artifact resolves on the real
+  Python 3.14 apt database, extracted package doctor is green, and the exact
+  five-ID comparison remains historical IDs 2, 3, and 5 only. This changes no
+  Hermes upstream source or architecture.
 
 ## P21 First-run Onboarding patch group
 

@@ -9,13 +9,12 @@ Last updated: 2026-08-26
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 213247d70804ffe9350ad5d0874f79a494fd7dc0
-  (Desktop Models now exposes the managed local GGUF download flow; the
-  preceding Electron Linux Debian packaging commit preserves the
-  `chrome-sandbox` setuid mode, and the preceding managed computer-use MCP
-  startup-gate and KI-043 boundary/model-capability commits remain
-  dc962963e6040f792e3f74fcd459d41da425d8d and
-  f9ebf814b53b0a3c71f932713db0e217af17cb1c.)
+- Current Hafiye source HEAD: fd435cc85fe018ca238256fb19547db2e7064565
+  (The Debian package now bootstraps its managed Python 3.11 runtime when the
+  distro system Python is 3.14. The preceding Desktop local-GGUF download
+  source commit remains 213247d70804ffe9350ad5d0874f79a494fd7dc0; the
+  Electron sandbox, managed computer-use MCP startup-gate, and KI-043 source
+  commits remain recorded below.)
 - Documentation closure HEAD: the documentation-only commit created after this
   source commit; verify the exact repository HEAD with `git rev-parse HEAD`.
 
@@ -2031,6 +2030,50 @@ checks without manual Desktop startup.
 - No live external model download was performed during this source change;
   the backend download lifecycle was already covered by the P4 runtime tests,
   while this change verifies the real Desktop control and its API payload.
+
+### README and Python 3.14 package bootstrap — 2026-08-26
+
+- The root README is now Hafiye-specific. It documents the real first install,
+  source-development restart path, production `.deb` rebuild/reinstall path,
+  GUI GGUF management, provider/privacy controls, security boundaries, XDG
+  roots, testing discipline, troubleshooting, project documents, and upstream
+  attribution. The inherited Windows-first Hermes install and obsolete
+  `avifenesh/computer-use-linux` reference were removed.
+- While dry-running the documented package install, the real host reported
+  `/usr/bin/python3` as Python `3.14.4`. The previous Debian metadata required
+  `python3 (<< 3.14)`, so `apt install --simulate` correctly rejected the
+  package. This was a genuine current-host Hafiye packaging defect, not a
+  documentation-only warning.
+- Source/test commit `fd435cc85fe018ca238256fb19547db2e7064565`
+  removes the Debian bootstrap interpreter upper bound while preserving the
+  Hafiye runtime requirement `>=3.11,<3.14`. `hafiye package install` now uses
+  a supported existing managed interpreter or provisions managed Python 3.11
+  through `uv` when the system interpreter is 3.14.
+- Verification completed:
+  - `uv sync --locked --python 3.11 --extra all --extra dev` — completed from
+    the committed lockfile.
+  - `.venv/bin/python -m pytest -q tests/packaging/test_hafiye_deb.py
+    tests/test_packaging_metadata.py` — `13 passed in 48.19s`.
+  - `.venv/bin/python -m ruff check packaging/debian/dependency_doctor.py
+    tests/packaging/test_hafiye_deb.py` — passed.
+  - Python bytecode compilation and `git diff --check` — passed.
+  - Real combined artifact rebuilt at `dist/hafiye_0.20.5_amd64.deb`; manifest
+    source commit is `fd435cc85fe018ca238256fb19547db2e7064565`, with pinned
+    upstream and baseline merge identities unchanged.
+  - `apt install --reinstall --simulate` against that real artifact on the
+    Python 3.14 host — package selected/configured successfully with no
+    dependency conflict.
+  - Extracted real-artifact `hafiye package doctor --json` under the managed
+    Python 3.11 environment — `ok=true`, `blockers=[]`; optional missing
+    `cargo` remained a warning.
+  - Exact historical upstream five-ID comparison after source commit
+    `fd435cc85` — `3 failed, 2 passed`; only accepted IDs 2, 3, and 5 failed.
+    No new or different regression was found.
+  - README bash-fence syntax, local links, current Ubuntu package names, CLI
+    parser/help surfaces, and `git diff --check` were checked.
+- No live `/usr` package installation, sudo prompt, service mutation, route
+  change, model change, or P23 real-machine acceptance claim was made. KI-051
+  records the resolved package bootstrap defect; P23 remains in progress.
 
 ### P23 final acceptance ledger
 
