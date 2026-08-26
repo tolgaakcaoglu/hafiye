@@ -9,13 +9,16 @@ Last updated: 2026-08-26
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 3c2ea9a7a9c119475aa0cee471b6cf982677d8a6
-  (The Desktop now provides a persisted `Türkçe` (`tr`) interface locale. The
-  preceding Electron dependency update is `312831690f5cc46767c58882fed5d98f611220d0`,
+- Current Hafiye source HEAD: 684227f6ebbfeed2bc9ea2e08e6723e54edef073
+  (The Desktop Turkish-locale implementation is
+  `3c2ea9a7a9c119475aa0cee471b6cf982677d8a6`; the current source HEAD also
+  aligns the package/runtime Electron pin at `40.10.6`. The preceding Electron
+  dependency update is `312831690f5cc46767c58882fed5d98f611220d0`,
   Python 3.14 package bootstrap source is `fd435cc85fe018ca238256fb19547db2e7064565`,
   and earlier source identities remain recorded below.)
-- Documentation closure HEAD: the documentation-only commit created after this
-  source commit; verify the exact repository HEAD with `git rev-parse HEAD`.
+- Previous documentation closure HEAD:
+  `c0e7c0823d26c3a1e5d08b7ecf520922033fb759`; the live-install documentation
+  update follows source HEAD `684227f6ebbfeed2bc9ea2e08e6723e54edef073`.
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -2090,7 +2093,17 @@ checks without manual Desktop startup.
   - Full Desktop UI suite: `584 files, 5,558 tests passed`.
   - Desktop renderer/Electron/E2E TypeScript typecheck: passed.
   - Targeted ESLint for all changed locale/test files: passed.
-  - Clean production build: passed with source stamp `3c2ea9a7a9c1` on `main`.
+  - Final production pack: passed with source stamp `684227f6ebbf` on `main`;
+    dependency, builder pin, installed module, and packaged runtime all report
+    Electron `40.10.6`.
+  - Combined package `/home/tolga/projects/hafiye/dist/hafiye_0.20.5_amd64.deb`
+    was built from source `684227f6ebbfeed2bc9ea2e08e6723e54edef073`,
+    installed through an interactive graphical Ptyxis/sudo prompt, and verified
+    as installed package `0.20.5-1`.
+  - The installed `app.asar` contains the `Türkçe` option, Turkish catalog, and
+    `tr` aliases. The packaged Desktop was restarted and logged install stamp
+    `684227f6ebbf (main)`; gateway health returned HTTP 200 with `ok=true` and
+    the user service remained enabled/active with `NRestarts=0`.
   - `git diff --check`: passed before documentation update.
 - This source maintenance does not alter or complete any deferred P23
   real-machine acceptance row.

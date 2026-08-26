@@ -715,9 +715,12 @@ E2E Suite — is now the first incomplete phase.
 - [x] Add the persisted Turkish Desktop locale through the existing i18n
       boundary. `Türkçe` is selectable under Appearance, core Desktop surfaces
       are translated, locale persistence/runtime tests pass, the full UI suite
-      is 5,558/5,558 green, and the clean production build is stamped from
-      source commit `3c2ea9a7a9c1`. Advanced English fallback remains the
-      non-blocking KI-052 coverage warning and does not complete P23.
+      is 5,558/5,558 green, and the final package is stamped from source commit
+      `684227f6ebbf` with Electron `40.10.6` aligned across dependency, builder,
+      installed module, and packaged runtime. The `.deb` was installed through
+      the graphical sudo path and the new packaged Desktop/gateway were
+      verified live. Advanced English fallback remains the non-blocking KI-052
+      coverage warning and does not complete P23.
 - [ ] Execute and record the remaining real-machine items 23.3, 23.5,
       23.14, and the long-running managed desktop portion of 23.15 from the
       master roadmap. P23.4 was explicitly skipped by the user and is not

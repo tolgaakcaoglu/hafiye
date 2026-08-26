@@ -859,6 +859,10 @@ silently treated as passing.
   surfaces. The existing `defineLocale` contract intentionally falls back to
   English for untranslated keys, so less-used advanced upstream screens may
   still contain English copy.
+- The final package source is `684227f6ebbfeed2bc9ea2e08e6723e54edef073`;
+  Electron is consistently pinned to `40.10.6`, and the rebuilt `.deb` was
+  installed and restarted successfully. This does not change the remaining
+  translation-coverage warning.
 - Locale aliases, persistence, runtime resolution, full Desktop UI tests,
   typecheck, changed-file lint, and a clean production build all pass. This is
   a translation-completeness warning, not a broken language selector or a P23
