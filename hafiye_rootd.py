@@ -906,12 +906,34 @@ class RootBrokerClient:
             raise RootBrokerError("broker response id did not match request", code="protocol_error")
         if not response.get("ok"):
             error = response.get("error")
+            try:
+                from hafiye_audit import record_audit
+
+                record_audit(
+                    "root_rpc",
+                    operation=operation,
+                    status="rejected",
+                    error_code=error.get("code") if isinstance(error, dict) else "broker_error",
+                )
+            except Exception:
+                pass
             if isinstance(error, dict):
                 raise RootBrokerError(str(error.get("message", "broker request failed")), code=str(error.get("code", "broker_error")))
             raise RootBrokerError("broker request failed", code="broker_error")
         result = response.get("result")
         if not isinstance(result, dict):
             raise RootBrokerError("broker result must be an object", code="protocol_error")
+        try:
+            from hafiye_audit import record_audit
+
+            record_audit(
+                "root_rpc",
+                operation=operation,
+                status="ok",
+                command=(args or {}).get("command") if operation == "root.exec" else None,
+            )
+        except Exception:
+            pass
         return result
 
     def exec(self, command: str, **kwargs: Any) -> dict[str, Any]:

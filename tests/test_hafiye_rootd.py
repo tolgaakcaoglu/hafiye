@@ -156,6 +156,24 @@ def test_emergency_stop_blocks_new_root_operations(tmp_path):
         _stop_server(server, thread)
 
 
+def test_root_client_records_canonical_audit_event(tmp_path, monkeypatch):
+    server, thread, socket_path, _ = _start_server(tmp_path)
+    product_audit = tmp_path / "product-state"
+    monkeypatch.setattr("hafiye_audit.get_hafiye_state_home", lambda: product_audit)
+    try:
+        result = RootBrokerClient(socket_path, timeout=2).exec("id -u")
+        assert result["returncode"] == 0
+        entries = [
+            json.loads(line)
+            for line in (product_audit / "logs/audit.log").read_text(encoding="utf-8").splitlines()
+        ]
+        assert entries[-1]["event"] == "root_rpc"
+        assert entries[-1]["operation"] == "root.exec"
+        assert entries[-1]["status"] == "ok"
+    finally:
+        _stop_server(server, thread)
+
+
 def test_systemd_unit_is_root_only_and_socket_based():
     unit = generate_systemd_unit(
         python_executable="/opt/hafiye/.venv/bin/python",

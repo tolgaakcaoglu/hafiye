@@ -226,6 +226,15 @@ def cmd_hafiye_routing(args: argparse.Namespace) -> int:
     if args.locality_policy is not None:
         slot["locality_policy"] = args.locality_policy
     save_config(config, merge_existing=True)
+    from hafiye_audit import record_audit
+
+    record_audit(
+        "provider_model_switch",
+        route_slot=args.slot,
+        provider=slot.get("provider", ""),
+        model=slot.get("model", ""),
+        locality_policy=slot.get("locality_policy", "NORMAL"),
+    )
     _print_result(_route_snapshot(config), as_json=args.json)
     return 0
 
@@ -242,6 +251,9 @@ def cmd_hafiye_privacy(args: argparse.Namespace) -> int:
         section = _hafiye_section(config)
         section["privacy_mode"] = mode
         save_config(config, merge_existing=True)
+        from hafiye_audit import record_audit
+
+        record_audit("privacy_mode_change", privacy_mode=mode)
     else:
         mode = normalize_privacy_mode(_route_snapshot(config)["privacy_mode"])
     _print_result({"privacy_mode": mode}, as_json=args.json)
@@ -278,6 +290,9 @@ def cmd_hafiye_task(args: argparse.Namespace) -> int:
         except (KeyError, ValueError) as exc:
             print(f"hafiye task: {exc}", file=sys.stderr)
             return 1
+        from hafiye_audit import record_audit
+
+        record_audit("task_cancellation", task_id=args.task_id, state=task.get("state"))
     _print_result(task, as_json=args.json)
     return 0
 

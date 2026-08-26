@@ -3817,6 +3817,19 @@ def terminal_tool(
             if sudo_cache_cleared:
                 result_dict["sudo_cache_cleared"] = True
 
+            try:
+                from hafiye_audit import record_audit
+
+                record_audit(
+                    "shell_command",
+                    command=command,
+                    cwd=command_cwd,
+                    exit_code=returncode,
+                    task_id=task_id or effective_task_id,
+                )
+            except Exception:
+                logger.debug("Hafiye shell audit recording failed", exc_info=True)
+
             return json.dumps(result_dict, ensure_ascii=False)
 
     except EnvironmentConnectionError as e:
