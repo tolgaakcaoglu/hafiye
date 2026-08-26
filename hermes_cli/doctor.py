@@ -36,6 +36,7 @@ from hermes_cli.models import _HERMES_USER_AGENT
 from hermes_cli.vercel_auth import describe_vercel_auth
 from hermes_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
+from hermes_cli.product_identity import command_name, externalize, product_name
 
 
 _PROVIDER_ENV_HINTS = (
@@ -392,16 +393,16 @@ def _has_healthy_oauth_fallback_for_apikey_provider(provider_label: str) -> bool
 
 
 def check_ok(text: str, detail: str = ""):
-    print(f"  {color('✓', Colors.GREEN)} {text}" + (f" {color(detail, Colors.DIM)}" if detail else ""))
+    print(f"  {color('✓', Colors.GREEN)} {externalize(text)}" + (f" {color(externalize(detail), Colors.DIM)}" if detail else ""))
 
 def check_warn(text: str, detail: str = ""):
-    print(f"  {color('⚠', Colors.YELLOW)} {text}" + (f" {color(detail, Colors.DIM)}" if detail else ""))
+    print(f"  {color('⚠', Colors.YELLOW)} {externalize(text)}" + (f" {color(externalize(detail), Colors.DIM)}" if detail else ""))
 
 def check_fail(text: str, detail: str = ""):
-    print(f"  {color('✗', Colors.RED)} {text}" + (f" {color(detail, Colors.DIM)}" if detail else ""))
+    print(f"  {color('✗', Colors.RED)} {externalize(text)}" + (f" {color(externalize(detail), Colors.DIM)}" if detail else ""))
 
 def check_info(text: str):
-    print(f"    {color('→', Colors.CYAN)} {text}")
+    print(f"    {color('→', Colors.CYAN)} {externalize(text)}")
 
 
 # ── state.db health/stats thresholds (advisory only — module constants,
@@ -1077,7 +1078,8 @@ def run_doctor(args):
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│                 🩺 Hermes Doctor                        │", Colors.CYAN))
+    title = f"🩺 {product_name()} Doctor"
+    print(color(f"│{title:^57}│", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
 
     _section("Security Advisories")
@@ -1240,8 +1242,10 @@ def run_doctor(args):
     _section("Configuration Files")
     # Managed scope (administrator-pinned config/env), when present.
     managed_scope_check()
-    # Check ~/.hermes/.env (primary location for user config)
-    env_path = HERMES_HOME / '.env'
+    # Hafiye provider credentials normally live in Secret Service; .env is an
+    # optional compatibility store. Hermes/profile invocations retain the
+    # upstream single-root behavior.
+    env_path = get_env_path() if product_name() == "Hafiye" else HERMES_HOME / '.env'
     if env_path.exists():
         check_ok(f"{_DHH}/.env file exists")
         
@@ -1263,7 +1267,11 @@ def run_doctor(args):
         if fallback_env.exists():
             check_ok(".env file exists (in project directory)")
         else:
-            check_fail(f"{_DHH}/.env file missing")
+            if product_name() == "Hafiye":
+                check_ok("Linux Secret Service is the normal provider credential store")
+                check_info(f"Optional compatibility .env not present: {env_path}")
+            else:
+                check_fail(f"{_DHH}/.env file missing")
             if should_fix:
                 env_path.parent.mkdir(parents=True, exist_ok=True)
                 env_path.touch()
@@ -1278,13 +1286,15 @@ def run_doctor(args):
                 check_info("Run 'hermes setup' to configure API keys")
                 fixed_count += 1
             else:
-                check_info("Run 'hermes setup' to create one")
-                issues.append("Run 'hermes setup' to create .env")
+                if product_name() != "Hafiye":
+                    check_info("Run 'hermes setup' to create one")
+                    issues.append("Run 'hermes setup' to create .env")
     
     # Check ~/.hermes/config.yaml (primary) or project cli-config.yaml (fallback)
-    config_path = HERMES_HOME / 'config.yaml'
+    from hermes_constants import get_config_path as _active_config_path
+    config_path = _active_config_path() if product_name() == "Hafiye" else HERMES_HOME / 'config.yaml'
     if config_path.exists():
-        check_ok(f"{_DHH}/config.yaml exists")
+        check_ok(f"{config_path} exists")
 
         # Validate model.provider and model.default values
         try:
@@ -1984,10 +1994,11 @@ def run_doctor(args):
 
     if sys.platform != "win32":
         _section("Command Installation")
+        _entry_name = command_name()
         # Determine the venv entry point location
         _venv_bin = None
         for _venv_name in ("venv", ".venv"):
-            _candidate = PROJECT_ROOT / _venv_name / "bin" / "hermes"
+            _candidate = PROJECT_ROOT / _venv_name / "bin" / _entry_name
             if _candidate.exists():
                 _venv_bin = _candidate
                 break
@@ -2001,12 +2012,12 @@ def run_doctor(args):
         else:
             _cmd_link_dir = Path.home() / ".local" / "bin"
             _cmd_link_display = "~/.local/bin"
-        _cmd_link = _cmd_link_dir / "hermes"
+        _cmd_link = _cmd_link_dir / _entry_name
 
         if _venv_bin is None:
             check_warn(
                 "Venv entry point not found",
-                "(hermes not in venv/bin/ or .venv/bin/ — reinstall with pip install -e '.[all]')"
+                f"({_entry_name} not in venv/bin/ or .venv/bin/ — reinstall with pip install -e '.[all]')"
             )
             manual_issues.append(
                 f"Reinstall entry point: cd {PROJECT_ROOT} && source venv/bin/activate && pip install -e '.[all]'"
@@ -2019,31 +2030,31 @@ def run_doctor(args):
                 _target = _cmd_link.resolve()
                 _expected = _venv_bin.resolve()
                 if _target == _expected:
-                    check_ok(f"{_cmd_link_display}/hermes → correct target")
+                    check_ok(f"{_cmd_link_display}/{_entry_name} → correct target")
                 else:
                     check_warn(
-                        f"{_cmd_link_display}/hermes points to wrong target",
+                        f"{_cmd_link_display}/{_entry_name} points to wrong target",
                         f"(→ {_target}, expected → {_expected})"
                     )
                     if should_fix:
                         _cmd_link.unlink()
                         _cmd_link.symlink_to(_venv_bin)
-                        check_ok(f"Fixed symlink: {_cmd_link_display}/hermes → {_venv_bin}")
+                        check_ok(f"Fixed symlink: {_cmd_link_display}/{_entry_name} → {_venv_bin}")
                         fixed_count += 1
                     else:
-                        issues.append(f"Broken symlink at {_cmd_link_display}/hermes — run 'hermes doctor --fix'")
+                        issues.append(f"Broken symlink at {_cmd_link_display}/{_entry_name} — run '{_entry_name} doctor --fix'")
             elif _cmd_link.exists():
                 # It's a regular file, not a symlink — possibly a wrapper script
-                check_ok(f"{_cmd_link_display}/hermes exists (non-symlink)")
+                check_ok(f"{_cmd_link_display}/{_entry_name} exists (non-symlink)")
             else:
                 check_fail(
-                    f"{_cmd_link_display}/hermes not found",
-                    "(hermes command may not work outside the venv)"
+                    f"{_cmd_link_display}/{_entry_name} not found",
+                    f"({_entry_name} command may not work outside the venv)"
                 )
                 if should_fix:
                     _cmd_link_dir.mkdir(parents=True, exist_ok=True)
                     _cmd_link.symlink_to(_venv_bin)
-                    check_ok(f"Created symlink: {_cmd_link_display}/hermes → {_venv_bin}")
+                    check_ok(f"Created symlink: {_cmd_link_display}/{_entry_name} → {_venv_bin}")
                     fixed_count += 1
 
                     # Check if the link dir is on PATH
@@ -2055,7 +2066,7 @@ def run_doctor(args):
                         )
                         manual_issues.append(f"Add {_cmd_link_display} to your PATH")
                 else:
-                    issues.append(f"Missing {_cmd_link_display}/hermes symlink — run 'hermes doctor --fix'")
+                    issues.append(f"Missing {_cmd_link_display}/{_entry_name} symlink — run '{_entry_name} doctor --fix'")
 
     _section("External Tools")
     # Git
@@ -3133,17 +3144,17 @@ def run_doctor(args):
         print()
         if remaining_issues:
             for i, issue in enumerate(remaining_issues, 1):
-                print(f"  {i}. {issue}")
+                print(f"  {i}. {externalize(issue)}")
             print()
     elif remaining_issues:
         print(color("─" * 60, Colors.YELLOW))
         print(color(f"  Found {len(remaining_issues)} issue(s) to address:", Colors.YELLOW, Colors.BOLD))
         print()
         for i, issue in enumerate(remaining_issues, 1):
-            print(f"  {i}. {issue}")
+            print(f"  {i}. {externalize(issue)}")
         print()
         if not should_fix:
-            print(color("  Tip: run 'hermes doctor --fix' to auto-fix what's possible.", Colors.DIM))
+            print(color(f"  Tip: run '{command_name()} doctor --fix' to auto-fix what's possible.", Colors.DIM))
     else:
         print(color("─" * 60, Colors.GREEN))
         print(color("  All checks passed! 🎉", Colors.GREEN, Colors.BOLD))

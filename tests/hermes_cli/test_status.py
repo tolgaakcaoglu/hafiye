@@ -3,6 +3,24 @@ from types import SimpleNamespace
 from hermes_cli.status import show_status
 
 
+def test_hafiye_status_uses_persistent_user_service(monkeypatch, capsys, tmp_path):
+    from hermes_cli import status as status_mod
+
+    class Result:
+        returncode = 0
+        stdout = "ActiveState=active\nUnitFileState=enabled\nMainPID=4242\n"
+        stderr = ""
+
+    monkeypatch.setattr(status_mod.subprocess, "run", lambda *args, **kwargs: Result())
+    monkeypatch.setattr(status_mod.sys, "argv", ["hafiye", "status"])
+    monkeypatch.setattr(status_mod, "get_env_path", lambda: tmp_path / ".env")
+    monkeypatch.setattr(status_mod, "load_config", lambda: {})
+
+    status = status_mod._hafiye_gateway_service_status()
+
+    assert status == {"running": True, "enabled": True, "pid": 4242}
+
+
 def test_show_status_all_does_not_print_tavily_key_value(monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     sentinel = "NONSECRET_SENTINEL_VALUE_DO_NOT_PRINT_123456"

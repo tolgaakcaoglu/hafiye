@@ -57,15 +57,17 @@ class AuditEvent(enum.Enum):
 
 
 def _resolve_log_path() -> Path:
-    """``$HERMES_HOME/logs/dashboard-auth.log``.
+    """Canonical Hafiye ``audit.log`` in the XDG state root.
 
     Uses ``hermes_constants.get_hermes_home()`` (a leaf module — no import
     cycle) so profile overrides and the native-Windows ``%LOCALAPPDATA%``
     fallback are honored.
     """
-    from hermes_constants import get_hermes_home
+    from hermes_constants import get_hafiye_state_home, get_hermes_home
 
-    return get_hermes_home() / "logs" / "dashboard-auth.log"
+    if os.environ.get("HERMES_HOME", "").strip():
+        return get_hermes_home() / "logs" / "dashboard-auth.log"
+    return get_hafiye_state_home() / "logs" / "audit.log"
 
 
 def audit_log(event: AuditEvent, **fields: Any) -> None:

@@ -793,7 +793,9 @@ try:
 
     _setup_logging(
         mode=(
-            "gui"
+            "persistent"
+            if os.environ.get("HAFIYE_PERSISTENT_GATEWAY", "").strip() == "1"
+            else "gui"
             if next((arg for arg in sys.argv[1:] if not arg.startswith("-")), "")
             in {"dashboard", "serve", "gui", "desktop"}
             else "cli"

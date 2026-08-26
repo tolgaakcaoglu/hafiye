@@ -137,6 +137,9 @@ def _write_state(payload: dict[str, Any]) -> dict[str, Any]:
     return _normalise_state(payload)
 
 
+SYSTEM_PACKAGE_ROOT = Path("/usr/lib/hafiye")
+
+
 def is_packaged_install() -> bool:
     """Return whether the active backend belongs to the Debian package.
 
@@ -148,7 +151,7 @@ def is_packaged_install() -> bool:
     explicit_root = os.environ.get("HAFIYE_PACKAGE_ROOT", "").strip()
     if explicit_root:
         return (Path(explicit_root) / "backend").is_dir() or (Path(explicit_root) / "desktop").is_dir()
-    return Path("/usr/lib/hafiye/backend").is_dir() and Path("/usr/lib/hafiye/desktop").is_dir()
+    return (SYSTEM_PACKAGE_ROOT / "backend").is_dir() and (SYSTEM_PACKAGE_ROOT / "desktop").is_dir()
 
 
 def onboarding_state() -> dict[str, Any]:
@@ -158,7 +161,7 @@ def onboarding_state() -> dict[str, Any]:
         {
             "required": bool(forced or is_packaged_install()),
             "state_path": str(state_path()),
-            "package_root": os.environ.get("HAFIYE_PACKAGE_ROOT", "") or "/usr/lib/hafiye",
+            "package_root": os.environ.get("HAFIYE_PACKAGE_ROOT", "") or str(SYSTEM_PACKAGE_ROOT),
             "steps": list(ONBOARDING_STEPS),
         }
     )

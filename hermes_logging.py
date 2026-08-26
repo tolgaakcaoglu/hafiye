@@ -10,6 +10,8 @@ Log files produced:
     gateway.log — INFO+, gateway-only events (created when mode="gateway")
     gui.log     — INFO+, dashboard/websocket/TUI-gateway events
                   (created when mode="gui")
+    voice.log, models.log, computer.log, tasks.log — Hafiye component streams
+    audit.log   — structured security and product-state audit events
 
 All files use ``RotatingFileHandler`` with ``RedactingFormatter`` so
 secrets are never written to disk.
@@ -249,6 +251,11 @@ COMPONENT_PREFIXES = {
         "tui_gateway",
         "uvicorn",
     ),
+    "voice": ("hafiye_voice", "hafiye_wakeword", "tools.transcription", "tools.tts"),
+    "models": ("hermes_cli.local_runtime", "hafiye_policy", "hafiye_providers"),
+    "computer": ("hafiye_computer_use", "tools.computer_use", "tools.terminal_tool"),
+    "tasks": ("hafiye_task", "hafiye_openhands", "hermes_cli.hafiye_cli"),
+    "audit": ("hafiye.audit", "hermes_cli.dashboard_auth.audit"),
 }
 
 
@@ -341,7 +348,7 @@ def setup_logging(
     )
 
     # --- gateway.log (INFO+, gateway component only) ------------------------
-    if mode == "gateway":
+    if mode in {"gateway", "persistent"}:
         _add_rotating_handler(
             root,
             log_dir / "gateway.log",
@@ -353,7 +360,7 @@ def setup_logging(
         )
 
     # --- gui.log (INFO+, dashboard/tui-gateway components) -----------------
-    if mode == "gui":
+    if mode in {"gui", "persistent"}:
         _add_rotating_handler(
             root,
             log_dir / "gui.log",
@@ -363,6 +370,23 @@ def setup_logging(
             formatter=RedactingFormatter(_LOG_FORMAT),
             log_filter=_ComponentFilter(COMPONENT_PREFIXES["gui"]),
         )
+
+    # Hafiye's product contract keeps stable component files even before the
+    # first event for a subsystem. This makes diagnostics deterministic and
+    # avoids splitting operational state between the legacy data root and XDG
+    # state. The catch-all agent/errors files remain available as upstream
+    # compatibility surfaces.
+    if mode in {"gui", "gateway", "persistent"}:
+        for component in ("voice", "models", "computer", "tasks", "audit"):
+            _add_rotating_handler(
+                root,
+                log_dir / f"{component}.log",
+                level=logging.INFO,
+                max_bytes=max_bytes,
+                backup_count=backups,
+                formatter=RedactingFormatter(_LOG_FORMAT),
+                log_filter=_ComponentFilter(COMPONENT_PREFIXES[component]),
+            )
 
     if _logging_initialized and not force:
         return log_dir

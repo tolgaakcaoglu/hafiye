@@ -194,6 +194,8 @@ def _unit_environment_value(value: str | Path) -> str:
 def generate_systemd_unit(targets: PersistentGatewayPaths | None = None) -> str:
     targets = targets or paths()
     repo_root = Path(__file__).resolve().parents[1]
+    package_root_raw = os.environ.get("HAFIYE_PACKAGE_ROOT", "").strip()
+    package_root = Path(package_root_raw) if package_root_raw else None
     # Keep the normal installation on the XDG-compatible Hafiye roots.  An
     # explicit HERMES_HOME is still propagated for legacy/profile-scoped
     # installs, where upstream's single-root semantics are intentional.
@@ -206,27 +208,39 @@ def generate_systemd_unit(targets: PersistentGatewayPaths | None = None) -> str:
     # Do not resolve a venv's interpreter symlink.  uv-created venvs commonly
     # point `.venv/bin/python` at a shared interpreter; resolving it removes
     # the venv prefix and makes systemd skip the venv site-packages.
-    python = Path(sys.executable)
-    exec_start = " ".join(
-        (
-            shlex.quote(str(python)),
-            "-m",
-            "hermes_cli.persistent_gateway",
-            "run",
-            "--foreground",
+    package_runner = package_root / "bin" / "hafiye-gateway-run" if package_root else None
+    if package_runner is not None and package_runner.is_file():
+        exec_start = shlex.quote(str(package_runner))
+        working_directory_line = ""
+        package_environment_line = (
+            f'Environment="HAFIYE_PACKAGE_ROOT={_unit_environment_value(package_root)}"\n'
         )
-    )
+    else:
+        python = Path(sys.executable)
+        exec_start = " ".join(
+            (
+                shlex.quote(str(python)),
+                "-m",
+                "hermes_cli.persistent_gateway",
+                "run",
+                "--foreground",
+            )
+        )
+        working_directory_line = f"WorkingDirectory={shlex.quote(str(repo_root))}\n"
+        package_environment_line = ""
     unit = (
+        "# Managed-By: Hafiye\n"
         "[Unit]\n"
         "Description=Hafiye persistent Desktop backend\n"
         "After=graphical-session.target\n"
         "PartOf=graphical-session.target\n\n"
         "[Service]\n"
         "Type=simple\n"
-        f"WorkingDirectory={shlex.quote(str(repo_root))}\n"
+        f"{working_directory_line}"
         f"ExecStart={exec_start}\n"
     )
     unit += hermes_home_line
+    unit += package_environment_line
     unit += (
         f'Environment="HAFIYE_GATEWAY_STATE_DIR={_unit_environment_value(targets.state_dir)}"\n'
         f'Environment="HAFIYE_GATEWAY_PORT={_port()}"\n'

@@ -7,6 +7,17 @@ export HAFIYE_PACKAGE_ROOT="$PACKAGE_ROOT"
 # This runs inside the user's graphical session, so the user manager can own
 # and authorize the persistent gateway without sudo or a root process.
 if command -v systemctl >/dev/null 2>&1; then
+    # A source checkout may have installed a user override before the Debian
+    # package was installed. Such an override wins over /usr/lib/systemd/user
+    # and silently couples the packaged Desktop to the checkout. Remove only
+    # recognizably Hafiye-managed source units; never touch arbitrary user
+    # customizations.
+    USER_UNIT="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/hafiye-gateway.service"
+    if [ -f "$USER_UNIT" ] && grep -q 'Description=Hafiye persistent Desktop backend' "$USER_UNIT"; then
+        if grep -Eq 'hermes_cli\.persistent_gateway|/projects/.*/hafiye|/\.venv/bin/python' "$USER_UNIT"; then
+            rm -f "$USER_UNIT"
+        fi
+    fi
     systemctl --user daemon-reload >/dev/null 2>&1 || true
     if ! systemctl --user enable --now hafiye-gateway.service >/dev/null 2>&1; then
         echo "Hafiye: persistent gateway could not be enabled; run hafiye package doctor." >&2

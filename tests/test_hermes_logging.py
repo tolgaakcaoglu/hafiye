@@ -162,6 +162,22 @@ class TestGatewayMode:
         ]
         assert len(gw_handlers) == 0
 
+    def test_persistent_hafiye_mode_creates_full_component_contract(self, hermes_home):
+        hermes_logging.setup_logging(hermes_home=hermes_home, mode="persistent")
+
+        expected = {
+            "agent.log",
+            "errors.log",
+            "gateway.log",
+            "gui.log",
+            "voice.log",
+            "models.log",
+            "computer.log",
+            "tasks.log",
+            "audit.log",
+        }
+        assert expected <= {path.name for path in (hermes_home / "logs").iterdir()}
+
 
 
     def test_gateway_log_receives_gateway_records(self, hermes_home):
@@ -676,5 +692,4 @@ class TestAsyncQueueLogging:
             "agent.log" in getattr(h, "baseFilename", "")
             for h in hermes_logging.rotating_file_handlers()
         )
-
 

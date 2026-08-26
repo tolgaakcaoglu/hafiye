@@ -367,6 +367,50 @@ class TestIsContainer:
         """Second call uses cached value without re-probing."""
         monkeypatch.setattr(hermes_constants, "_container_detected", True)
         assert is_container() is True
+
+    def test_host_containerd_mounts_do_not_mark_host_as_container(self, monkeypatch):
+        """Nested container mounts on a bare-metal Docker host are irrelevant."""
+        import builtins
+        import io
+
+        self._reset_cache(monkeypatch)
+        monkeypatch.setattr(os.path, "exists", lambda p: False)
+        monkeypatch.delenv("KUBERNETES_SERVICE_HOST", raising=False)
+        real_open = builtins.open
+
+        def fake_open(path, *args, **kwargs):
+            if path == "/proc/1/cgroup":
+                return io.StringIO("0::/init.scope\n")
+            if path == "/proc/self/mountinfo":
+                return io.StringIO(
+                    "29 1 8:2 / / rw,relatime - ext4 /dev/sda2 rw\n"
+                    "91 29 0:77 / /var/lib/containerd/io.containerd.runtime.v2.task/k8s.io/child/rootfs rw - overlay overlay rw\n"
+                )
+            return real_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "open", fake_open)
+        assert is_container() is False
+
+    def test_overlay_root_mount_marks_current_process_as_container(self, monkeypatch):
+        import builtins
+        import io
+
+        self._reset_cache(monkeypatch)
+        monkeypatch.setattr(os.path, "exists", lambda p: False)
+        monkeypatch.delenv("KUBERNETES_SERVICE_HOST", raising=False)
+        real_open = builtins.open
+
+        def fake_open(path, *args, **kwargs):
+            if path == "/proc/1/cgroup":
+                return io.StringIO("0::/\n")
+            if path == "/proc/self/mountinfo":
+                return io.StringIO(
+                    "29 1 0:77 / / rw,relatime - overlay overlay rw,upperdir=/var/lib/docker/overlay2/id/diff\n"
+                )
+            return real_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "open", fake_open)
+        assert is_container() is True
         # Even if we make os.path.exists return False, cached value wins
         monkeypatch.setattr(os.path, "exists", lambda p: False)
         assert is_container() is True

@@ -26,6 +26,7 @@ from hermes_cli.runtime_provider import resolve_requested_provider
 from hermes_cli.vercel_auth import describe_vercel_auth
 from hermes_constants import OPENROUTER_MODELS_URL
 from tools.tool_backend_helpers import managed_nous_tools_enabled
+from hermes_cli.product_identity import command_name, externalize, product_name
 
 def check_mark(ok: bool) -> str:
     if ok:
@@ -109,6 +110,36 @@ def _effective_provider_label() -> str:
     return provider_label(effective)
 
 
+def _hafiye_gateway_service_status() -> dict[str, object]:
+    """Return the real persistent Hafiye user-service state."""
+
+    result = subprocess.run(
+        [
+            "systemctl",
+            "--user",
+            "show",
+            "hafiye-gateway.service",
+            "--property=ActiveState,UnitFileState,MainPID",
+            "--no-pager",
+        ],
+        check=False,
+        text=True,
+        capture_output=True,
+        timeout=5,
+    )
+    values: dict[str, str] = {}
+    if result.returncode == 0:
+        for line in result.stdout.splitlines():
+            key, separator, value = line.partition("=")
+            if separator:
+                values[key] = value
+    return {
+        "running": values.get("ActiveState") == "active",
+        "enabled": values.get("UnitFileState") in {"enabled", "enabled-runtime"},
+        "pid": int(values.get("MainPID", "0") or 0),
+    }
+
+
 from hermes_constants import is_termux as _is_termux
 
 
@@ -126,7 +157,7 @@ def _estop_status_line():
         return None
     reason = state.get("reason")
     suffix = f" — reason: {reason}" if reason else ""
-    return f"⏸️  PAUSED (global emergency stop{suffix}; `hermes resume` to lift)"
+    return externalize(f"⏸️  PAUSED (global emergency stop{suffix}; `hermes resume` to lift)")
 
 
 def show_status(args):
@@ -135,7 +166,8 @@ def show_status(args):
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│                 ⚕ Hermes Agent Status                  │", Colors.CYAN))
+    title = f"⚕ {product_name()} Status"
+    print(color(f"│{title:^57}│", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
 
     _paused_line = _estop_status_line()
@@ -152,7 +184,11 @@ def show_status(args):
     print(f"  Python:       {sys.version.split()[0]}")
 
     env_path = get_env_path()
-    print(f"  .env file:    {check_mark(env_path.exists())} {'exists' if env_path.exists() else 'not found'}")
+    if product_name() == "Hafiye":
+        print(f"  Secrets:      {check_mark(True)} Linux Secret Service / optional .env compatibility")
+        print(f"  Config:       {env_path.parent / 'config.yaml'}")
+    else:
+        print(f"  .env file:    {check_mark(env_path.exists())} {'exists' if env_path.exists() else 'not found'}")
 
     try:
         config = load_config()
@@ -270,7 +306,7 @@ def show_status(args):
     elif nous_inference_present:
         nous_label = "not logged in (Nous inference key configured)"
     else:
-        nous_label = "not logged in (run: hermes portal)"
+        nous_label = f"not logged in (run: {command_name()} portal)"
     print(
         f"  {'Nous Portal':<12}  {check_mark(nous_logged_in)} "
         f"{nous_label}"
@@ -299,7 +335,7 @@ def show_status(args):
     codex_logged_in = bool(codex_status.get("logged_in"))
     print(
         f"  {'OpenAI Codex':<12}  {check_mark(codex_logged_in)} "
-        f"{'logged in' if codex_logged_in else 'not logged in (run: hermes model)'}"
+        f"{'logged in' if codex_logged_in else f'not logged in (run: {command_name()} model)'}"
     )
     codex_auth_file = codex_status.get("auth_store")
     if codex_auth_file:
@@ -308,7 +344,7 @@ def show_status(args):
     if codex_status.get("last_refresh"):
         print(f"    Refreshed:  {codex_last_refresh}")
     if codex_status.get("error") and not codex_logged_in:
-        print(f"    Error:      {codex_status.get('error')}")
+        print(f"    Error:      {externalize(str(codex_status.get('error')))}")
 
     qwen_logged_in = bool(qwen_status.get("logged_in"))
     print(
@@ -328,7 +364,7 @@ def show_status(args):
     minimax_logged_in = bool(minimax_status.get("logged_in"))
     print(
         f"  {'MiniMax OAuth':<12}  {check_mark(minimax_logged_in)} "
-        f"{'logged in' if minimax_logged_in else 'not logged in (run: hermes auth add minimax-oauth)'}"
+        f"{'logged in' if minimax_logged_in else f'not logged in (run: {command_name()} auth add minimax-oauth)'}"
     )
     minimax_region = minimax_status.get("region")
     if minimax_logged_in and minimax_region:
@@ -350,7 +386,7 @@ def show_status(args):
     xai_oauth_logged_in = bool(xai_oauth_status.get("logged_in"))
     print(
         f"  {'xAI OAuth':<12}  {check_mark(xai_oauth_logged_in)} "
-        f"{'logged in' if xai_oauth_logged_in else 'not logged in (run: hermes auth add xai-oauth)'}"
+        f"{'logged in' if xai_oauth_logged_in else f'not logged in (run: {command_name()} auth add xai-oauth)'}"
     )
     xai_auth_file = xai_oauth_status.get("auth_store")
     if xai_auth_file:
@@ -358,7 +394,7 @@ def show_status(args):
     if xai_oauth_status.get("last_refresh"):
         print(f"    Refreshed:  {_format_iso_timestamp(xai_oauth_status.get('last_refresh'))}")
     if xai_oauth_status.get("error") and not xai_oauth_logged_in:
-        print(f"    Error:      {xai_oauth_status.get('error')}")
+        print(f"    Error:      {externalize(str(xai_oauth_status.get('error')))}")
 
     # =========================================================================
     # Nous Subscription Features
@@ -418,7 +454,7 @@ def show_status(args):
             if key_val:
                 break
         configured = bool(key_val)
-        label = "configured" if configured else "not configured (run: hermes model)"
+        label = "configured" if configured else f"not configured (run: {command_name()} model)"
         print(f"  {pname:<16} {check_mark(configured)} {label}")
 
     # LM Studio reachability — only probe when it's the active provider so
@@ -547,21 +583,30 @@ def show_status(args):
     print(color("◆ Gateway Service", Colors.CYAN, Colors.BOLD))
 
     try:
-        from hermes_cli.gateway import get_gateway_runtime_snapshot, _format_gateway_pids
+        if product_name() == "Hafiye" and sys.platform.startswith("linux"):
+            snapshot = _hafiye_gateway_service_status()
+            is_running = bool(snapshot["running"])
+            print(f"  Status:       {check_mark(is_running)} {'running' if is_running else 'stopped'}")
+            print("  Manager:      systemd (user)")
+            print(f"  Enabled:      {check_mark(bool(snapshot['enabled']))} {str(bool(snapshot['enabled'])).lower()}")
+            if snapshot["pid"]:
+                print(f"  PID:          {snapshot['pid']}")
+        else:
+            from hermes_cli.gateway import get_gateway_runtime_snapshot, _format_gateway_pids
 
-        snapshot = get_gateway_runtime_snapshot()
-        is_running = snapshot.running
-        print(f"  Status:       {check_mark(is_running)} {'running' if is_running else 'stopped'}")
-        print(f"  Manager:      {snapshot.manager}")
-        if snapshot.gateway_pids:
-            print(f"  PID(s):       {_format_gateway_pids(snapshot.gateway_pids)}")
-        if snapshot.has_process_service_mismatch:
-            print("  Service:      installed but not managing the current running gateway")
-        elif _is_termux() and not snapshot.gateway_pids:
-            print("  Start with:   hermes gateway")
-            print("  Note:         Android may stop background jobs when Termux is suspended")
-        elif snapshot.service_installed and not snapshot.service_running:
-            print("  Service:      installed but stopped")
+            snapshot = get_gateway_runtime_snapshot()
+            is_running = snapshot.running
+            print(f"  Status:       {check_mark(is_running)} {'running' if is_running else 'stopped'}")
+            print(f"  Manager:      {snapshot.manager}")
+            if snapshot.gateway_pids:
+                print(f"  PID(s):       {_format_gateway_pids(snapshot.gateway_pids)}")
+            if snapshot.has_process_service_mismatch:
+                print("  Service:      installed but not managing the current running gateway")
+            elif _is_termux() and not snapshot.gateway_pids:
+                print("  Start with:   hermes gateway")
+                print("  Note:         Android may stop background jobs when Termux is suspended")
+            elif snapshot.service_installed and not snapshot.service_running:
+                print("  Service:      installed but stopped")
     except Exception:
         if _is_termux():
             print(f"  Status:       {color('unknown', Colors.DIM)}")
@@ -719,6 +764,6 @@ def show_status(args):
 
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  Run 'hermes doctor' for detailed diagnostics", Colors.DIM))
-    print(color("  Run 'hermes setup' to configure", Colors.DIM))
+    print(color(f"  Run '{command_name()} doctor' for detailed diagnostics", Colors.DIM))
+    print(color(f"  Run '{command_name()} setup' to configure", Colors.DIM))
     print()

@@ -72,6 +72,22 @@ def test_systemd_unit_preserves_explicit_hermes_home(monkeypatch, tmp_path):
     assert f'Environment="HERMES_HOME={explicit_home}"' in unit
 
 
+def test_systemd_unit_uses_packaged_runner_without_checkout_coupling(monkeypatch, tmp_path):
+    gateway = _module(monkeypatch, tmp_path)
+    package_root = tmp_path / "package"
+    runner = package_root / "bin" / "hafiye-gateway-run"
+    runner.parent.mkdir(parents=True)
+    runner.write_text("#!/bin/sh\n", encoding="utf-8")
+    monkeypatch.setenv("HAFIYE_PACKAGE_ROOT", str(package_root))
+
+    unit = gateway.generate_systemd_unit(gateway.paths())
+
+    assert f"ExecStart={runner}" in unit
+    assert f'Environment="HAFIYE_PACKAGE_ROOT={package_root}"' in unit
+    assert "WorkingDirectory=" not in unit
+    assert "hermes_cli.persistent_gateway" not in unit
+
+
 def test_persistent_restart_targets_user_service(monkeypatch):
     from hermes_cli import web_server
 

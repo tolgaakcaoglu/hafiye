@@ -11,6 +11,7 @@ def _use_state_root(monkeypatch, tmp_path: Path) -> Path:
     monkeypatch.setattr(hafiye_onboarding, "get_hafiye_state_home", lambda: state_root)
     monkeypatch.delenv("HAFIYE_PACKAGE_ROOT", raising=False)
     monkeypatch.delenv("HAFIYE_ONBOARDING_FORCE", raising=False)
+    monkeypatch.setattr(hafiye_onboarding, "SYSTEM_PACKAGE_ROOT", tmp_path / "system-package")
     return state_root
 
 

@@ -214,6 +214,23 @@ def test_extracted_deb_launcher_and_doctor_use_the_same_backend(tmp_path):
     assert manifest["package"] == "hafiye"
 
 
+def test_packaged_services_do_not_depend_on_a_source_checkout(tmp_path):
+    package, _ = _build_fixture_package(tmp_path)
+    extracted = tmp_path / "service-root"
+    extracted.mkdir()
+    subprocess.run(["dpkg-deb", "--extract", str(package), str(extracted)], check=True)
+
+    unit = (extracted / "usr/lib/systemd/user/hafiye-gateway.service").read_text(encoding="utf-8")
+    launcher = (extracted / "usr/lib/hafiye/bin/hafiye-desktop-launcher").read_text(encoding="utf-8")
+    rootd = (extracted / "usr/lib/hafiye/bin/hafiye-rootd").read_text(encoding="utf-8")
+
+    assert "ExecStart=/usr/lib/hafiye/bin/hafiye-gateway-run" in unit
+    assert "projects/hafiye" not in unit
+    assert "hermes_cli\\.persistent_gateway" in launcher
+    assert "rm -f \"$USER_UNIT\"" in launcher
+    assert 'PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"' in rootd
+
+
 def test_rootd_sudo_handoff_is_import_path_independent(monkeypatch):
     calls = []
     monkeypatch.setattr(hafiye_rootd.shutil, "which", lambda name: "/usr/bin/sudo" if name == "sudo" else None)
