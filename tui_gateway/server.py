@@ -7088,6 +7088,7 @@ def _resolve_hafiye_agent_runtime(
     *,
     model: str,
     runtime: dict,
+    explicit_overrides: bool = False,
 ) -> tuple[str, dict, dict, list[dict]]:
     """Apply the configured Hafiye route before building a Desktop agent.
 
@@ -7105,6 +7106,7 @@ def _resolve_hafiye_agent_runtime(
         provider=runtime.get("provider") or "",
         model=model,
         base_url=runtime.get("base_url") or "",
+        explicit_overrides=explicit_overrides,
     )
     current_provider = str(runtime.get("provider") or "").strip()
     if route.provider and (
@@ -7269,10 +7271,21 @@ def _make_agent(
             if not resolution.selected_model:
                 raise RuntimeError("Auth fallback resolved without a model")
             model = resolution.selected_model
+    # A Desktop composer/session model is an explicit user selection.  The
+    # configured Hafiye default route still owns ordinary builds, but it must
+    # not overwrite a model the client deliberately shipped on session.create
+    # (or a persisted per-session /model override).  Privacy/locality policy is
+    # still enforced by resolve_hafiye_route; this changes only precedence.
+    explicit_route_override = bool(
+        (isinstance(model_override, dict) and model_override.get("model"))
+        or (isinstance(model_override, str) and model_override.strip())
+        or str(provider_override or "").strip()
+    )
     model, runtime, hafiye_route, fallback_model = _resolve_hafiye_agent_runtime(
         cfg,
         model=model,
         runtime=runtime,
+        explicit_overrides=explicit_route_override,
     )
     _pr = _load_provider_routing()
     return AIAgent(

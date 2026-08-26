@@ -18,11 +18,12 @@ export type ComposerModelSource = '' | 'default' | 'manual'
 
 const WORKSPACE_CWD_KEY = 'hermes.desktop.workspace-cwd'
 
-// The composer's model/effort/fast is sticky UI state, NOT the profile default
-// (that lives in Settings → Model). Persisting it in localStorage makes a pick
-// follow across Cmd+N and app restarts instead of snapping back to the default.
-// It's deliberately global (not per-profile): a profile switch force-reseeds to
-// that profile's default, while within a profile new chats keep your last pick.
+// The composer's model is draft/session UI state, NOT the profile default (that
+// lives in Settings → Model). Persistence keeps the current draft stable across
+// a renderer restart, but a deliberate New Chat resets model/provider to the
+// profile default; otherwise an old manual pick can disagree with Settings and
+// be silently carried into every later session. Effort/fast remain sticky model
+// presets and are reseeded from config when the fresh draft loads.
 const COMPOSER_MODEL_KEY = 'hermes.desktop.composer.model'
 const COMPOSER_PROVIDER_KEY = 'hermes.desktop.composer.provider'
 const COMPOSER_MODEL_SOURCE_KEY = 'hermes.desktop.composer.model-source'
@@ -913,6 +914,20 @@ export const getComposerSelectionGeneration = (): number => composerSelectionGen
 export const markComposerSelectionManual = (): void => {
   composerSelectionGeneration += 1
   setCurrentModelSource('manual')
+}
+
+/** Start a new-chat model intent from the profile default.
+ *
+ * Clear the previous session's manual pick synchronously so session.create
+ * cannot race ahead with stale provider/model atoms. The fresh-draft config
+ * refresh repopulates them from Settings → Model. Bumping the generation also
+ * prevents an older in-flight refresh from restoring the value we just left.
+ */
+export const resetComposerModelForFreshDraft = (): void => {
+  composerSelectionGeneration += 1
+  setCurrentModelSource('default')
+  setCurrentModel('')
+  setCurrentProvider('')
 }
 
 export const setCurrentReasoningEffort = (next: Updater<string>) => {

@@ -5,7 +5,13 @@ import type { NavigateFunction } from 'react-router'
 import { graftRefreshedTailOntoBackfill } from '@/app/chat/transcript-backfill'
 import { revealTreePane } from '@/components/pane-shell/tree/store'
 import { setWorkspaceScope } from '@/components/pane-shell/workspace-scope'
-import { deleteSession, getAllSessionMessages, getLatestSessionMessages, setSessionArchived } from '@/hermes'
+import {
+  deleteSession,
+  getAllSessionMessages,
+  getGlobalModelInfo,
+  getLatestSessionMessages,
+  setSessionArchived
+} from '@/hermes'
 import { useI18n } from '@/i18n'
 import { type ChatMessage, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
 import { isMissingRpcMethod } from '@/lib/gateway-rpc'
@@ -48,8 +54,10 @@ import {
   $newChatWorkspaceTarget,
   $sessions,
   $yoloActive,
+  getCurrentModelSource,
   getSessionOwnerHint,
   type NewChatWorkspaceTarget,
+  resetComposerModelForFreshDraft,
   resolveComposerSessionKey,
   sessionPinId,
   setActiveSessionId,
@@ -208,7 +216,9 @@ async function desktopSessionCreateParams(
   // profile handshake below can yield long enough for background config/model
   // refreshes to finish; reading atoms afterward would silently create the
   // session with a different selection than the one the user submitted.
-  const selection = {
+  const modelSource = getCurrentModelSource()
+
+  let selection = {
     effort: $currentReasoningEffort.get().trim(),
     fast: $currentFastMode.get(),
     model: $currentModel.get().trim(),
@@ -221,6 +231,20 @@ async function desktopSessionCreateParams(
     await ensureGatewayAgent(capturedRoute.connectionId, profile)
   } else {
     await ensureGatewayProfile(profile)
+  }
+
+  // A fresh draft is default-derived, so resolve Settings → Model only
+  // after its target profile is ready. This closes the New Chat → Send race
+  // where the selector refresh had not yet replaced the previous session's
+  // model. A manual picker choice remains the exact frozen Enter-time value.
+  if (modelSource !== 'manual') {
+    const modelInfo = await getGlobalModelInfo(capturedRoute?.targetProfile || profile)
+
+    selection = {
+      ...selection,
+      model: modelInfo.model.trim(),
+      provider: modelInfo.provider.trim()
+    }
   }
 
   return {
@@ -424,12 +448,12 @@ export function useSessionActions({
       })
       setSessionStartedAt(null)
       setTurnStartedAt(null)
-      // The composer's model/effort/fast is sticky UI state (persisted in
-      // localStorage) — a new chat FOLLOWS your last pick instead of snapping
-      // back to the profile default, so we deliberately don't reset it here. The
-      // profile default still owns first-run seeding and profile switches (see
-      // refreshCurrentModel). Only $currentServiceTier (a live-session mirror)
-      // is cleared.
+      // A new chat starts from Settings → Model, not from the previous
+      // session's manual Composer override. Clear synchronously before the
+      // fresh-draft background refresh resolves the profile default; this also
+      // prevents a fast New Chat → Send from shipping stale model/provider
+      // atoms on session.create.
+      resetComposerModelForFreshDraft()
       setCurrentServiceTier('')
       setYoloActive(false)
       setNewChatWorkspaceTarget(hasWorkspaceTarget ? workspaceTarget : undefined)

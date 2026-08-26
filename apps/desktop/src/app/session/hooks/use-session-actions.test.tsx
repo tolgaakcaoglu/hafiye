@@ -9,6 +9,7 @@ import { noteActiveTreeGroup, revealTreePane } from '@/components/pane-shell/tre
 import {
   deleteSession,
   getAllSessionMessages,
+  getGlobalModelInfo,
   getLatestSessionMessages,
   getSession,
   type SessionInfo,
@@ -32,6 +33,7 @@ import {
   $resumeFailedSessionId,
   $selectedStoredSessionId,
   $turnStartedAt,
+  getCurrentModelSource,
   setActiveSessionId,
   setActiveSessionStoredIdRotation,
   setAwaitingResponse,
@@ -39,6 +41,7 @@ import {
   setCurrentCwd,
   setCurrentFastMode,
   setCurrentModel,
+  setCurrentModelSource,
   setCurrentProvider,
   setCurrentReasoningEffort,
   setMessages,
@@ -65,6 +68,7 @@ vi.mock('@/hermes', async importOriginal => ({
   getSession: vi.fn(),
   getAllSessionMessages: vi.fn(),
   getLatestSessionMessages: vi.fn(),
+  getGlobalModelInfo: vi.fn(async () => ({ model: '', provider: '' })),
   listAllProfileSessions: vi.fn(),
   setApiRequestProfile: vi.fn(),
   setSessionArchived: vi.fn()
@@ -523,6 +527,25 @@ describe('startFreshSessionDraft', () => {
     expect(revealTreePane).toHaveBeenCalledWith('workspace')
     expect($terminalTakeover.get()).toBe(true)
   })
+
+  it('drops the previous Composer override so a new chat reloads the Settings default', async () => {
+    const navigate = vi.fn()
+    const requestGateway = vi.fn(async () => ({}) as never)
+    let handle: HarnessHandle | null = null
+
+    setCurrentModel('qwen2.5-0.5b-instruct-q4')
+    setCurrentProvider('custom')
+    setCurrentModelSource('manual')
+
+    render(<Harness navigate={navigate} onReady={value => (handle = value)} requestGateway={requestGateway} />)
+    await waitFor(() => expect(handle).not.toBeNull())
+
+    act(() => handle!.startFreshSessionDraft())
+
+    expect($currentModel.get()).toBe('')
+    expect($currentProvider.get()).toBe('')
+    expect(getCurrentModelSource()).toBe('default')
+  })
 })
 
 describe('createBackendSessionForSend profile routing', () => {
@@ -537,6 +560,7 @@ describe('createBackendSessionForSend profile routing', () => {
     $currentFastMode.set(false)
     $currentModel.set('')
     $currentProvider.set('')
+    setCurrentModelSource('default')
     $currentReasoningEffort.set('')
     setNewChatWorkspaceTarget(undefined)
     vi.restoreAllMocks()
@@ -628,6 +652,7 @@ describe('createBackendSessionForSend profile routing', () => {
 
     setCurrentModel('anthropic/claude-sonnet-4.6')
     setCurrentProvider('anthropic')
+    setCurrentModelSource('manual')
     setCurrentReasoningEffort('high')
     setCurrentFastMode(false)
 
@@ -670,6 +695,24 @@ describe('createBackendSessionForSend profile routing', () => {
       model: 'anthropic/claude-sonnet-4.6',
       provider: 'anthropic',
       reasoning_effort: 'high'
+    })
+  })
+
+  it('resolves the Settings model before a fast send from a fresh default-derived draft', async () => {
+    vi.mocked(getGlobalModelInfo).mockResolvedValueOnce({
+      model: 'gemini-3.1-pro-preview',
+      provider: 'gemini'
+    })
+    setCurrentModel('qwen2.5-0.5b-instruct-q4')
+    setCurrentProvider('custom')
+    setCurrentModelSource('default')
+
+    const params = await createWith(() => {})
+
+    expect(getGlobalModelInfo).toHaveBeenCalledWith('default')
+    expect(params).toMatchObject({
+      model: 'gemini-3.1-pro-preview',
+      provider: 'gemini'
     })
   })
 
