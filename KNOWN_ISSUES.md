@@ -810,3 +810,17 @@ silently treated as passing.
   The host route was restored to custom/Qwen2 and the package state was
   rechecked. This issue is model/task-selection behavior, not a reason to
   weaken `FULL_AUTONOMOUS` or bypass `hafiye-rootd`.
+
+## KI-050 — Ollama-native model stores are outside Hafiye's managed runtime
+
+- Status: DOCUMENTED ARCHITECTURE CONSTRAINT; not a blocker.
+- Hafiye's built-in local runtime is the managed llama.cpp server and its
+  private GGUF registry. The Desktop Models page now provides the supported
+  GUI download path for a single `.gguf` file from Hugging Face, plus Import
+  GGUF for a compatible file already on disk.
+- Ollama manifests and blob-store layouts are not accepted as direct Hafiye
+  model-registry inputs. If an Ollama model is also published as a single-file
+  GGUF, download that GGUF through Hafiye; otherwise provide a compatible
+  GGUF produced outside Hafiye before using Import GGUF.
+- This records the existing fixed runtime boundary; it does not add an Ollama
+  runtime, create a new phase, or change the local-first architecture.

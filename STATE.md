@@ -1,6 +1,6 @@
 # Hafiye State
 
-Last updated: 2026-08-25
+Last updated: 2026-08-26
 
 ## Repository and commit state
 
@@ -9,12 +9,13 @@ Last updated: 2026-08-25
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: a1271a93277e6ac0747c1c5c31b586c2e883e55a
-  (Electron Linux Debian packaging preserves the `chrome-sandbox` setuid
-  mode; the preceding managed computer-use MCP startup-gate source/test fix
-  is dc962963e6040f792e3f74fcd459d41da425d8d, and the preceding KI-043
-  boundary/local-model capability source/test commit is
-  f9ebf814b53b0a3c71f932713db0e217af17cb1c)
+- Current Hafiye source HEAD: 213247d70804ffe9350ad5d0874f79a494fd7dc0
+  (Desktop Models now exposes the managed local GGUF download flow; the
+  preceding Electron Linux Debian packaging commit preserves the
+  `chrome-sandbox` setuid mode, and the preceding managed computer-use MCP
+  startup-gate and KI-043 boundary/model-capability commits remain
+  dc962963e6040f792e3f74fcd459d41da425d8d and
+  f9ebf814b53b0a3c71f932713db0e217af17cb1c.)
 - Documentation closure HEAD: the documentation-only commit created after this
   source commit; verify the exact repository HEAD with `git rev-parse HEAD`.
 
@@ -149,6 +150,11 @@ call.
   is `agent=true, tool_calling=true, validation=false` with
   `resource_warning=KI-046`. The default route remains
   `custom/qwen2.5-0.5b-instruct-q4`; Qwen3 is selectable and not default.
+- The Desktop Models settings page now exposes the existing managed
+  `/api/local-runtime/models/download` contract: a Hugging Face repo, GGUF
+  filename, optional model id/revision/SHA-256, and a Download GGUF action.
+  A successful download is registered in the private llama.cpp model
+  registry and becomes selectable for Load / start.
 - KI-043 source hardening is present at the shared terminal boundary. Direct,
   absolute, env/command-wrapped, quoted, shell-wrapped, and chained
   escalation binaries are not executed by the normal terminal; FULL_AUTONOMOUS
@@ -2002,6 +2008,29 @@ checks without manual Desktop startup.
 - KI-043 is resolved at source level. The exact Firefox Gemini replay remains
   unaccepted under KI-049; the separate clean Gemini file-task replay is
   recorded as P23.6 PASS.
+
+### Desktop local model download UI — 2026-08-26
+
+- Source/test/E2E commit:
+  `213247d70804ffe9350ad5d0874f79a494fd7dc0`.
+- The persistent Models settings surface uses the existing Hafiye-managed
+  llama.cpp endpoint. It downloads one `.gguf` file from Hugging Face,
+  forwards optional revision/model-id/checksum values, refreshes the registry,
+  and selects the returned model without silently starting it.
+- The fixed local-runtime boundary is unchanged: Hafiye manages llama.cpp and
+  GGUF. An Ollama manifest/blob model directory is not a Hafiye local-runtime
+  input; use a compatible single-file GGUF through this form or Import GGUF.
+- Verification completed:
+  - `cd apps/desktop && ../../node_modules/.bin/vitest run src/app/settings/local-runtime-settings.test.tsx --project ui` — 1 passed.
+  - `cd apps/desktop && npm run test:ui` — 584 files and 5,557 tests passed.
+  - `cd apps/desktop && npm run typecheck` — passed.
+  - `cd apps/desktop && npm exec playwright test e2e/p17-control-center.spec.ts --reporter=list` — real Electron Models page check passed, 1 test in 10.4s.
+  - `cd apps/desktop && npm run pack` — production build and Linux unpacked package passed; build stamp `213247d70804`.
+  - Targeted ESLint for the changed source/test files exited 0 with existing padding warnings. Full `npm run lint` remains non-green because of seven unrelated repository errors; no error was reported in the changed files.
+  - `git diff --check` passed before this documentation update.
+- No live external model download was performed during this source change;
+  the backend download lifecycle was already covered by the P4 runtime tests,
+  while this change verifies the real Desktop control and its API payload.
 
 ### P23 final acceptance ledger
 

@@ -11,10 +11,10 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (Electron Linux Debian packaging preserves the
-  `chrome-sandbox` setuid mode; preceding managed computer-use MCP startup-gate
-  fix and KI-043 source/test commits remain below):
-  a1271a93277e6ac0747c1c5c31b586c2e883e55a
+- Current Hafiye source HEAD (Desktop Models exposes the managed local GGUF
+  download flow; preceding Electron packaging, computer-use MCP startup-gate,
+  and KI-043 source/test commits remain below):
+  213247d70804ffe9350ad5d0874f79a494fd7dc0
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -58,8 +58,8 @@ The Hafiye source history contains these separable logical groups:
 - desktop-remote-roots: Desktop and remote lifecycle root alignment.
 - persistent-gateway: user-scoped authenticated Hafiye backend service.
 - composer-tray-autostart: Composer lifecycle, tray, and XDG autostart.
-- local-model-runtime: managed llama.cpp/GGUF runtime, registry, server, and
-  Desktop controls.
+- local-model-runtime: managed llama.cpp/GGUF runtime, registry, server,
+  Desktop controls, and the Hugging Face GGUF download surface.
 - gateway-environment-guard: shared subprocess environment construction for the
   persistent gateway child process.
 - providers-secret-service: provider credential ownership, Linux Secret
@@ -237,6 +237,10 @@ P0 computer-use acceptance requires:
   upstream baseline and documented timing diagnostics; no new or different
   Hafiye failure was found, and no upstream Hermes bug is being fixed as part
   of P4.
+- Follow-up Desktop source/test commit
+  `213247d70804ffe9350ad5d0874f79a494fd7dc0` adds the Models-page control for
+  the existing Hafiye GGUF download API. It does not change the pinned Hermes
+  source, managed llama.cpp architecture, or upstream history.
 
 ## P5 source validation
 

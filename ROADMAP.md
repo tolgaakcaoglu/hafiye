@@ -178,7 +178,8 @@ equivalent. See KI-013 for that operational follow-up.
 - [x] Implement loopback llama-server start/stop/restart/health/version and
       the authenticated gateway REST boundary.
 - [x] Add real Desktop model settings for backend selection, runtime install,
-      GGUF import, model selection, context/GPU layers, load, and unload.
+      GGUF import/download, model selection, context/GPU layers, load, and
+      unload.
 - [x] Build the managed runtime on the real host with CPU and CUDA support;
       AUTO selects CUDA on the RTX 3080.
 - [x] Verify real GGUF chat, Hermes provider connectivity, model switching,
@@ -193,7 +194,11 @@ process correction is `ae24562fb9dfeeb4dd58752849b4778b2c8606e8`. The managed
 llama.cpp checkout is separately pinned to source commit
 `c060ca974c773c7c3d17fd1b66dc9d312bc292c0`. The real runtime, Desktop API,
 and corrected full backend regression checks pass under the documented
-baseline rule. P7 followed this phase and is closed below.
+baseline rule. The follow-up source commit
+`213247d70804ffe9350ad5d0874f79a494fd7dc0` exposes the already-supported GGUF
+download contract from the Desktop Models page; this is a local-model-runtime
+UI completion detail, not a new phase or a change to the managed llama.cpp
+architecture. P7 followed this phase and is closed below.
 
 ## P5 execution status
 
