@@ -69,8 +69,33 @@ def _run_doctor(fix=False):
 class TestDoctorCommandInstallation:
     """Tests for the ◆ Command Installation section."""
 
+    @pytest.mark.skipif(sys.platform == "win32", reason="Package check is Unix-only")
+    def test_packaged_hafiye_install_does_not_require_development_venv(
+        self, monkeypatch, tmp_path
+    ):
+        home = tmp_path / ".hermes"
+        home.mkdir(parents=True)
+        (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
+        package_root = tmp_path / "package"
+        backend = package_root / "backend"
+        backend.mkdir(parents=True)
+        (package_root / "package-manifest.json").write_text("{}\n", encoding="utf-8")
 
+        monkeypatch.setenv("HAFIYE_PACKAGE_ROOT", str(package_root))
+        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", backend)
+        monkeypatch.setattr(doctor_mod, "_DHH", str(home))
+        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setitem(
+            sys.modules,
+            "model_tools",
+            types.SimpleNamespace(check_tool_availability=lambda *a, **kw: ([], []), TOOLSET_REQUIREMENTS={}),
+        )
 
+        out = _run_doctor(fix=False)
+
+        assert "Packaged hafiye launcher is installed" in out
+        assert "Venv entry point not found" not in out
 
 
     @pytest.mark.skipif(sys.platform == "win32", reason="Symlink check is Unix-only")
@@ -148,4 +173,3 @@ class TestDoctorCommandInstallation:
         out = _run_doctor(fix=False)
         assert "Command Installation" in out
         assert "$PREFIX/bin" in out
-

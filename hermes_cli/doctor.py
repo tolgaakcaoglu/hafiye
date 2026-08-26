@@ -2014,7 +2014,17 @@ def run_doctor(args):
             _cmd_link_display = "~/.local/bin"
         _cmd_link = _cmd_link_dir / _entry_name
 
-        if _venv_bin is None:
+        _package_root_raw = os.environ.get("HAFIYE_PACKAGE_ROOT", "").strip()
+        _package_root = Path(_package_root_raw) if _package_root_raw else None
+        _packaged_install = bool(
+            _package_root
+            and (_package_root / "package-manifest.json").is_file()
+            and (_package_root / "backend").resolve() == PROJECT_ROOT.resolve()
+        )
+
+        if _packaged_install:
+            check_ok(f"Packaged {_entry_name} launcher is installed ({_package_root})")
+        elif _venv_bin is None:
             check_warn(
                 "Venv entry point not found",
                 f"({_entry_name} not in venv/bin/ or .venv/bin/ — reinstall with pip install -e '.[all]')"
