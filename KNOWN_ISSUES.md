@@ -929,3 +929,34 @@ silently treated as passing.
 - No GitHub CLI or authenticated HTTPS credential is available in this
   session. After authenticating Git for GitHub, run `git push origin main`.
   Do not force-push; upstream history and both remotes are otherwise correct.
+
+## KI-056 — Hafiye Jarvis assistant loop is not product-converged
+
+- Status: OPEN / P24 PRODUCT BLOCKER.
+- The component architecture exists, but the installed user experience is not
+  yet the binding Jarvis loop. Current live config records
+  `wake_word.enabled=false` and `voice.auto_tts=false`, so the product does not
+  normally wait for “Hafiye” or speak assistant responses after login.
+- Source inspection shows `wake.detected` stops wake capture, plays a cue,
+  activates a separate small wake indicator, starts a fresh session and asks
+  the main Composer voice hook to start. It does not open the compact Hafiye
+  Composer. Quick Entry is currently opened by login policy, tray, or global
+  shortcut instead.
+- The compact Composer declares all roadmap activity labels, but its bridge
+  currently maps generic gateway/session `busy` state primarily to WORKING and
+  does not receive the authoritative listening/transcribing/acknowledging/
+  thinking/speaking/tool/re-arm lifecycle. Voice transcription is submitted
+  directly through the main Composer path rather than first becoming visible
+  in the compact Composer field.
+- The existing voice-conversation implementation can listen, transcribe,
+  submit, stream Piper speech, handle barge-in, and reconcile wake after a
+  turn. These are reusable foundations, not proof that the installed unified
+  loop passes.
+- Current route state uses `gemini/gemini-3.1-pro-preview`; the Qwen2 fixture is
+  validation-only and Qwen3 remains non-default under KI-046. P24 must qualify
+  a practical capability-based local-first agent route without hiding the host
+  resource warning.
+- P24 in `HAFIYE_MASTER_ROADMAP.md` is the binding remediation plan. KI-056 is
+  resolved only after the installed-package real-machine acceptance passes for
+  physical wake, visible transcript, concise speech, real coding and YouTube
+  tasks, verification, repeated re-arm, interruption, privacy and recovery.

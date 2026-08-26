@@ -1,6 +1,6 @@
 # Hafiye State
 
-Last updated: 2026-08-26
+Last updated: 2026-08-27
 
 ## Repository and commit state
 
@@ -21,7 +21,7 @@ Last updated: 2026-08-26
   Python 3.14 package bootstrap source is `fd435cc85fe018ca238256fb19547db2e7064565`,
   and earlier source identities remain recorded below.)
 - Previous documentation closure HEAD:
-  `d02d960c7`; this session's documentation update follows source HEAD
+  `b75f95d09a432914dc8fb1dc6738540b3ed1c36f`; this session's documentation update follows source HEAD
   `822448adee3c4fce570cbda2323bebc18ab5c792`.
 
 The three SHA values above are intentionally separate: the first is the
@@ -113,6 +113,13 @@ now the first incomplete phase. The isolated Qwen3-14B local-agent
 qualification subtask is complete with a measured host resource warning.
 P23.4 remains explicitly user-deferred; the other unaccepted final-machine
 rows remain open and must not be represented as passed.
+
+P24 — Hafiye Jarvis experience convergence: planned, not started. The user
+explicitly added this binding phase on 2026-08-27 to make the installed product
+operate as one assistant loop: login auto-arm, “Hafiye” wake, visible Composer,
+visible Turkish transcript, short spoken acknowledgement, real tool execution
+and verification, concise completion, then clean wake re-arm. P24 reuses the
+fixed architecture and does not create a second agent/runtime.
 
 The KI-043 source-level privileged-command boundary is now resolved: normal
 terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
@@ -2183,8 +2190,8 @@ tests exist. The master roadmap requires the final real-machine sequence.
    by the user's instruction and P23.5 blocked until a real remote endpoint is
    configured.
 3. Do not mark P23 complete or create a P23 completion commit until every
-   required acceptance row has fresh evidence. The current master roadmap
-   defines no P24 phase.
+   required acceptance row has fresh evidence. P24 is now defined but remains
+   planned and unimplemented.
 
 ### Post-roadmap implementation audit closure — 2026-08-26
 
@@ -2223,6 +2230,30 @@ tests exist. The master roadmap requires the final real-machine sequence.
 1. Authenticate Git for the Hafiye GitHub origin and run the normal,
    non-force `git push origin main`; the current Codex session has no HTTPS
    credential and the attempted push was rejected before any remote mutation.
-2. Resume only the deferred P23 real-machine acceptance rows when the user
-   requests it. Do not create P24, mark P23 complete, or create a release tag
-   until every required final acceptance row has genuine evidence.
+2. When the user requests implementation, begin the P24 baseline and canonical
+   interaction-state work recorded below. P24 may remediate P23 failures; rerun
+   every affected P23 row afterward using the installed post-P24 package.
+3. Do not mark P23 or P24 complete and do not create a release tag until their
+   respective required real-machine evidence is genuinely green.
+
+### P24 planning record — 2026-08-27
+
+- The user clarified the primary product contract: an installed Hafiye starts
+  after graphical login, waits locally for “Hafiye”, opens Composer on wake,
+  displays the Turkish transcript in its field, gives a short assistant-style
+  spoken acknowledgement, performs and verifies the task with real tools,
+  gives a concise spoken result, then returns to wake waiting.
+- Current pre-P24 evidence shows the product is not yet converged: live config
+  has `wake_word.enabled=false` and `voice.auto_tts=false`; `wake.detected`
+  activates a separate small indicator and the main voice hook but does not
+  open Quick Entry; the compact Composer receives generic busy state rather
+  than authoritative voice/tool phases; and the current default route is
+  Gemini rather than a practical local agent-qualified default.
+- The master roadmap now defines P24.1–P24.14, including the coding scenario
+  “Randevu projesini açıp bug fix yapalım” and browser/media scenario
+  “YouTube'dan Mertcan Bahar'ın son videosunu aç”.
+- No source code, package, service, runtime setting, wake setting, voice setting,
+  provider route, or P23 acceptance status was changed in this planning step.
+- Exact next implementation action when authorized: capture the P24.1 installed
+  baseline, add failing tests for wake-to-Composer/state/transcript/speech
+  contracts, then implement the single canonical interaction state machine.

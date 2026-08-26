@@ -27,6 +27,7 @@ records execution status only.
 - [x] P21 First-run onboarding
 - [x] P22 CLI
 - [ ] P23 Final E2E suite
+- [ ] P24 Hafiye Jarvis experience convergence
 
 ## P11 execution status
 
@@ -757,7 +758,7 @@ This maintenance is complete but does not create a phase or complete P23. The
 current exact upstream result is `2 failed, 3 passed`, with only historical IDs
 2 and 3 failing.
 
-## Deferred P23 acceptance — mandatory roadmap-end reminder
+## Deferred P23 acceptance reminder
 
 Per the user's explicit instruction on 2026-08-25, the following remaining
 real-machine acceptance steps are intentionally deferred. The completed P23.1
@@ -780,6 +781,59 @@ replayed before P23 is ever marked complete:
 - [ ] P23.14 live spoken barge-in with `Hafiye dur.`.
 - [ ] P23.15 long-running managed desktop action stopped by
       `Ctrl+Super+Escape`.
-This reminder is deliberately at the end of the execution roadmap. The master
-roadmap currently ends at P23; no P24 phase is defined, and these deferred
-checks must not be silently converted into a completed P23.
+These deferred checks must not be silently converted into a completed P23.
+P24 may remediate gaps exposed by these rows, after which affected P23 evidence
+must be replayed from the installed post-P24 package.
+
+## P24 execution plan — Hafiye Jarvis experience convergence
+
+Status: PLANNED / NOT STARTED. Added by binding user direction on 2026-08-27.
+No P24 source implementation or acceptance result is claimed yet.
+
+- [ ] P24.1 Capture the installed-product baseline: package/source identity,
+      login/autostart state, current wake/voice settings, Composer behavior,
+      agent route, and real microphone/browser/tool readiness.
+- [ ] P24.2 Implement one canonical interaction state machine spanning
+      `IDLE_ARMED → WAKE_DETECTED → LISTENING → TRANSCRIBING → ACKNOWLEDGING
+      → THINKING/WORKING → SPEAKING → COMPLETED/ERROR → REARMING`.
+- [ ] P24.3 Auto-arm the local wake listener after graphical login and prior
+      microphone consent, while preserving an explicit persisted user disable.
+- [ ] P24.4 Make a real `wake.detected` event open/focus Hafiye Composer on the
+      active display without opening the full Desktop or requiring the hotkey.
+- [ ] P24.5 Show the final Turkish whisper.cpp transcript in the Composer field
+      before normal submission; preserve failed transcripts for correction and
+      never submit empty speech.
+- [ ] P24.6 Add the short spoken-assistant presentation contract: concise
+      acknowledgement before work, concise verified completion/blocker after
+      work, detailed output visual only, Piper Turkish TTS, no long automatic
+      model-response reading.
+- [ ] P24.7 Feed real session/task/tool/model/progress/cancellation state into
+      Composer instead of reducing voice work to a generic busy boolean.
+- [ ] P24.8 Make tool-backed work and postcondition verification mandatory for
+      actionable voice requests; preserve rootd, privacy, audit, stop and
+      emergency boundaries.
+- [ ] P24.9 Implement and verify the coding-assistant flow for “Randevu
+      projesini açıp bug fix yapalım”: project/memory resolution, real IDE,
+      diagnosis, OpenHands when editing is required, tests and concise speech.
+- [ ] P24.10 Implement and verify the browser/media flow for “YouTube'dan
+      Mertcan Bahar'ın son videosunu aç”: correct channel, latest video,
+      open/playback verification and concise speech.
+- [ ] P24.11 Qualify and select a practical agent-capable local-first default
+      through registry capability metadata. Keep Qwen2 validation-only and
+      retain Qwen3 KI-046/non-default status unless host evidence changes.
+- [ ] P24.12 Make completion, failure, cancellation, no-speech, provider/tool
+      error, restart and suspend/resume converge on clean microphone release,
+      Composer lifecycle and verified wake re-arm.
+- [ ] P24.13 Add automated state, Desktop, gateway, voice, policy, tool,
+      package and regression tests specified by the master roadmap.
+- [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
+      wake, visible transcript, short acknowledgement, coding flow, YouTube
+      flow, truthful blocker, three repeated turns, barge-in, local/offline,
+      restart recovery, affected P23 replays and exact upstream comparison.
+- [ ] Mark P24 complete only after every P24.14 item is genuinely green and
+      create separate source and documentation closure identities.
+
+P24 is not a new generic runtime or technology-selection phase. It converges
+the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,
+computer-use-linux, OpenHands and rootd machinery into Hafiye's primary Jarvis
+assistant loop.

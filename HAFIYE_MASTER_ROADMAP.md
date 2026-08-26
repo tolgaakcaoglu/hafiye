@@ -6,7 +6,8 @@
 **Developer:** Codex  
 **Runtime intelligence:** Local-first LLMs, remote self-hosted LLMs and explicitly configured cloud providers  
 **Supersedes:** Every previous Jarvis/Hafiye roadmap or architecture draft  
-**Date:** 2026-08-23
+**Date:** 2026-08-27
+**Latest binding amendment:** P24 Hafiye Jarvis experience convergence
 
 ---
 
@@ -2325,6 +2326,344 @@ Desktop reconnects cleanly.
 
 ---
 
+# P24 — HAFIYE JARVIS EXPERIENCE CONVERGENCE
+
+P24 is a binding product-convergence phase added on 2026-08-27.
+
+It does not replace Hermes, Electron, llama.cpp, whisper.cpp, Piper,
+computer-use-linux, OpenHands, the Hafiye gateway, or `hafiye-rootd`. It joins
+those already-fixed components into the primary Hafiye interaction promised in
+Section 1.
+
+The Hafiye product is not accepted merely because its chat, voice, computer,
+browser, and coding components pass separately. They must operate as one
+continuous assistant loop on the real installed machine.
+
+P23 remains open as the existing final-machine ledger. P24 source work may
+proceed while P23 is open because P24 explicitly remediates product gaps exposed
+by P23. After P24 implementation, every affected P23 row must be replayed; P23
+must not be closed using pre-P24 evidence.
+
+## 24.1 Binding primary interaction
+
+The default installed-product interaction is:
+
+```text
+graphical login
+→ Hafiye gateway and Desktop start in the background
+→ local wake listener is armed
+→ user says “Hafiye”
+→ Hafiye Composer appears on the active display
+→ Composer enters LISTENING
+→ user speaks a Turkish instruction
+→ whisper.cpp produces the transcript
+→ transcript is visibly placed in the Composer field
+→ Hafiye gives a short spoken acknowledgement
+→ the agent executes the task with its real tools
+→ Composer shows operational progress
+→ Hafiye verifies the result
+→ Hafiye gives a short spoken completion or blocker
+→ Composer collapses according to its mode
+→ local wake listener is re-armed
+```
+
+The normal one-shot wake turn returns to wake-word waiting after completion.
+The separately configured continuous-conversation mode may remain listening for
+follow-up speech, but it must not silently become the default.
+
+## 24.2 Installation, login and always-ready behavior
+
+When Hafiye is installed and voice onboarding has obtained microphone consent:
+
+- `hafiye-gateway.service` is enabled as a systemd user service;
+- Hafiye Desktop starts through its XDG graphical autostart entry;
+- the main Desktop window may remain hidden;
+- the tray remains available;
+- the GUI wake surface connects to the persistent gateway;
+- the local wake listener arms without opening a terminal;
+- suspend/resume, gateway restart, Desktop renderer restart, and microphone
+  hot-plug recover the listener;
+- an explicit user choice to disable wake listening is respected and clearly
+  visible in Settings and tray state.
+
+Wake listening must not start before graphical login or before microphone
+consent. After consent, wake listening is the normal installed-product default,
+not a hidden development toggle.
+
+## 24.3 Canonical interaction state machine
+
+Implement one authoritative interaction state shared by the main Desktop
+renderer and the compact Composer:
+
+```text
+BOOTING
+IDLE_ARMED
+WAKE_DETECTED
+LISTENING
+TRANSCRIBING
+ACKNOWLEDGING
+THINKING
+WORKING
+SPEAKING
+COMPLETED
+ERROR
+PAUSED
+REARMING
+```
+
+The existing roadmap Composer labels may map onto this richer internal state,
+but they must not be inferred only from a generic `busy` boolean.
+
+The state owner must expose:
+
+- active session and task identity;
+- voice-turn identity;
+- current tool and safe progress summary;
+- selected provider/model and locality;
+- cancellation/emergency state;
+- wake ownership and re-arm status.
+
+Do not create an independent second agent or second conversation. Composer is a
+view/controller over the same Hafiye session and task boundaries.
+
+## 24.4 Wake-to-Composer and visible transcript
+
+On a real `wake.detected` event:
+
+- show and focus the Hafiye Composer on the active display;
+- do not require the user to press the global shortcut;
+- keep the full Desktop window hidden unless the user explicitly opens it;
+- display `LISTENING`, then `TRANSCRIBING`;
+- place the final Turkish transcript in the Composer input field before normal
+  agent submission;
+- preserve that text as the visible user turn after submission;
+- never submit an empty transcript;
+- retain the transcript for correction when transcription fails or the turn
+  cannot be submitted.
+
+The small wake indicator may remain as an auxiliary cue, but it cannot replace
+the Composer or own a conflicting state machine.
+
+## 24.5 Short spoken assistant contract
+
+Voice presentation is not the same as the full model response.
+
+For a wake-started task, Hafiye produces two user-facing channels:
+
+1. a concise spoken assistant channel through Piper;
+2. a detailed visual/task channel in Composer, chat history, and Task Center.
+
+Acknowledgement speech:
+
+- is normally one sentence and at most two short sentences;
+- should normally remain below 25 Turkish words;
+- confirms the understood intent and immediate next action;
+- must not claim that work has already succeeded;
+- begins promptly while the real task continues.
+
+Example:
+
+> “Tamam. Projeyi bulup olası bir hatayı araştırıyorum.”
+
+Completion speech:
+
+- is normally one sentence and at most two short sentences;
+- should normally remain below 30 Turkish words;
+- states verified success, the most important result, or the exact blocker;
+- does not read logs, stack traces, code diffs, long model prose, URLs, or the
+  complete chat response aloud;
+- never says a task succeeded before verification.
+
+Full reasoning remains private. Detailed safe results remain readable in the
+visual transcript and Task Center. The user may explicitly ask Hafiye to read a
+longer answer aloud.
+
+## 24.6 Real execution and verification
+
+After acknowledgement, Hafiye must execute rather than merely explain.
+
+- use the existing deterministic tool priority;
+- operate files, terminal, processes, browser, and Linux desktop as needed;
+- use `hafiye-rootd` for privileged work and never open a normal sudo/password
+  path from the agent terminal;
+- show the current tool and a concise progress statement in Composer;
+- keep detailed task history in Task Center;
+- verify observable postconditions before reporting completion;
+- surface provider, tool, permission, network, and physical-user blockers
+  honestly without inventing success.
+
+FULL_AUTONOMOUS preserves this orchestration but does not bypass privacy,
+emergency-stop, root-broker, or audit boundaries.
+
+## 24.7 Coding-assistant flow
+
+Required natural-language scenario:
+
+> “Randevu projesini açıp bug fix yapalım.”
+
+Hafiye must:
+
+1. resolve the project through the project registry, aliases, memory, and
+   recent-session context;
+2. open or focus the project workspace/IDE on the real desktop;
+3. inspect repository state and applicable instructions;
+4. run relevant diagnostics/tests and identify evidence for a plausible bug;
+5. delegate implementation to OpenHands when coding work is required;
+6. keep the repository path and execution on the Hafiye host;
+7. expose progress through Composer and Task Center;
+8. run independent verification after the edit;
+9. speak only a concise acknowledgement and verified completion/blocker.
+
+The model must not invent a bug merely to satisfy the wording. If no supported
+bug is found, Hafiye reports that result and proposes the next concrete check.
+
+## 24.8 Browser/media assistant flow
+
+Required natural-language scenario:
+
+> “YouTube'dan Mertcan Bahar'ın son videosunu aç.”
+
+Hafiye must:
+
+1. use structured browser operations first where possible;
+2. use the user's existing native logged-in browser session through the
+   prescribed computer-use path when the website requires it;
+3. find the intended Mertcan Bahar channel rather than selecting an unrelated
+   name match;
+4. determine the latest published video from observable page/channel state;
+5. open the video and start playback when browser policy permits;
+6. verify the selected channel/video and the final open/playback state;
+7. speak a concise result such as “Son videosunu açtım.”
+
+Ads, consent screens, login requirements, network failure, unavailable content,
+or ambiguous channel identity are operational states to handle, not reasons to
+fake acceptance.
+
+## 24.9 Local-first agent readiness
+
+The normal Jarvis route must be agent-qualified, tool-capable, and local-first.
+
+- the Qwen2.5-0.5B validation fixture cannot be used as the production agent;
+- Qwen3-14B remains qualified and selectable with KI-046, but qualification
+  alone does not make it the default on this resource-constrained host;
+- identify and qualify a resource-appropriate agent-capable local GGUF through
+  registry capability metadata, not a model-name UI hack;
+- the selected default must complete the required computer, browser, and coding
+  tool contracts within the host's practical RAM/VRAM envelope;
+- NORMAL may use configured legal fallbacks;
+- LOCAL_ONLY and OFFLINE must remain local and fail closed if no capable local
+  route is available;
+- Gemini and remote self-hosted providers remain optional routes, not a hidden
+  replacement for local-first product readiness.
+
+Onboarding and Settings must show whether the current route is genuinely
+Jarvis-ready. A validation-only model or an unavailable model is not “ready”.
+
+## 24.10 Completion, interruption and re-arm
+
+- `Hafiye dur`, Composer Stop, tray Stop, and emergency stop use the shared
+  cancellation boundary;
+- barge-in stops current speech and prevents queued speech from continuing;
+- cancellation does not leave wake capture and conversation capture competing
+  for the microphone;
+- success, failure, cancellation, no-speech, transcription error, provider
+  error, tool error, and Desktop/gateway reconnect all reach a defined terminal
+  state;
+- after terminal cleanup, wake status is queried and the listener is re-armed
+  when configuration says it should be enabled;
+- repeated wake turns must not leak sessions, microphones, playback queues,
+  timers, model requests, or Composer windows.
+
+## 24.11 Desktop product hierarchy
+
+Hafiye Composer is the primary daily interaction surface.
+
+The full Desktop remains the Control Center for:
+
+- settings and provider/model configuration;
+- detailed transcripts and task history;
+- files/projects and coding results;
+- diagnostics, logs, permissions, and recovery.
+
+Hermes' chat/coding-oriented UI may remain available, but it must not be the
+only coherent way to operate Hafiye. Normal Jarvis use must not require opening
+the full chat window or a terminal.
+
+All new P24 user-facing Composer and voice text must support the Turkish locale
+without model-name-specific UI logic.
+
+## 24.12 Privacy, consent and audit
+
+- wake detection, default Turkish STT, and default Turkish TTS remain local;
+- the microphone-active state is always visible through Composer/tray state;
+- disabling wake immediately releases the listener and persists;
+- LOCAL_ONLY/OFFLINE cannot call cloud inference or network tools;
+- spoken and visual summaries redact secrets;
+- wake, transcript submission, route selection, tool execution, cancellation,
+  completion, and re-arm transitions are represented in the existing audit and
+  logging boundaries without storing raw secrets;
+- no main Hafiye process runs as root.
+
+## 24.13 Required automated tests
+
+Add regression coverage for:
+
+- login/autostart wake auto-arm after consent;
+- explicit wake-disable persistence;
+- wake event opens Composer without the shortcut;
+- exact state-machine transitions and terminal cleanup;
+- final transcript appears in the Composer field before submission;
+- empty/failed transcription does not submit;
+- acknowledgement and completion speech obey length/channel policy;
+- long visual response is not automatically read in full;
+- real tool events update Composer task/tool/progress fields;
+- coding delegation uses project registry and OpenHands boundaries;
+- browser/media intent uses structured/native browser priority;
+- privileged work stays behind `hafiye-rootd`;
+- LOCAL_ONLY/OFFLINE remain fail-closed;
+- stop, barge-in, emergency stop, and repeated re-arm behavior;
+- provider/model selection is capability-based and local-first;
+- packaged Desktop and persistent gateway reconnect behavior.
+
+Mocks alone are insufficient for P24 acceptance.
+
+## 24.14 Real-machine acceptance
+
+P24 is complete only when all of the following pass on the installed package:
+
+1. Reboot/login without manual terminal startup; verify gateway, Desktop/tray,
+   microphone consent state, and armed local wake listener.
+2. With Desktop hidden, physically say “Hafiye”; verify Composer appears and
+   reaches LISTENING.
+3. Speak a Turkish command; verify the final transcript is visibly present in
+   the Composer field before submission.
+4. Verify a short Turkish acknowledgement is audible while a real tool-backed
+   task begins; verify the full model response is not read aloud.
+5. Complete the “Randevu projesini açıp bug fix yapalım” flow against a real or
+   controlled fixture project, including project resolution, IDE, diagnosis,
+   OpenHands when needed, tests, verification, Task Center, and concise speech.
+6. Complete the “YouTube'dan Mertcan Bahar'ın son videosunu aç” flow in the
+   real browser, verifying correct channel, latest video, open/playback state,
+   and concise speech.
+7. Verify a failed/ambiguous task produces a truthful short blocker and useful
+   visual detail, not fabricated success.
+8. Run three consecutive wake-command-completion cycles; after each, verify the
+   Composer lifecycle and that wake is armed again with no duplicated TTS or
+   tool execution.
+9. While speaking, say “Hafiye dur”; verify immediate stop and clean re-arm.
+10. Repeat the supported local operation under LOCAL_ONLY and the required
+    offline acceptance with no cloud/remote inference.
+11. Restart the gateway during a recoverable turn and verify Composer state,
+    task state, and wake readiness recover according to contract.
+12. Run P24 targeted backend/Desktop/package matrices, the exact historical
+    upstream five-ID comparison, and every affected P23 final-machine row.
+
+Do not mark P24 complete because wake, STT, TTS, browser, computer-use, or
+OpenHands passed independently. The end-to-end assistant loop itself is the
+acceptance object.
+
+---
+
 # 19. DEFINITION OF DONE
 
 The project is complete only when all are true:
@@ -2363,6 +2702,14 @@ The project is complete only when all are true:
 - reboot/autostart E2E passes;
 - `.deb` package installs successfully;
 - normal use after installation does not require terminal setup.
+- installed Hafiye arms its local wake listener after graphical login and
+  microphone consent;
+- saying “Hafiye” opens Composer and starts the canonical voice turn;
+- the Turkish transcript is visible in Composer before task submission;
+- spoken acknowledgements/completions are concise while detailed output stays
+  visual;
+- coding and browser/media examples execute with real tools and verification;
+- every completed/cancelled/failed voice turn safely re-arms wake listening.
 
 ---
 
