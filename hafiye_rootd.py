@@ -1044,7 +1044,11 @@ def install_system_service(
     temporary.chmod(0o644)
     os.replace(temporary, service_paths.unit_path)
     _systemctl("daemon-reload")
-    _systemctl("enable", "--now", SERVICE_UNIT)
+    _systemctl("enable", SERVICE_UNIT)
+    # ``enable --now`` starts an inactive unit but deliberately leaves an
+    # already-active process untouched. Always restart after replacing the
+    # unit so a package/source provenance change takes effect immediately.
+    _systemctl("restart", SERVICE_UNIT)
     return 0
 
 

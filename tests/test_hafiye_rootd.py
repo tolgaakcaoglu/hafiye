@@ -8,6 +8,7 @@ import threading
 import time
 
 import pytest
+import hafiye_rootd
 
 from hafiye_rootd import (
     MAX_FRAME_BYTES,
@@ -168,3 +169,27 @@ def test_systemd_unit_is_root_only_and_socket_based():
     assert "--socket /run/hafiye/root.sock" in unit
     assert "--audit-log /var/log/hafiye/rootd-audit.log" in unit
     assert "ListenStream=" not in unit
+
+
+def test_install_restarts_an_already_active_root_service(monkeypatch, tmp_path):
+    calls = []
+    broker_paths = hafiye_rootd.RootBrokerPaths(
+        socket_path=tmp_path / "run/root.sock",
+        audit_log=tmp_path / "log/rootd-audit.log",
+        unit_path=tmp_path / "system/hafiye-rootd.service",
+    )
+    monkeypatch.setattr(hafiye_rootd.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(hafiye_rootd, "paths", lambda: broker_paths)
+    monkeypatch.setattr(
+        hafiye_rootd,
+        "_systemctl",
+        lambda *arguments, **kwargs: calls.append(arguments),
+    )
+
+    assert hafiye_rootd.install_system_service(allowed_uid=1000, estop_path=tmp_path / "ESTOP") == 0
+
+    assert calls == [
+        ("daemon-reload",),
+        ("enable", "hafiye-rootd.service"),
+        ("restart", "hafiye-rootd.service"),
+    ]
