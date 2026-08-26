@@ -82,9 +82,9 @@ git --version
 ## İlk kurulum
 
 Hafiye henüz final release etiketiyle yayımlanmadığı için desteklenen kurulum
-yolu, yetkili Hafiye kaynak kopyasındaki `hafiye/p0` geliştirme dalından birleşik
-Ubuntu/Debian paketini üretmektir. Bu repository zaten mevcutsa aşağıdaki
-komutları repository kökünde çalıştırın.
+yolu, yetkili Hafiye kaynak kopyasındaki `main` dalından birleşik Ubuntu/Debian
+paketini üretmektir. Bu repository zaten mevcutsa aşağıdaki komutları
+repository kökünde çalıştırın.
 
 ### 1. Sistem ve geliştirme bağımlılıkları
 

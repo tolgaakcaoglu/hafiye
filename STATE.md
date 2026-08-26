@@ -4,7 +4,7 @@ Last updated: 2026-08-26
 
 ## Repository and commit state
 
-- Branch: hafiye/p0
+- Branch: main (local integration branch; tracks origin/main)
 - origin: https://github.com/tolgaakcaoglu/hafiye.git
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d

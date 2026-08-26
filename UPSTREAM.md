@@ -29,11 +29,14 @@ after the source commit do not change the product source pin.
   fix(dashboard): detect stale code after hermes update and refuse model picker
   with clear 503 (#86207)
 - Last fetch: 2026-08-23
-- Hafiye development branch: hafiye/p0
+- Hafiye integration branch: main
 
-The branch was created from upstream/main and merged with the original Hafiye
-documentation history using --allow-unrelated-histories. Both histories remain
-reachable; Hermes history is not rewritten.
+Development began on `hafiye/p0`, created from upstream/main and merged with
+the original Hafiye documentation history using --allow-unrelated-histories.
+On 2026-08-26, local `main` was fast-forwarded to the completed Hafiye history.
+The historical `hafiye/p0` pointer is retained temporarily as a safety
+reference. Both original histories remain reachable; Hermes history is not
+rewritten.
 
 ## Sync and conflicts
 
@@ -42,8 +45,8 @@ reachable; Hermes history is not rewritten.
   Hermes development guide below them.
 - Hafiye source implementation was added after the P0 baseline in separable
   commits; no upstream commit was rewritten.
-- The working branch tracks upstream/main for upstream visibility; origin
-  remains the Hafiye repository.
+- `main` tracks origin/main. The separate upstream remote remains the Hermes
+  source of truth for fetches and future upstream comparisons.
 - Internal Hermes names remain where they are part of upstream compatibility:
   Python module names, IPC keys, HERMES_* environment names, the legacy Hermes
   protocol scheme, and the upstream npm package name.
