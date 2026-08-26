@@ -49,6 +49,12 @@ test.describe('P17 Control Center — real Desktop and gateway', () => {
       await expect(nav.locator(`[data-tour="nav-${id}"]`)).toBeVisible()
       await nav.getByRole('button', { name: label, exact: true }).click()
       await expect(page.getByTestId('control-center-page-title')).toHaveText(label, { timeout: 30_000 })
+
+      if (id === 'models') {
+        await expect(page.locator('[data-slot="local-runtime-settings"]')).toBeVisible({ timeout: 30_000 })
+        await expect(page.getByRole('button', { name: 'Download GGUF', exact: true })).toBeVisible()
+        await expect(page.getByRole('textbox', { name: 'Hugging Face repository' })).toBeVisible()
+      }
     }
 
     await nav.getByRole('button', { name: 'Privacy', exact: true }).click()

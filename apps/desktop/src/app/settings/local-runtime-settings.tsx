@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
+  downloadLocalRuntimeModel,
   getLocalRuntime,
   getLocalRuntimeModels,
   importLocalRuntimeModel,
@@ -43,6 +44,11 @@ export function LocalRuntimeSettings() {
   const [backend, setBackend] = useState<LocalRuntimeBackend>('AUTO')
   const [modelPath, setModelPath] = useState('')
   const [modelId, setModelId] = useState('')
+  const [downloadRepo, setDownloadRepo] = useState('')
+  const [downloadFilename, setDownloadFilename] = useState('')
+  const [downloadModelId, setDownloadModelId] = useState('')
+  const [downloadRevision, setDownloadRevision] = useState('')
+  const [downloadSha256, setDownloadSha256] = useState('')
   const [contextSize, setContextSize] = useState('4096')
   const [gpuLayers, setGpuLayers] = useState('')
   const [busy, setBusy] = useState('')
@@ -72,27 +78,48 @@ export function LocalRuntimeSettings() {
   const active = doctor?.server?.running ? doctor.server.model_id || '' : ''
   const selected = useMemo(() => models.find(model => model.id === selectedModel), [models, selectedModel])
 
-  const run = useCallback(async (label: string, operation: () => Promise<unknown>) => {
-    setBusy(label)
-    setError('')
-    try {
-      await operation()
-      await refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    } finally {
-      setBusy('')
-    }
-  }, [refresh])
+  const run = useCallback(
+    async (label: string, operation: () => Promise<unknown>) => {
+      setBusy(label)
+      setError('')
+      try {
+        await operation()
+        await refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+      } finally {
+        setBusy('')
+      }
+    },
+    [refresh]
+  )
 
-  const install = () =>
-    run('install', () => installLocalRuntime(backend))
+  const install = () => run('install', () => installLocalRuntime(backend))
 
   const importModel = () => {
     if (!modelPath.trim()) {
       return
     }
-    return run('import', () => importLocalRuntimeModel({ path: modelPath.trim(), model_id: modelId.trim() || undefined }))
+    return run('import', () =>
+      importLocalRuntimeModel({ path: modelPath.trim(), model_id: modelId.trim() || undefined })
+    )
+  }
+
+  const downloadModel = () => {
+    if (!downloadRepo.trim() || !downloadFilename.trim()) {
+      return
+    }
+
+    return run('download', async () => {
+      const model = await downloadLocalRuntimeModel({
+        filename: downloadFilename.trim(),
+        model_id: downloadModelId.trim() || undefined,
+        repo_id: downloadRepo.trim(),
+        revision: downloadRevision.trim() || undefined,
+        sha256: downloadSha256.trim() || undefined
+      })
+      setSelectedModel(model.id)
+    })
   }
 
   const start = () => {
@@ -133,7 +160,9 @@ export function LocalRuntimeSettings() {
             </SelectTrigger>
             <SelectContent>
               {BACKENDS.map(value => (
-                <SelectItem key={value} value={value}>{value}</SelectItem>
+                <SelectItem key={value} value={value}>
+                  {value}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -147,18 +176,103 @@ export function LocalRuntimeSettings() {
         </div>
 
         <div className="text-xs text-muted-foreground">
-          {doctor?.runtime.installed ? `llama-server ${doctor.runtime.version || 'installed'}` : 'llama-server is not installed'}
-          {doctor?.environment?.nvidia_present ? ` · NVIDIA ${String(doctor.environment.nvidia_name || 'present')}` : ''}
+          {doctor?.runtime.installed
+            ? `llama-server ${doctor.runtime.version || 'installed'}`
+            : 'llama-server is not installed'}
+          {doctor?.environment?.nvidia_present
+            ? ` · NVIDIA ${String(doctor.environment.nvidia_name || 'present')}`
+            : ''}
           {doctor?.server?.ready ? ` · serving ${doctor.server.model_id || 'model'}` : ''}
         </div>
 
-        {doctor?.warnings?.map(warning => <div className="text-xs text-amber-300" key={warning}>{warning}</div>)}
-        {doctor?.blockers?.map(blocker => <div className="text-xs text-destructive" key={blocker}>{blocker}</div>)}
+        {doctor?.warnings?.map(warning => (
+          <div className="text-xs text-amber-300" key={warning}>
+            {warning}
+          </div>
+        ))}
+        {doctor?.blockers?.map(blocker => (
+          <div className="text-xs text-destructive" key={blocker}>
+            {blocker}
+          </div>
+        ))}
 
-        <div className="mt-2 grid gap-2 border-t border-border/60 pt-3">
+        <div className="mt-2 grid gap-3 border-t border-border/60 pt-3">
+          <div className="grid gap-1">
+            <span className="text-xs font-medium">Download a GGUF model</span>
+            <span className="text-[0.7rem] text-muted-foreground">
+              Downloads one GGUF from Hugging Face, verifies an optional checksum, and registers it for llama.cpp.
+              Hafiye does not use an Ollama model directory as its local runtime.
+            </span>
+          </div>
+          <form
+            className="grid gap-2"
+            onSubmit={event => {
+              event.preventDefault()
+              void downloadModel()
+            }}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                aria-label="Hugging Face repository"
+                className="min-w-52 flex-1"
+                disabled={!!busy}
+                onChange={event => setDownloadRepo(event.target.value)}
+                placeholder="owner/repository"
+                value={downloadRepo}
+              />
+              <Input
+                aria-label="GGUF filename"
+                className="min-w-60 flex-1"
+                disabled={!!busy}
+                onChange={event => setDownloadFilename(event.target.value)}
+                placeholder="Model-Q4_K_M.gguf"
+                value={downloadFilename}
+              />
+              <Input
+                aria-label="Downloaded model ID"
+                className="w-36"
+                disabled={!!busy}
+                onChange={event => setDownloadModelId(event.target.value)}
+                placeholder="model id (optional)"
+                value={downloadModelId}
+              />
+              <Button disabled={!downloadRepo.trim() || !downloadFilename.trim() || !!busy} size="sm" type="submit">
+                {busy === 'download' && <Loader2 className="size-3.5 animate-spin" />}
+                Download GGUF
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                aria-label="Hugging Face revision"
+                className="min-w-52 flex-1"
+                disabled={!!busy}
+                onChange={event => setDownloadRevision(event.target.value)}
+                placeholder="revision (optional; branch or commit)"
+                value={downloadRevision}
+              />
+              <Input
+                aria-label="GGUF SHA-256 checksum"
+                className="min-w-60 flex-1 font-mono"
+                disabled={!!busy}
+                onChange={event => setDownloadSha256(event.target.value)}
+                placeholder="SHA-256 (optional)"
+                value={downloadSha256}
+              />
+            </div>
+          </form>
           <div className="flex flex-wrap items-center gap-2">
-            <Input className="min-w-60 flex-1" onChange={event => setModelPath(event.target.value)} placeholder="/path/to/model.gguf" value={modelPath} />
-            <Input className="w-36" onChange={event => setModelId(event.target.value)} placeholder="model id (optional)" value={modelId} />
+            <Input
+              className="min-w-60 flex-1"
+              onChange={event => setModelPath(event.target.value)}
+              placeholder="/path/to/model.gguf"
+              value={modelPath}
+            />
+            <Input
+              className="w-36"
+              onChange={event => setModelId(event.target.value)}
+              placeholder="model id (optional)"
+              value={modelId}
+            />
             <Button disabled={!modelPath.trim() || !!busy} onClick={() => void importModel()} size="sm">
               {busy === 'import' && <Loader2 className="size-3.5 animate-spin" />}
               Import GGUF
@@ -170,16 +284,35 @@ export function LocalRuntimeSettings() {
                 <SelectValue placeholder="Select a local model" />
               </SelectTrigger>
               <SelectContent>
-                {models.map(model => <SelectItem key={model.id} value={model.id}>{model.id} · {formatSize(model.size)}</SelectItem>)}
+                {models.map(model => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.id} · {formatSize(model.size)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Input className="w-24" onChange={event => setContextSize(event.target.value)} placeholder="context" value={contextSize} />
-            <Input className="w-24" onChange={event => setGpuLayers(event.target.value)} placeholder="GPU layers" value={gpuLayers} />
+            <Input
+              className="w-24"
+              onChange={event => setContextSize(event.target.value)}
+              placeholder="context"
+              value={contextSize}
+            />
+            <Input
+              className="w-24"
+              onChange={event => setGpuLayers(event.target.value)}
+              placeholder="GPU layers"
+              value={gpuLayers}
+            />
             <Button disabled={!selectedModel || !!busy} onClick={() => void start()} size="sm">
               {busy === 'start' && <Loader2 className="size-3.5 animate-spin" />}
               Load / start
             </Button>
-            <Button disabled={!active || !!busy} onClick={() => void run('stop', stopLocalRuntimeServer)} size="sm" variant="text">
+            <Button
+              disabled={!active || !!busy}
+              onClick={() => void run('stop', stopLocalRuntimeServer)}
+              size="sm"
+              variant="text"
+            >
               {busy === 'stop' && <Loader2 className="size-3.5 animate-spin" />}
               Unload / stop
             </Button>
