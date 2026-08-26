@@ -572,3 +572,15 @@ current observed comparison subset is 2, 3, and 5.
 | D-TR-04 | Full Desktop UI regression | `cd apps/desktop && npm run test:ui` | `584 files; 5,558 tests passed` | PASS |
 | D-TR-05 | Type/lint/build boundary | `npm run typecheck`; targeted `npx eslint`; `npm run build`; `npm run pack` | Renderer/Electron/E2E typecheck passed; changed files lint clean; final production package passed with clean `684227f6ebbf` stamp and Electron `40.10.6` | PASS |
 | D-TR-06 | Real installed package | `scripts/build_deb.py --json`; graphical Ptyxis `sudo apt install --reinstall /home/tolga/projects/hafiye/dist/hafiye_0.20.5_amd64.deb`; extract/inspect installed `app.asar`; restart Desktop and gateway; `curl /api/health` | Installed `0.20.5-1`; packaged locale contains `Türkçe` and `tr` aliases; Desktop logged `684227f6ebbf (main)`; gateway HTTP 200 `ok=true`, enabled/active, `NRestarts=0` | PASS |
+
+## Settings / Composer model identity — 2026-08-26
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| D-MODEL-SYNC-01 | New Chat reset, default refresh, manual override, fast-send race | `cd apps/desktop && npm run test -- --run src/app/session/hooks/use-session-actions.test.tsx src/app/session/hooks/use-model-controls.test.tsx src/app/settings/model-settings.test.tsx src/store/session.test.ts` | 4 files; 171 tests passed | PASS / KI-053 RESOLVED |
+| D-MODEL-SYNC-02 | Desktop full regression | `cd apps/desktop && npm run test -- --run` | 700 files passed, 1 skipped; 7,175 tests passed, 3 skipped | PASS |
+| D-MODEL-SYNC-03 | Desktop static checks | `npm run typecheck`; targeted `npx eslint` on changed files | Renderer/Electron/E2E typecheck and changed-file lint passed | PASS |
+| BE-MODEL-SYNC-01 | Explicit Desktop provider/model precedence over Hafiye default route | `.venv/bin/python -m pytest -q tests/tui_gateway/test_make_agent_provider.py tests/test_hafiye_policy.py`; targeted Ruff | 17 passed; Ruff clean | PASS / KI-053 RESOLVED |
+| BE-MODEL-SYNC-02 | Broader host-sensitive gateway diagnostic | `.venv/bin/python -m pytest -q tests/test_tui_gateway_server.py tests/tui_gateway` plus isolated reruns | 1,140 passed; two failures were real managed-MCP exact-set assumptions and two order-sensitive failures passed in isolation | DIAGNOSTIC / NO MODEL REGRESSION |
+| D-MODEL-SYNC-04 | Production package and live installed runtime | `npm run pack`; `.venv/bin/python scripts/build_deb.py --json`; visible Ptyxis/sudo reinstall; gateway/Desktop restart; installed stamp, health, model-info checks | Clean source stamp `197e4ca8fe86`; installed `0.20.5-1`; health `ok=true`; active service `NRestarts=0`; live model info `gemini/gemini-3.1-pro-preview` | PASS |
+| BE-MODEL-SYNC-BASELINE | Exact historical five-ID comparison after source change | Canonical P23 five-node command | 3 failed, 2 passed; failures only accepted IDs 2, 3, and 5 | ACCEPTED BASELINE / NO NEW REGRESSION |

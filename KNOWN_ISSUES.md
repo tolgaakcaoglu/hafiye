@@ -867,3 +867,24 @@ silently treated as passing.
   typecheck, changed-file lint, and a clean production build all pass. This is
   a translation-completeness warning, not a broken language selector or a P23
   blocker.
+
+## KI-053 — Settings and new-chat model identity drift
+
+- Status: RESOLVED 2026-08-26 in source/test commit
+  `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33`.
+- Before the fix, New Chat retained the prior Composer's manual Qwen selection
+  even when Settings selected Gemini. The gateway then allowed the configured
+  Hafiye default route to replace an explicit Desktop session model without
+  consistently replacing the runtime endpoint. Real logs captured Qwen being
+  requested from the Gemini endpoint and returning HTTP 404.
+- New Chat now clears the old manual selection, marks the fresh draft as
+  default-derived, and reads the target profile's Settings model immediately
+  before `session.create`. A deliberate Composer picker choice is still frozen
+  as a manual per-session override. The backend preserves explicit Desktop
+  provider/model precedence while retaining privacy/locality enforcement.
+- Targeted Desktop tests returned 171 passed, full Desktop tests returned 7,175
+  passed with 3 skipped, backend route tests returned 17 passed, typecheck/lint/
+  Ruff passed, and the exact upstream comparison remained 3 failed/2 passed
+  with only accepted IDs 2, 3, and 5. The rebuilt package is installed and its
+  live model API reports the Settings value
+  `gemini/gemini-3.1-pro-preview`.

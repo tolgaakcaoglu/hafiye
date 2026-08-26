@@ -11,11 +11,11 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (the Debian package can bootstrap a managed
-  Python 3.11 runtime on distro Python 3.14; the preceding Desktop local-GGUF
-  download, Electron packaging, computer-use MCP startup-gate, and KI-043
-  source/test commits remain below):
-  fd435cc85fe018ca238256fb19547db2e7064565
+- Current Hafiye source HEAD (Settings/Composer/new-chat model identity
+  hardening; the Debian bootstrap, Desktop local-GGUF download, Electron
+  packaging, computer-use MCP startup-gate, and KI-043 source/test commits
+  remain below):
+  197e4ca8fe864faaf48dd695cc25d7c89e2c6e33
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -608,7 +608,9 @@ P0 computer-use acceptance requires:
   `f9ebf814b53b0a3c71f932713db0e217af17cb1c` (KI-043 privileged terminal
   boundary, regression tests, and local-model capability metadata), followed
   by `dc962963e6040f792e3f74fcd459d41da425d8d` (managed computer-use MCP
-  startup-gate fix and regression test).
+  startup-gate fix and regression test), followed by
+  `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33` (explicit Desktop model-route
+  precedence and Settings-derived New Chat state).
 - The current source/test commit is
   `a1271a93277e6ac0747c1c5c31b586c2e883e55a`. It fixes Hafiye's Debian
   packaging boundary exposed by P23.1: the Linux Electron `chrome-sandbox`
@@ -654,6 +656,13 @@ P0 computer-use acceptance requires:
   `dc962963e`; Hermes upstream history and the pinned upstream state are
   unchanged. A subsequent real Qwen3 Composer replay still failed to emit a
   tool call and remains a P23 acceptance warning, not an upstream change.
+- The Desktop model-identity patch keeps upstream routing architecture intact:
+  explicit `session.create` provider/model values now use the existing
+  `explicit_overrides` policy input, while default-derived new chats resolve
+  the existing profile model-info API before creation. No provider, local
+  runtime, privacy policy, upstream commit, or history was changed. The exact
+  five-ID comparison remains 3 failed/2 passed with only accepted IDs 2, 3,
+  and 5.
 
 ## P17 Control Center patch group
 

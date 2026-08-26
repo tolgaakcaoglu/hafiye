@@ -721,6 +721,14 @@ E2E Suite — is now the first incomplete phase.
       the graphical sudo path and the new packaged Desktop/gateway were
       verified live. Advanced English fallback remains the non-blocking KI-052
       coverage warning and does not complete P23.
+- [x] Resolve Settings/Composer/new-chat model drift at the real session
+      boundary. New Chat now derives from the target profile's Settings model,
+      deliberate Composer picks remain per-session overrides, and the gateway
+      no longer replaces an explicit Desktop provider/model with the Hafiye
+      default route. Source `197e4ca8f`; targeted Desktop/backend tests, full
+      Desktop tests, typecheck/lint, package build/install, live gateway health,
+      and model-info checks passed. KI-053 is resolved; this maintenance does
+      not complete a deferred P23 final-machine row.
 - [ ] Execute and record the remaining real-machine items 23.3, 23.5,
       23.14, and the long-running managed desktop portion of 23.15 from the
       master roadmap. P23.4 was explicitly skipped by the user and is not

@@ -9,16 +9,17 @@ Last updated: 2026-08-26
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 684227f6ebbfeed2bc9ea2e08e6723e54edef073
-  (The Desktop Turkish-locale implementation is
+- Current Hafiye source HEAD: 197e4ca8fe864faaf48dd695cc25d7c89e2c6e33
+  (This fixes the Settings/Composer/new-chat model identity boundary. The
+  Desktop Turkish-locale implementation is
   `3c2ea9a7a9c119475aa0cee471b6cf982677d8a6`; the current source HEAD also
   aligns the package/runtime Electron pin at `40.10.6`. The preceding Electron
   dependency update is `312831690f5cc46767c58882fed5d98f611220d0`,
   Python 3.14 package bootstrap source is `fd435cc85fe018ca238256fb19547db2e7064565`,
   and earlier source identities remain recorded below.)
 - Previous documentation closure HEAD:
-  `c0e7c0823d26c3a1e5d08b7ecf520922033fb759`; the live-install documentation
-  update follows source HEAD `684227f6ebbfeed2bc9ea2e08e6723e54edef073`.
+  `bd0eef309a592ccca9d5ab11da9289afb13aecc1`; this session's documentation
+  update follows source HEAD `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33`.
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -2107,6 +2108,40 @@ checks without manual Desktop startup.
   - `git diff --check`: passed before documentation update.
 - This source maintenance does not alter or complete any deferred P23
   real-machine acceptance row.
+
+### Settings / Composer model identity hardening — 2026-08-26
+
+- Source/test commit: `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33`.
+- A real pre-fix Desktop session displayed/selected the stale local Qwen model
+  while the runtime inherited Gemini's endpoint, producing a Gemini 404 for
+  `qwen2.5-0.5b-instruct-q4`. Two causes were fixed at their owning boundaries:
+  an explicit Desktop `session.create` provider/model now has precedence over
+  the configured Hafiye default route, and New Chat resets a prior manual
+  Composer override then resolves the target profile's Settings model before
+  session creation. Privacy/locality policy continues to apply and manual
+  picker choices remain explicit per-session overrides.
+- Verification completed:
+  - Desktop targeted model/session matrix: `4 files, 171 passed`.
+  - Full Desktop Vitest matrix: `700 passed, 1 skipped`; `7,175 passed, 3
+    skipped`.
+  - Desktop renderer/Electron/E2E TypeScript typecheck and changed-file ESLint:
+    passed.
+  - Backend route/agent matrix: `17 passed`; Ruff passed.
+  - Exact historical upstream five-ID comparison: `3 failed, 2 passed`; only
+    accepted IDs 2, 3, and 5 failed, with no new/different regression.
+  - Production `npm run pack` passed with clean build stamp `197e4ca8fe86`;
+    the combined `.deb` manifest records the full source commit above.
+  - The package was installed through a visible Ptyxis/sudo prompt. Installed
+    package `0.20.5-1` carries the clean source stamp, gateway health returns
+    `ok=true`, the service is active with `NRestarts=0`, the installed Desktop
+    is running, and `/api/model/info` reports
+    `gemini/gemini-3.1-pro-preview`, matching Settings.
+- A broad host-sensitive TUI-gateway diagnostic run returned 1,140 passed and
+  four failures: two exact-toolset expectations observed the real managed
+  computer-use provider, while two order-sensitive tests passed when rerun in
+  isolation. None is a new model-route failure; KI-053 is resolved.
+- This maintenance does not mark any deferred P23 real-machine acceptance row
+  as passed and does not complete P23.
 
 ### P23 final acceptance ledger
 
