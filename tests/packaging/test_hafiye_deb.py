@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 import shutil
@@ -12,6 +13,15 @@ from scripts.build_deb import build_package
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _dependency_doctor_module():
+    path = REPO_ROOT / "packaging" / "debian" / "dependency_doctor.py"
+    spec = importlib.util.spec_from_file_location("hafiye_dependency_doctor_test", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _fixture_desktop(tmp_path: Path) -> Path:
@@ -80,7 +90,47 @@ def test_deb_contains_the_roadmap_packaging_contract(tmp_path):
     assert "Package: hafiye\n" in control
     assert "Version: 0.20.5-1\n" in control
     assert "Architecture: amd64\n" in control
-    assert "Depends: python3 (>= 3.11), python3 (<< 3.14), python3-venv, systemd\n" in control
+    assert "Depends: python3 (>= 3.11), python3-venv, systemd\n" in control
+    assert "python3 (<< 3.14)" not in control
+
+
+def test_dependency_installer_uses_managed_python_when_system_python_is_too_new(monkeypatch):
+    doctor = _dependency_doctor_module()
+
+    monkeypatch.setattr(doctor.sys, "version_info", (3, 14, 4))
+
+    assert doctor._venv_python_spec() == "3.11"
+    assert doctor._python_version_supported((3, 11)) is True
+    assert doctor._python_version_supported((3, 13)) is True
+    assert doctor._python_version_supported((3, 14)) is False
+
+
+def test_dependency_install_bootstraps_python_311_from_python_314(tmp_path, monkeypatch):
+    doctor = _dependency_doctor_module()
+    target = tmp_path / "python-venv"
+    target_python = target / "bin" / "python"
+    calls = []
+
+    monkeypatch.setattr(doctor.sys, "version_info", (3, 14, 4))
+    monkeypatch.setattr(doctor.shutil, "which", lambda name: "/usr/bin/uv" if name == "uv" else None)
+    monkeypatch.setenv("HAFIYE_PYTHON_VENV", str(target))
+    monkeypatch.setattr(doctor, "_interpreter_supported", lambda executable: executable.exists())
+
+    def fake_run(command, *, cwd=None):
+        calls.append((command, cwd))
+        if command[1] == "venv":
+            target_python.parent.mkdir(parents=True)
+            target_python.touch()
+
+    monkeypatch.setattr(doctor, "_run", fake_run)
+
+    assert doctor.install_dependencies(["mcp"]) == 0
+    assert calls[0] == (
+        ["/usr/bin/uv", "venv", "--python", "3.11", str(target)],
+        None,
+    )
+    assert calls[1][0][:4] == ["/usr/bin/uv", "export", "--project", str(doctor.backend_root())]
+    assert calls[2][0][:4] == ["/usr/bin/uv", "pip", "install", "--python"]
 
 
 def test_deb_preserves_electron_sandbox_setuid_mode(tmp_path):

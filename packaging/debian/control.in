@@ -4,7 +4,7 @@ Section: utils
 Priority: optional
 Architecture: @ARCH@
 Maintainer: Hafiye Project <support@nousresearch.com>
-Depends: python3 (>= 3.11), python3 (<< 3.14), python3-venv, systemd
+Depends: python3 (>= 3.11), python3-venv, systemd
 Suggests: curl, ca-certificates, git, ripgrep, ffmpeg, libgtk-3-0, libnss3, libasound2 | libasound2t64, libgbm1, libnotify4, libxss1, libxtst6, xdg-utils
 Description: Hafiye local-first desktop AI agent
  Hafiye is a maintained Hermes Agent fork with a persistent local gateway,

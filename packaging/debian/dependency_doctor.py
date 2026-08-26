@@ -40,6 +40,9 @@ OPTIONAL_COMMANDS = (
     "nvidia-smi",
     "cargo",
 )
+SUPPORTED_PYTHON_MIN = (3, 11)
+SUPPORTED_PYTHON_MAX = (3, 14)
+BOOTSTRAP_PYTHON = "3.11"
 
 
 def package_root() -> Path:
@@ -68,9 +71,13 @@ def _command_check(command: str, *, required: bool = False) -> dict[str, Any]:
     return _check(command, required=required, ok=False, detail="not found")
 
 
+def _python_version_supported(version: tuple[int, int]) -> bool:
+    return SUPPORTED_PYTHON_MIN <= version < SUPPORTED_PYTHON_MAX
+
+
 def _python_check() -> dict[str, Any]:
     version = platform.python_version()
-    supported = (3, 11) <= sys.version_info[:2] < (3, 14)
+    supported = _python_version_supported(sys.version_info[:2])
     return _check(
         "python",
         required=True,
@@ -82,6 +89,30 @@ def _python_check() -> dict[str, Any]:
         ),
         path=sys.executable,
     )
+
+
+def _interpreter_supported(executable: Path) -> bool:
+    try:
+        result = subprocess.run(
+            [
+                str(executable),
+                "-c",
+                "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')",
+            ],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+        major, minor = (int(part) for part in result.stdout.strip().split(".", 1))
+    except (OSError, subprocess.CalledProcessError, TypeError, ValueError):
+        return False
+    return _python_version_supported((major, minor))
+
+
+def _venv_python_spec() -> str:
+    if _python_version_supported(sys.version_info[:2]):
+        return sys.executable
+    return BOOTSTRAP_PYTHON
 
 
 def _source_check() -> list[dict[str, Any]]:
@@ -205,15 +236,29 @@ def install_dependencies(extras: list[str]) -> int:
     if not uv:
         print("Hafiye dependency install requires uv; install uv and rerun `hafiye package install`.", file=sys.stderr)
         return 2
-    python = Path(sys.executable)
     target = Path(
         os.environ.get("HAFIYE_PYTHON_VENV", "")
         or (Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "hafiye" / "python-venv")
     ).expanduser()
     target.parent.mkdir(parents=True, exist_ok=True)
     target_python = target / "bin" / "python"
-    if not target_python.exists():
-        _run([uv, "venv", "--python", str(python), str(target)])
+    if not _interpreter_supported(target_python):
+        command = [uv, "venv"]
+        if target_python.exists():
+            command.append("--clear")
+        command.extend(("--python", _venv_python_spec(), str(target)))
+        if not _python_version_supported(sys.version_info[:2]):
+            print(
+                f"System Python {platform.python_version()} is a bootstrap interpreter only; "
+                f"provisioning managed Python {BOOTSTRAP_PYTHON}."
+            )
+        _run(command)
+    if not _interpreter_supported(target_python):
+        print(
+            f"Hafiye dependency environment did not produce a supported Python at {target_python}.",
+            file=sys.stderr,
+        )
+        return 2
 
     with tempfile.TemporaryDirectory(prefix="hafiye-deps-") as temporary:
         requirements = Path(temporary) / "requirements.txt"
