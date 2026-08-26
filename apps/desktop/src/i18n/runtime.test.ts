@@ -75,6 +75,14 @@ describe('desktop i18n runtime translator', () => {
     expect(translateNow('settings.appearance.reasoningCollapsedDesc')).toBe(
       'أبقِ التفكير المتدفق متاحًا دون توسيعه حتى تفتحه.'
     )
+
+    setRuntimeI18nLocale('tr')
+    expect(translateNow('language.label')).toBe('Dil')
+    expect(translateNow('settings.nav.providers')).toBe('Sağlayıcılar')
+    expect(translateNow('settings.appearance.title')).toBe('Görünüm')
+    expect(translateNow('settings.model.provider')).toBe('Sağlayıcı')
+    expect(translateNow('composer.send')).toBe('Gönder')
+    expect(translateNow('modelPicker.title')).toBe('Modeli değiştir')
   })
 
   it('keeps translated settings field copy addressable from schema keys', () => {

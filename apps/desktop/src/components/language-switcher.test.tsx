@@ -40,4 +40,29 @@ describe('LanguageSwitcher', () => {
     await waitFor(() => expect(saveConfig).toHaveBeenCalledTimes(1))
     expect(saveConfig).toHaveBeenCalledWith({ display: { language: 'ja', skin: 'slate' } })
   })
+
+  it('offers Turkish and persists it as tr', async () => {
+    const saveConfig = vi.fn().mockResolvedValue({ ok: true })
+    const latestConfig: HermesConfigRecord = { display: { language: 'en', skin: 'slate' } }
+
+    const configClient: I18nConfigClient = {
+      getConfig: vi.fn().mockResolvedValue(latestConfig),
+      saveConfig
+    }
+
+    render(
+      <I18nProvider configClient={configClient}>
+        <LanguageSwitcher />
+      </I18nProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Switch language' }).hasAttribute('disabled')).toBe(false)
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Switch language' }))
+    fireEvent.click(screen.getByRole('option', { name: /Türkçe/i }))
+
+    await waitFor(() => expect(saveConfig).toHaveBeenCalledWith({ display: { language: 'tr', skin: 'slate' } }))
+    expect(screen.getByRole('button', { name: 'Dili değiştir' }).textContent).toContain('Türkçe')
+  })
 })
