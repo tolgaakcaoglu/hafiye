@@ -918,3 +918,14 @@ silently treated as passing.
 - KI-046 remains an open resource warning. P23 remains incomplete because its
   deferred physical/remote/offline acceptance rows were not silently promoted
   by this source audit.
+
+## KI-055 — Origin push credential unavailable in the Codex session
+
+- Status: OPERATIONAL BLOCKER; no source or repository-history defect.
+- `git fetch origin main` succeeded and confirmed no remote-side divergence;
+  local `main` is ahead of `origin/main`. A normal, non-force
+  `git push origin main` failed with `could not read Username for
+  'https://github.com': No such device or address`.
+- No GitHub CLI or authenticated HTTPS credential is available in this
+  session. After authenticating Git for GitHub, run `git push origin main`.
+  Do not force-push; upstream history and both remotes are otherwise correct.

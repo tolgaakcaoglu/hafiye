@@ -2220,6 +2220,9 @@ tests exist. The master roadmap requires the final real-machine sequence.
 
 ### Exact next action
 
-Resume only the deferred P23 real-machine acceptance rows when the user
-requests it. Do not create P24, mark P23 complete, or create a release tag
-until every required final acceptance row has genuine evidence.
+1. Authenticate Git for the Hafiye GitHub origin and run the normal,
+   non-force `git push origin main`; the current Codex session has no HTTPS
+   credential and the attempted push was rejected before any remote mutation.
+2. Resume only the deferred P23 real-machine acceptance rows when the user
+   requests it. Do not create P24, mark P23 complete, or create a release tag
+   until every required final acceptance row has genuine evidence.
