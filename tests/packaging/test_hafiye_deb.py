@@ -231,6 +231,34 @@ def test_packaged_services_do_not_depend_on_a_source_checkout(tmp_path):
     assert 'PACKAGE_ROOT="${HAFIYE_PACKAGE_ROOT:-/usr/lib/hafiye}"' in rootd
 
 
+def test_packaged_python_cannot_be_shadowed_by_checkout_cwd(tmp_path):
+    package, _ = _build_fixture_package(tmp_path)
+    extracted = tmp_path / "python-root"
+    extracted.mkdir()
+    subprocess.run(["dpkg-deb", "--extract", str(package), str(extracted)], check=True)
+
+    package_root = extracted / "usr/lib/hafiye"
+    env = {
+        **os.environ,
+        "HAFIYE_PACKAGE_ROOT": str(package_root),
+        "HAFIYE_PACKAGE_PYTHON": sys.executable,
+    }
+    result = subprocess.run(
+        [
+            str(package_root / "bin/hafiye-python"),
+            "-c",
+            "import hermes_cli; print(hermes_cli.__file__)",
+        ],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+
+    assert Path(result.stdout.strip()).is_relative_to(package_root / "backend")
+
+
 def test_rootd_sudo_handoff_is_import_path_independent(monkeypatch):
     calls = []
     monkeypatch.setattr(hafiye_rootd.shutil, "which", lambda name: "/usr/bin/sudo" if name == "sudo" else None)

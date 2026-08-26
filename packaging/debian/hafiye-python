@@ -32,5 +32,8 @@ else
 fi
 export PYTHONPATH
 export PYTHONUTF8="${PYTHONUTF8:-1}"
+# Never let the caller's current working directory shadow the packaged backend
+# (for example when `/usr/bin/hafiye` is invoked from a source checkout).
+export PYTHONSAFEPATH="${PYTHONSAFEPATH:-1}"
 
 exec "$PYTHON" "$@"
