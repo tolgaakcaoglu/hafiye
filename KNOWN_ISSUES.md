@@ -888,3 +888,33 @@ silently treated as passing.
   with only accepted IDs 2, 3, and 5. The rebuilt package is installed and its
   live model API reports the Settings value
   `gemini/gemini-3.1-pro-preview`.
+
+## KI-054 — Post-roadmap implementation audit inconsistencies
+
+- Status: RESOLVED 2026-08-26 in source commits `c1827ad92` through
+  `822448adee3c4fce570cbda2323bebc18ab5c792`.
+- The audit found and corrected real integration defects: Docker-host mounts
+  falsely classified a bare-metal host as a container; Hafiye status queried
+  the wrong service; diagnostics leaked Hermes identity or legacy paths;
+  persistent component logs and the canonical product audit remained empty;
+  onboarding tests could inspect live `/usr`; generated services and package
+  launchers could retain checkout/CWD coupling; rootd did not restart after a
+  unit replacement; and package doctor incorrectly required a development
+  venv entry point.
+- The installed package manifest now records source `822448ade`; the gateway
+  imports `/usr/lib/hafiye/backend`, is enabled/active, and returns health HTTP
+  200. General doctor reports all checks passed, package doctor reports
+  `ok=true` with no blockers, hardening/voice/computer doctors are green, and
+  computer-use readiness retains all four required booleans with no blockers.
+- The owner-only canonical audit is mode `0600`; real live actions produced
+  `provider_model_switch` and `root_rpc` JSONL events. A root RPC returned UID
+  0 through `hafiye-rootd`; the gateway remains non-root. Optional provider,
+  Cargo, and tool-availability diagnostics are not product blockers.
+- Final source regression evidence: backend/package matrix `190 passed, 7
+  skipped`; audit/root/doctor matrix `70 passed`; Desktop model matrix `171
+  passed` plus typecheck; Ruff/compileall/diff checks passed. The exact upstream
+  comparison improved to `2 failed, 3 passed`, with only historical IDs 2 and
+  3 failing. No new/different regression exists.
+- KI-046 remains an open resource warning. P23 remains incomplete because its
+  deferred physical/remote/offline acceptance rows were not silently promoted
+  by this source audit.

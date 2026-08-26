@@ -189,9 +189,9 @@ The historical post-source comparison set is this exact five-failure baseline:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-The latest exact comparison command after KI-043 source hardening returned
-failures in items 2, 3, and 5; items 1 and 4 passed. The current comparison
-baseline is therefore items 2, 3, and 5 above, while the exact five remain
+The latest exact comparison command after the implementation audit returned
+failures in items 2 and 3; items 1, 4, and 5 passed. The current observed
+comparison subset is therefore items 2 and 3 above, while the exact five remain
 the historical accepted whitelist. The separate
 local reconnect failure was observed only in the earlier post-P6 comparison,
 reproduced in the P6-parent checkout, and is documented as KI-019. The P19
@@ -584,3 +584,13 @@ current observed comparison subset is 2, 3, and 5.
 | BE-MODEL-SYNC-02 | Broader host-sensitive gateway diagnostic | `.venv/bin/python -m pytest -q tests/test_tui_gateway_server.py tests/tui_gateway` plus isolated reruns | 1,140 passed; two failures were real managed-MCP exact-set assumptions and two order-sensitive failures passed in isolation | DIAGNOSTIC / NO MODEL REGRESSION |
 | D-MODEL-SYNC-04 | Production package and live installed runtime | `npm run pack`; `.venv/bin/python scripts/build_deb.py --json`; visible Ptyxis/sudo reinstall; gateway/Desktop restart; installed stamp, health, model-info checks | Clean source stamp `197e4ca8fe86`; installed `0.20.5-1`; health `ok=true`; active service `NRestarts=0`; live model info `gemini/gemini-3.1-pro-preview` | PASS |
 | BE-MODEL-SYNC-BASELINE | Exact historical five-ID comparison after source change | Canonical P23 five-node command | 3 failed, 2 passed; failures only accepted IDs 2, 3, and 5 | ACCEPTED BASELINE / NO NEW REGRESSION |
+
+## Post-roadmap implementation audit — 2026-08-26
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| AUDIT-SRC-01 | Container/status/identity/logging/onboarding/package/root/audit/doctor source boundaries | Targeted and broad pytest matrices over constants, status, identity, logging, onboarding, Debian package, rootd, execution policy, model policy and doctor | Final broad matrix `190 passed, 7 skipped`; focused audit/root/doctor matrix `70 passed` | PASS / KI-054 RESOLVED |
+| AUDIT-DESKTOP-01 | Settings/new-chat model behavior after backend hardening | Four targeted Vitest files; `npm run typecheck` | `171 passed`; renderer/Electron/E2E TypeScript checks passed | PASS |
+| AUDIT-PACKAGE-01 | Final installed Debian package | Build `.deb` from source `822448ade`; visible Ptyxis/sudo `dpkg -i`; inspect `/usr/lib/hafiye/package-manifest.json`; restart user gateway | Manifest source matches; gateway enabled/active; `/api/health` HTTP 200; package doctor `ok=true`, `blockers=[]` | PASS |
+| AUDIT-LIVE-01 | Product diagnostics and canonical audit | `/usr/bin/hafiye doctor`; hardening/voice/computer doctors; routing set; `hafiye root exec 'id -u'`; inspect state audit | General doctor all checks passed; hardening/voice/computer ready; root returned `0`; mode-0600 audit contains real provider switch and root RPC events | PASS |
+| AUDIT-UPSTREAM-01 | Exact historical five-ID comparison on source `822448ade` | Canonical P23 five-node command | `2 failed, 3 passed`; only historical IDs 2 and 3 fail | ACCEPTED BASELINE IMPROVED / NO NEW REGRESSION |

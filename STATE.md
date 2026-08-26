@@ -9,8 +9,11 @@ Last updated: 2026-08-26
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 197e4ca8fe864faaf48dd695cc25d7c89e2c6e33
-  (This fixes the Settings/Composer/new-chat model identity boundary. The
+- Current Hafiye source HEAD: 822448adee3c4fce570cbda2323bebc18ab5c792
+  (This completes the post-roadmap implementation audit: packaged-runtime
+  provenance, product diagnostics/logging, canonical audit coverage, and the
+  packaged doctor boundary are corrected. The Settings/Composer/new-chat
+  model identity source is `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33`. The
   Desktop Turkish-locale implementation is
   `3c2ea9a7a9c119475aa0cee471b6cf982677d8a6`; the current source HEAD also
   aligns the package/runtime Electron pin at `40.10.6`. The preceding Electron
@@ -18,8 +21,8 @@ Last updated: 2026-08-26
   Python 3.14 package bootstrap source is `fd435cc85fe018ca238256fb19547db2e7064565`,
   and earlier source identities remain recorded below.)
 - Previous documentation closure HEAD:
-  `bd0eef309a592ccca9d5ab11da9289afb13aecc1`; this session's documentation
-  update follows source HEAD `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33`.
+  `d02d960c7`; this session's documentation update follows source HEAD
+  `822448adee3c4fce570cbda2323bebc18ab5c792`.
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -150,8 +153,8 @@ call.
 - The local GGUF registry exposes evidence-backed capability metadata: the
   Qwen2.5-0.5B validation fixture is `validation=true, agent=false`; Qwen3-14B
   is `agent=true, tool_calling=true, validation=false` with
-  `resource_warning=KI-046`. The default route remains
-  `custom/qwen2.5-0.5b-instruct-q4`; Qwen3 is selectable and not default.
+  `resource_warning=KI-046`. The current default route is
+  `gemini/gemini-3.1-pro-preview`; Qwen3 is selectable and not default.
 - The Desktop Models settings page now exposes the existing managed
   `/api/local-runtime/models/download` contract: a Hugging Face repo, GGUF
   filename, optional model id/revision/SHA-256, and a Download GGUF action.
@@ -1632,7 +1635,9 @@ claimed as passed.
 - The local model registry now persists capability state. The Qwen2.5-0.5B
   fixture is `validation=true, agent=false`; Qwen3-14B is
   `agent=true, tool_calling=true, validation=false` with `resource_warning=KI-046`.
-  The default route remains `custom/qwen2.5-0.5b-instruct-q4`.
+  At this qualification point the default route was
+  `custom/qwen2.5-0.5b-instruct-q4`; the current installed default is the
+  configured Gemini route recorded in the audit closure below.
 
 ### P23.2 managed computer-use MCP startup fix — 2026-08-25
 
@@ -2180,3 +2185,41 @@ tests exist. The master roadmap requires the final real-machine sequence.
 3. Do not mark P23 complete or create a P23 completion commit until every
    required acceptance row has fresh evidence. The current master roadmap
    defines no P24 phase.
+
+### Post-roadmap implementation audit closure — 2026-08-26
+
+- Current Hafiye source HEAD:
+  `822448adee3c4fce570cbda2323bebc18ab5c792`.
+- Installed package `0.20.5-1` has the same source commit in
+  `/usr/lib/hafiye/package-manifest.json`. The user gateway imports the packaged
+  backend, is enabled/active, and `GET http://127.0.0.1:9120/api/health`
+  returned HTTP 200 with `ok=true`.
+- `/usr/bin/hafiye doctor` reports all checks passed. Package doctor reports
+  `ok=true`, `blockers=[]`; the only package warning is optional Cargo absence.
+  Hardening and voice doctors report `ok=true`; computer-use doctor retains
+  all four required readiness booleans and an empty blocker list.
+- The current default route is the configured Gemini route
+  `gemini/gemini-3.1-pro-preview`. The managed Qwen2 validation fixture remains
+  `validation=true, agent=false`; qualified Qwen3 remains selectable,
+  non-default, and carries resource warning KI-046.
+- A live `hafiye root exec 'id -u'` returned `0`. The canonical product audit
+  at `~/.local/state/hafiye/logs/audit.log` is owner-only mode `0600` and now
+  contains real `root_rpc` and `provider_model_switch` events.
+- Final test commands/results:
+  - broad backend/package matrix covering constants, status, identity, doctor,
+    logging, onboarding, packaging, rootd, audit, execution and model policy:
+    `190 passed, 7 skipped in 102.51s`;
+  - focused audit/root/doctor matrix: `70 passed in 44.04s`;
+  - Desktop session/model matrix: `171 passed`; `npm run typecheck` passed;
+  - Ruff, compileall, `git diff --check`: passed;
+  - exact historical five-node comparison: `2 failed, 3 passed`; failures are
+    only accepted historical IDs 2 and 3, with no new/different regression.
+- KI-054 is resolved. KI-046 remains a non-blocking resource warning. P23 is
+  still the first incomplete phase; deferred P23.2/P23.3/P23.4/P23.5/P23.14/
+  P23.15 evidence remains unaccepted exactly as recorded in ROADMAP.md.
+
+### Exact next action
+
+Resume only the deferred P23 real-machine acceptance rows when the user
+requests it. Do not create P24, mark P23 complete, or create a release tag
+until every required final acceptance row has genuine evidence.

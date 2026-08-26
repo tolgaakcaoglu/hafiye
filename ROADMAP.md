@@ -90,9 +90,9 @@ is the next incomplete phase.
       ACCEPTED_UPSTREAM_BASELINE.
 
 P0 is complete. The original five-failure set remains the historical
-`ACCEPTED_UPSTREAM_BASELINE`; the current post-P5 comparison baseline is the
-four members that reproduced. A later full run contained four of those IDs
-plus the separately investigated KI-019 browser reconnect diagnostic; the accepted
+`ACCEPTED_UPSTREAM_BASELINE`; the current exact-node comparison reproduces
+only historical IDs 2 and 3 (`2 failed, 3 passed`). Fewer failures update the
+current observed subset without changing the historical whitelist. The accepted
 failures, missing pactl, and missing vulkaninfo are documented
 warnings/diagnostics and are not P0 blockers.
 
@@ -572,7 +572,7 @@ P21 implementation/source-test commits are `48860ee5f` and
 `a87eaaba7373a2c23fa73b7ef498b64d67c989f5`. The pinned upstream commit and
 baseline merge remain `f293e7206b4ddd66042329442c6afebc19a8808d` and
 `2ac06b131a237916432503ac67bbcada6dbea39e`; no Hermes history was rewritten.
-The current exact five-ID comparison is `3 failed, 2 passed`, with only
+The P21-closure exact five-ID comparison was `3 failed, 2 passed`, with only
 accepted historical IDs 2, 3, and 5 failing. The packaged Electron replay
 reached all 20 steps and completed the wizard. After the temporary acceptance
 gate was removed, the normal live service and CUDA local server were restored
@@ -597,7 +597,7 @@ complete; P23 is now the first incomplete phase.
 - [x] Compare the exact five upstream baseline tests after the source change;
       the accepted set remained unchanged and no new regression was found.
 
-P22 source/test commit: `e031162fd`. The exact five-ID comparison returned
+P22 source/test commit: `e031162fd`. Its exact five-ID comparison returned
 `3 failed, 2 passed`; only accepted historical IDs 2, 3, and 5 failed. The
 small local Qwen one-shot's 4K-context rejection is retained as historical
 KI-014 evidence; the managed Qwen2 64K compatibility path is recorded in the
@@ -740,6 +740,22 @@ E2E Suite — is now the first incomplete phase.
 
 P23 is still the first incomplete phase. The current state, exact commands,
 and unverified acceptance rows are recorded in `STATE.md` and `TEST_MATRIX.md`.
+
+## Post-roadmap implementation audit
+
+- [x] Correct bare-metal container detection, package-aware gateway/rootd
+      provenance, Hafiye status/doctor identity, persistent XDG component
+      logging, onboarding test isolation, and canonical audit events.
+- [x] Make package launchers independent of the caller checkout/CWD and make
+      package doctor recognize the installed Hafiye launcher without requiring
+      a development venv entry point.
+- [x] Build/install the package from source `822448ade`; verify live gateway
+      health, all required doctors, real root RPC/audit events, model route,
+      backend/Desktop regression matrices, and the exact upstream comparison.
+
+This maintenance is complete but does not create a phase or complete P23. The
+current exact upstream result is `2 failed, 3 passed`, with only historical IDs
+2 and 3 failing.
 
 ## Deferred P23 acceptance — mandatory roadmap-end reminder
 

@@ -11,11 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (Settings/Composer/new-chat model identity
-  hardening; the Debian bootstrap, Desktop local-GGUF download, Electron
+- Current Hafiye source HEAD (post-roadmap implementation audit and packaged
+  runtime hardening; the Settings/Composer model identity, Debian bootstrap,
+  Desktop local-GGUF download, Electron
   packaging, computer-use MCP startup-gate, and KI-043 source/test commits
   remain below):
-  197e4ca8fe864faaf48dd695cc25d7c89e2c6e33
+  822448adee3c4fce570cbda2323bebc18ab5c792
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -81,6 +82,11 @@ The Hafiye source history contains these separable logical groups:
 - root-broker: strict local Unix-socket privileged-operation broker,
   `hafiye-rootd.service`, peer authentication, audit trail, root-broker CLI,
   and packaged `hafiye-rootd` entrypoint.
+- packaged-runtime-integrity: package-aware gateway/rootd launchers, caller-CWD
+  isolation, package-source manifest checks, and packaged doctor recognition.
+- product-observability: Hafiye status/doctor identity, persistent component
+  logs, and the owner-only canonical redacted audit stream for shell, route,
+  privacy, cancellation, and root-RPC events.
 - browser-routing: structured Hermes browser reuse and explicit native browser
   routing through the managed computer-use-linux MCP provider.
 - structured-browser-download: current official agent-browser download
@@ -125,12 +131,11 @@ exact five test IDs were:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-After the P5 source fix, the latest full run covered 3,218 files and measured
-37,156 passed, 4 failed, and 244 skipped in 541.8 seconds. All four failures
-were members of the exact five IDs above; the accepted remote browser-control
-ID did not reproduce. No new or different Hafiye regression was found. The
-earlier local browser reconnect diagnostic is tracked as KI-019, and the
-current comparison baseline is therefore the four reproduced IDs (items 2–5).
+After the implementation audit, the latest exact-node comparison on source
+`822448ade` measured `2 failed, 3 passed`. Only historical items 2 and 3
+reproduced; items 1, 4, and 5 passed. No new or different Hafiye regression was
+found. The earlier local browser reconnect diagnostic is tracked as KI-019,
+and the current observed comparison subset is therefore items 2 and 3.
 The exact five remain the historical accepted whitelist; fewer failures update
 the current baseline, while any new/different ID is investigated as a
 regression. The upstream baseline bugs are not fixed by Hafiye.
