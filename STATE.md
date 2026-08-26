@@ -9,12 +9,11 @@ Last updated: 2026-08-26
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: fd435cc85fe018ca238256fb19547db2e7064565
-  (The Debian package now bootstraps its managed Python 3.11 runtime when the
-  distro system Python is 3.14. The preceding Desktop local-GGUF download
-  source commit remains 213247d70804ffe9350ad5d0874f79a494fd7dc0; the
-  Electron sandbox, managed computer-use MCP startup-gate, and KI-043 source
-  commits remain recorded below.)
+- Current Hafiye source HEAD: 3c2ea9a7a9c119475aa0cee471b6cf982677d8a6
+  (The Desktop now provides a persisted `Türkçe` (`tr`) interface locale. The
+  preceding Electron dependency update is `312831690f5cc46767c58882fed5d98f611220d0`,
+  Python 3.14 package bootstrap source is `fd435cc85fe018ca238256fb19547db2e7064565`,
+  and earlier source identities remain recorded below.)
 - Documentation closure HEAD: the documentation-only commit created after this
   source commit; verify the exact repository HEAD with `git rev-parse HEAD`.
 
@@ -2074,6 +2073,27 @@ checks without manual Desktop startup.
 - No live `/usr` package installation, sudo prompt, service mutation, route
   change, model change, or P23 real-machine acceptance claim was made. KI-051
   records the resolved package bootstrap defect; P23 remains in progress.
+
+### Turkish Desktop interface locale — 2026-08-26
+
+- Source/test commit: `3c2ea9a7a9c119475aa0cee471b6cf982677d8a6`.
+- Settings → Appearance → Language now offers `Türkçe`; selecting it persists
+  `display.language: tr`, updates the document locale to LTR Turkish, and
+  applies without restarting the Desktop.
+- Turkish coverage includes common actions, boot/error recovery, notifications,
+  voice controls, navigation, Composer, model selection, Appearance and Model
+  settings, session/file/terminal surfaces, approvals, and primary tool status.
+  Advanced untranslated upstream surfaces use the i18n framework's deliberate
+  English fallback and are tracked as the non-blocking KI-052 coverage warning.
+- Verification completed:
+  - Targeted locale/context/switcher/runtime matrix: `26 passed`.
+  - Full Desktop UI suite: `584 files, 5,558 tests passed`.
+  - Desktop renderer/Electron/E2E TypeScript typecheck: passed.
+  - Targeted ESLint for all changed locale/test files: passed.
+  - Clean production build: passed with source stamp `3c2ea9a7a9c1` on `main`.
+  - `git diff --check`: passed before documentation update.
+- This source maintenance does not alter or complete any deferred P23
+  real-machine acceptance row.
 
 ### P23 final acceptance ledger
 

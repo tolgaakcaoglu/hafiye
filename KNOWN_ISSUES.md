@@ -850,3 +850,16 @@ silently treated as passing.
 - No live package install or sudo mutation was performed. This is resolved at
   the package dependency/bootstrap boundary and does not change P23's open
   final real-machine acceptance rows.
+
+## KI-052 — Turkish locale retains English fallback on advanced surfaces
+
+- Status: NON-BLOCKING LOCALIZATION COVERAGE WARNING.
+- Source commit `3c2ea9a7a9c119475aa0cee471b6cf982677d8a6` adds a real,
+  persisted `Türkçe` locale and translates the primary Desktop interaction
+  surfaces. The existing `defineLocale` contract intentionally falls back to
+  English for untranslated keys, so less-used advanced upstream screens may
+  still contain English copy.
+- Locale aliases, persistence, runtime resolution, full Desktop UI tests,
+  typecheck, changed-file lint, and a clean production build all pass. This is
+  a translation-completeness warning, not a broken language selector or a P23
+  blocker.

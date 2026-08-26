@@ -261,6 +261,15 @@ Qwen3-14B bu hostta agent-qualified ve seçilebilirdir; ancak KI-046 kaynak
 uyarısı nedeniyle varsayılan route değildir. Modelin selectable olması,
 otomatik olarak default yapılacağı anlamına gelmez.
 
+## Arayüz dilini Türkçe yapma
+
+Hafiye Desktop içinde **Settings → Appearance → Language → Türkçe** yolunu
+izleyin. Değişiklik anında uygulanır ve `display.language: tr` olarak kalıcı
+saklanır; uygulamayı yeniden başlatmak gerekmez. Temel gezinme, Composer,
+model seçimi, Görünüm/Model ayarları, ses, dosya, terminal ve hata akışları
+Türkçedir. Henüz çevrilmemiş ileri düzey upstream ekranlar güvenli biçimde
+İngilizce metne geri düşer; güncel kapsam KI-052 altında izlenir.
+
 ## Provider ve gizlilik ayarları
 
 Provider, model, route ve privacy ayarlarını Desktop içinden değiştirmek

@@ -561,3 +561,13 @@ current observed comparison subset is 2, 3, and 5.
 | PKG-PY314-02 | Real rebuilt `.deb` on current apt database | `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; `apt install --reinstall --simulate` | Artifact manifest source `fd435cc85fe018ca238256fb19547db2e7064565`; apt selected/configured Hafiye without the prior dependency conflict | PASS / SIMULATION; NO LIVE `/usr` MUTATION |
 | PKG-PY314-03 | Extracted real package doctor | Extract rebuilt artifact; run packaged `hafiye package doctor --json` with the supported managed Python 3.11 environment | `ok=true`, `blockers=[]`; package/backend/Desktop/service/rootd/XDG paths present; optional `cargo` warning only | PASS WITH DIAGNOSTIC |
 | PKG-PY314-04 | Exact upstream five-ID comparison after package bootstrap source fix | Canonical five nodes from the P23 command above, using managed Python 3.11 | `3 failed, 2 passed`; only historical IDs 2, 3, and 5 failed; no new/different regression | ACCEPTED BASELINE UNCHANGED |
+
+## Turkish Desktop locale — 2026-08-26
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| D-TR-01 | Locale aliases and persisted config value | `cd apps/desktop && npx vitest run --project ui src/i18n/languages.test.ts src/i18n/context.test.tsx` | `tr`, `tr-TR`, `Türkçe`, and `turkce` normalize to `tr`; persisted config path remains `display.language` | PASS |
+| D-TR-02 | Real language selector state | Same targeted Vitest run including `src/components/language-switcher.test.tsx` | `Türkçe` is offered, selection saves `display.language: tr`, and the visible button switches to Turkish copy | PASS |
+| D-TR-03 | Runtime translation catalog | Same targeted run including `src/i18n/runtime.test.ts` | Language, provider, Appearance, Model, Composer, and model-picker keys resolve in Turkish; total targeted result `26 passed` | PASS |
+| D-TR-04 | Full Desktop UI regression | `cd apps/desktop && npm run test:ui` | `584 files; 5,558 tests passed` | PASS |
+| D-TR-05 | Type/lint/build boundary | `npm run typecheck`; targeted `npx eslint`; `npm run build` | Renderer/Electron/E2E typecheck passed; changed files lint clean; production build passed with clean `3c2ea9a7a9c1` stamp | PASS |
