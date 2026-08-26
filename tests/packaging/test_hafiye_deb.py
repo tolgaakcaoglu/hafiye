@@ -258,6 +258,17 @@ def test_packaged_python_cannot_be_shadowed_by_checkout_cwd(tmp_path):
 
     assert Path(result.stdout.strip()).is_relative_to(package_root / "backend")
 
+    help_result = subprocess.run(
+        [str(extracted / "usr/bin/hafiye"), "root", "--help"],
+        cwd=REPO_ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    assert "usage: hafiye root" in help_result.stdout
+    assert "usage: hermes" not in help_result.stdout
+
 
 def test_rootd_sudo_handoff_is_import_path_independent(monkeypatch):
     calls = []

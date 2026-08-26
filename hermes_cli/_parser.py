@@ -19,7 +19,8 @@ import sys
 def _cli_command_name() -> str:
     """Use the Hafiye command name for the new launcher, keep Hermes compat."""
     executable = os.path.basename(sys.argv[0]).lower()
-    return "hafiye" if executable.startswith("hafiye") else "hermes"
+    packaged_hafiye = bool(os.environ.get("HAFIYE_PACKAGE_ROOT", "").strip())
+    return "hafiye" if executable.startswith("hafiye") or packaged_hafiye else "hermes"
 
 
 _CLI_COMMAND = _cli_command_name()
