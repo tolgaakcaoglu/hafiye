@@ -108,6 +108,7 @@ describe('LocalRuntimeSettings', () => {
     const { LocalRuntimeSettings } = await import('./local-runtime-settings')
     render(<LocalRuntimeSettings />)
 
+    expect(await screen.findByText(/5\.8 GiB/)).toBeTruthy()
     fireEvent.click(await screen.findByRole('button', { name: 'Download verified GGUF' }))
 
     await waitFor(() => {

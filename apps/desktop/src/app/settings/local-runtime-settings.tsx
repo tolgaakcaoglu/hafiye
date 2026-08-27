@@ -28,10 +28,10 @@ function formatSize(size?: number): string {
   if (!size || size <= 0) {
     return 'unknown size'
   }
-  const units = ['B', 'MiB', 'GiB']
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
   let value = size
   let unit = 0
-  while (value >= 1024 * 1024 && unit < units.length - 1) {
+  while (value >= 1024 && unit < units.length - 1) {
     value /= 1024
     unit += 1
   }
