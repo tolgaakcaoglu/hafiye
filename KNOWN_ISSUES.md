@@ -1254,3 +1254,16 @@ silently treated as passing.
   packaging and live GNOME StatusNotifier/dbusmenu inspection passed. Direct
   synthetic D-Bus click injection was rejected by Electron and is not claimed
   as physical click evidence; it does not reopen the verified source boundary.
+
+## KI-065 — Local GGUF Runtime disappeared after Model page loading
+
+- Status: RESOLVED at source/package commit
+  `ecace19727b8f26d372e1ea6e18ed05706ad5ef9`.
+- The loading skeleton included `LocalRuntimeSettings`, but the successful
+  `ModelSettings` render omitted it. Consequently the runtime/catalog briefly
+  existed only during loading and disappeared when provider data resolved.
+- The successful render now mounts the canonical runtime component. Regression
+  coverage asserts the heading and API calls after loading; focused/full UI,
+  typecheck, production package installation and live catalog response pass.
+- The three catalog models remain explicit downloads with pending
+  qualification; this fix does not download or select them automatically.

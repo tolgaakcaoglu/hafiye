@@ -880,6 +880,10 @@ physical acceptance remains open.
       the canonical wake, voice, privacy and emergency boundaries. New Task,
       Settings and Recent Tasks now reveal the hidden primary window; the
       installed GNOME dbusmenu exposes all required controls as enabled.
+- [x] Keep `Local GGUF Runtime` and its backend-owned downloadable catalog in
+      the successful Model-page render tree, not only its loading skeleton.
+      Source `ecace1972`; focused/full UI, typecheck, package reinstall and
+      installed catalog response verified.
 - [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
       wake, visible transcript, short acknowledgement, coding flow, YouTube
       flow, truthful blocker, three repeated turns, barge-in, local/offline,

@@ -9,8 +9,9 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9
-  (Functional stateful Desktop system-tray controls and regression coverage.)
+- Current Hafiye source HEAD: ecace19727b8f26d372e1ea6e18ed05706ad5ef9
+  (Model page renders the managed Local GGUF Runtime and downloadable catalog
+  after successful page loading.)
   Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `c6ae3d5444e7242b422ed770d5ba8b0e09b95e82` (substantive documentation
@@ -2951,3 +2952,25 @@ offline replay remain unaccepted. No P25 or release tag was created.
   click the installed menu for final physical confirmation. KI-064 is resolved
   at source/package level. P24 remains open for its unrelated physical Jarvis
   acceptance items.
+
+## P24 Local GGUF catalog visibility repair — 2026-08-27
+
+- The user's real Model-page screenshot proved that `Local GGUF Runtime` was
+  absent even though the installed backend returned all three Qwen3.8 catalog
+  entries. Root cause: `ModelSettingsSkeleton` rendered
+  `LocalRuntimeSettings`, but the successful/non-loading `ModelSettings` tree
+  omitted it entirely.
+- Source commit `ecace19727b8f26d372e1ea6e18ed05706ad5ef9`
+  mounts the same component between main-model defaults and auxiliary models in
+  the real loaded page. A regression test asserts that the heading and both
+  runtime API calls remain present after model-page loading completes.
+- Focused Model/local-runtime UI tests returned `26 passed`; full Desktop UI
+  returned `588 files / 5,581 passed`; Desktop typecheck passed. The exact
+  historical comparison returned `3 passed, 2 failed`, only accepted IDs 2
+  and 3.
+- Production Desktop/package build and rootd reinstall passed. Installed stamp
+  is clean source `ecace1972`; gateway is active; the packaged Hafiye window is
+  visible on the Models route. Its authenticated local-runtime response lists
+  Qwen3.8 UD-IQ1_S, Qwen3.8 Uncensored Q4_K_M and Flash Next Uncensored IQ2_M
+  as downloadable. KI-065 is resolved; no model was downloaded or promoted to
+  qualified/default state.

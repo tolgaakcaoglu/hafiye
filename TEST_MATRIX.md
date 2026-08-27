@@ -915,3 +915,12 @@ Synthetic D-Bus click injection returned an Electron dbusmenu adapter error and
 is not counted as physical click evidence. Product action routing is covered at
 the real preload/renderer callback contracts, and the installed menu/state is
 live. P24 remains open for the separate physical Jarvis acceptance rows.
+
+## P24 Local GGUF catalog visibility repair — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-MODEL-CATALOG-UI-01 | Successful Model-page render | Focused `model-settings` and `local-runtime-settings` Vitest | `26 passed`; runtime heading survives loading and catalog actions remain covered | PASS |
+| P24-MODEL-CATALOG-UI-02 | Full Desktop regression | `npm run test:ui`; `npm run typecheck` | UI `5,581 passed`; typecheck exit 0 | PASS |
+| P24-MODEL-CATALOG-UPSTREAM-01 | Exact historical comparison | Canonical five-node command | `3 passed, 2 failed`; only accepted IDs 2 and 3 fail | ACCEPTED BASELINE / NO NEW REGRESSION |
+| P24-MODEL-CATALOG-PACKAGE-01 | Installed Model page and catalog backend | Production pack/deb; rootd reinstall; installed stamp; authenticated `/api/local-runtime/models`; real window state | Source `ecace1972`; gateway active; Hafiye visible; all three Qwen3.8 entries `downloadable` | PASS / INSTALLED SUPPORT |

@@ -11,12 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (functional Desktop system-tray control
+- Current Hafiye source HEAD (Local GGUF catalog visibility
   checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9
+  ecace19727b8f26d372e1ea6e18ed05706ad5ef9
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -763,6 +763,17 @@ P0 computer-use acceptance requires:
   RPC boundaries; no alternative configuration or privileged path was added.
 - Window-oriented menu actions now reveal the hidden primary window. The
   pinned upstream commit, baseline merge, remotes and preserved upstream
+  history are unchanged.
+
+## P24 Local GGUF catalog visibility patch group
+
+- Hafiye source/test commit:
+  `ecace19727b8f26d372e1ea6e18ed05706ad5ef9`.
+- This is a narrow Desktop composition fix: the existing upstream-derived
+  Model page now mounts Hafiye's already-existing managed runtime component in
+  its successful render, matching its loading skeleton. Backend catalog,
+  llama.cpp runtime and model qualification architecture are unchanged.
+- The pinned upstream commit, baseline merge, remotes and preserved upstream
   history are unchanged.
 
 ## P17 Control Center patch group
