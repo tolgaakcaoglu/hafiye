@@ -1120,6 +1120,10 @@ is claimed.
   The installed target surface now shows `Hafiye Kontrol Merkezi`,
   `Bilgisayar`, `Yerel GGUF Çalışma Zamanı` and Turkish catalog warnings and
   download actions. KI-066 is resolved.
+- Follow-up source/package commit
+  `4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf` also localizes the
+  llama.cpp version/build diagnostic fragments and removes the duplicated
+  NVIDIA vendor prefix found by installed visual QA.
 - This repair does not change any P24 completion checkbox, model qualification
   or default route. P24 remains open for the existing physical and complete
   Jarvis acceptance work.

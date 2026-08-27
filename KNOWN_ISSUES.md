@@ -1270,8 +1270,10 @@ silently treated as passing.
 
 ## KI-066 — Managed Local GGUF Runtime ignored the Turkish locale
 
-- Status: RESOLVED at source/package commit
-  `9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0`.
+- Status: RESOLVED at source commits
+  `9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0` and
+  `4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf`; the latter is the
+  installed package source.
 - The newly mounted runtime/catalog surface used hard-coded English for its
   headings, actions, placeholders, authentication/conflict messages and
   backend-owned catalog purpose/resource warnings. The Settings sidebar also
@@ -1284,3 +1286,6 @@ silently treated as passing.
   production packaging/rootd reinstall and real installed Electron visual/DOM
   verification passed. The exact upstream comparison remains `3 passed, 2
   failed`, only accepted historical IDs 2 and 3.
+- Final installed visual QA additionally verifies that the runtime version
+  diagnostic is Turkish and that neither `built with` nor the duplicated
+  `NVIDIA NVIDIA` prefix remains.

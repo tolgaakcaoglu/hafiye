@@ -16,7 +16,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0
+  4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -779,7 +779,8 @@ P0 computer-use acceptance requires:
 ## P24 managed local-runtime Turkish localization patch group
 
 - Hafiye source/test commit:
-  `9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0`.
+  `9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0`; installed diagnostic-copy
+  follow-up `4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf`.
 - The upstream-derived Desktop Settings/Model composition now routes Hafiye's
   managed GGUF runtime labels through the existing i18n context. Trusted
   Hafiye catalog presentation copy is localized by backend-owned catalog ID;

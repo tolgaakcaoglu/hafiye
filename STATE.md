@@ -9,7 +9,7 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0
+- Current Hafiye source HEAD: 4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf
   (The loaded Model page and managed Local GGUF Runtime/catalog surface use
   the active Desktop locale; the Turkish package is installed and visually
   verified.)
@@ -2987,6 +2987,10 @@ offline replay remain unaccepted. No P25 or release tag was created.
 - Trusted catalog localization is keyed by the backend-owned catalog ID and
   does not alter model capability, qualification, default-route or download
   state. Unknown catalog entries continue to display backend-provided copy.
+- Follow-up source commit `4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf`
+  localizes the llama.cpp `version/build/built with/for` diagnostic fragments
+  and removes the duplicated `NVIDIA NVIDIA` prefix observed in the first
+  installed screenshot.
 - Verification: focused i18n/runtime UI `13 passed`; full Desktop UI `588
   files / 5,582 passed`; Desktop typecheck and changed-file ESLint passed;
   `git diff --check` passed. The repository-wide lint still reports nine
@@ -2995,10 +2999,11 @@ offline replay remain unaccepted. No P25 or release tag was created.
   only accepted whitelist IDs 2 and 3 failed. No new/different regression was
   found.
 - Production pack/deb and root-broker reinstall passed. Installed manifest
-  and Desktop stamp carry source `9f315f6a6`; package doctor is OK with only
+  and Desktop stamp carry source `4935c91b7`; package doctor is OK with only
   the existing optional `cargo: not found` warning. A real installed Electron
   render showed all target Turkish labels and catalog warnings; DOM inspection
-  confirmed `Download verified GGUF` was absent and
-  `Doğrulanmış GGUF’u indir` was present. KI-066 is resolved.
+  confirmed `Download verified GGUF`, `built with`, and `NVIDIA NVIDIA` were
+  absent while `Doğrulanmış GGUF’u indir` and `llama-server sürüm:` were
+  present. KI-066 is resolved.
 - P24 remains open. No model was downloaded, qualified or made default, and
   none of the deferred physical Jarvis acceptance rows were promoted.
