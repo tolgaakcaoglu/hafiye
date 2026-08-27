@@ -9,10 +9,9 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 53e783e8c8ee6c88b2ecff2cff4954512deb386a
-  (Pinned OrcaRouter/Ollama Qwen3.8-27B Uncensored and gated Hugging Face
-  Qwen3.8 Flash Next security-research catalog integration.) Earlier source
-  identities remain recorded below.
+- Current Hafiye source HEAD: 25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9
+  (Functional stateful Desktop system-tray controls and regression coverage.)
+  Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `1edc72dbfcfe3961342c0ffe901dbc5eec02823e` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
@@ -2922,3 +2921,33 @@ offline replay remain unaccepted. No P25 or release tag was created.
   auth metadata. The installed Desktop was restarted from the packaged binary.
 - P24 remains open; no phase, release tag, default route, or model qualification
   state changed.
+
+## P24 installed system-tray hardening — 2026-08-27
+
+- Source/test commit `25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9`
+  replaces the stale P3 tray placeholders with a stateful menu. New Task,
+  Settings and Recent Tasks reveal/focus the hidden primary window; microphone
+  enablement uses persisted `wake.start/stop`; voice pause stops active TTS and
+  persists `voice.auto_tts`; privacy mode writes the existing
+  `hafiye.privacy_mode`; computer-control pause/resume uses the existing
+  `emergency.stop/resume` gate. Emergency Stop, core lifecycle, Composer,
+  Desktop and Logs retain their existing boundaries.
+- The menu state is renderer-owned and pushed through the preload IPC bridge;
+  Electron only renders normalized cached labels. `FULL_AUTONOMOUS` does not
+  bypass emergency/root gating, and no root-capable path was added.
+- Verification: targeted tray/wake/emergency tests `29 passed`; Desktop
+  typecheck passed; full UI `587 files / 5,579 passed`; full Electron `117
+  passed, 1 skipped / 1,618 passed, 3 skipped`; packaging contract `8 passed`;
+  exact upstream comparison `3 passed, 2 failed`, only accepted IDs 2 and 3.
+- The Debian package was rebuilt/reinstalled through `hafiye-rootd`. Installed
+  stamp is clean source `25f1d0fd6`; gateway is active/listening on
+  `127.0.0.1:9120`; packaged Desktop PID `2803441` is running hidden. GNOME's
+  real StatusNotifier watcher reports Hafiye `Active`, and its live dbusmenu
+  exposes enabled Composer/Desktop/task/microphone/voice/emergency/computer-
+  control/privacy/settings/log/core lifecycle entries with stateful labels.
+- Direct synthetic `com.canonical.dbusmenu.Event` injection was rejected by
+  Electron's Linux tray adapter and is not recorded as a click PASS. The real
+  callback/IPC/action boundaries are covered by source tests; a user can now
+  click the installed menu for final physical confirmation. KI-064 is resolved
+  at source/package level. P24 remains open for its unrelated physical Jarvis
+  acceptance items.

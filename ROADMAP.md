@@ -789,7 +789,7 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`beec5bd9c061b4c538e7916ee152c29264f6b8ad`; these implementation marks do not
+`25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
 rebuilt/reinstalled from the package containing the source checkpoint above;
 physical acceptance remains open.
@@ -876,6 +876,10 @@ physical acceptance remains open.
       research entry to the same backend-owned catalog. Downloads are selected
       by trusted catalog ID, SHA-256 verified, resumable/repairable, and exposed
       in Settings/onboarding. Neither model is qualified or default on this host.
+- [x] Replace the stale P3 tray placeholders with stateful controls backed by
+      the canonical wake, voice, privacy and emergency boundaries. New Task,
+      Settings and Recent Tasks now reveal the hidden primary window; the
+      installed GNOME dbusmenu exposes all required controls as enabled.
 - [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
       wake, visible transcript, short acknowledgement, coding flow, YouTube
       flow, truthful blocker, three repeated turns, barge-in, local/offline,

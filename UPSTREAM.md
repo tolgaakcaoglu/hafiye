@@ -11,12 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (pinned Qwen3.8 security-research catalog/download
+- Current Hafiye source HEAD (functional Desktop system-tray control
   checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  53e783e8c8ee6c88b2ecff2cff4954512deb386a
+  25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -752,6 +752,18 @@ P0 computer-use acceptance requires:
   security-research warnings. The fixed upstream pin, baseline merge, remotes,
   history, llama.cpp architecture and model qualification semantics are
   unchanged.
+
+## P24 Desktop system-tray hardening patch group
+
+- Hafiye source/test commit:
+  `25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9`.
+- This patch keeps Hermes Desktop's Electron tray architecture and adds a
+  Hafiye-owned stateful menu builder plus preload/renderer bridge. Actions reuse
+  existing wake, TTS preference/playback, Hafiye privacy config and emergency
+  RPC boundaries; no alternative configuration or privileged path was added.
+- Window-oriented menu actions now reveal the hidden primary window. The
+  pinned upstream commit, baseline merge, remotes and preserved upstream
+  history are unchanged.
 
 ## P17 Control Center patch group
 

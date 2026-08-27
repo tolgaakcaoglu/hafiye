@@ -900,3 +900,18 @@ does not close P24.11 or P24.14.
 No large model was automatically downloaded. The 15.7 GiB Ollama model layer
 and 74.6 GiB gated Flash Next split weights remain explicit, unqualified,
 non-default downloads under KI-046. P24 remains open.
+
+## P24 installed system-tray hardening — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-TRAY-UNIT-01 | Stateful Electron tray template | `npx vitest run --project electron electron/hafiye-tray-menu.test.ts` | `2 passed`; normalized state, dynamic labels, privacy radio and next-state callbacks verified | PASS |
+| P24-TRAY-BRIDGE-01 | Renderer tray action routing | Focused UI Vitest for tray bridge, emergency bridge and wake store | `29 passed`; task/settings/session, exact mic state, TTS/auto-speak, privacy save and emergency stop/resume boundaries verified | PASS |
+| P24-TRAY-DESKTOP-01 | Full Desktop regression | `npm run typecheck`; `npm run test:ui`; `npm run test:desktop:platforms` | Typecheck exit 0; UI `5,579 passed`; Electron `1,618 passed, 3 skipped` | PASS |
+| P24-TRAY-UPSTREAM-01 | Exact historical five-ID comparison | Canonical P23 five-node command | `3 passed, 2 failed`; only accepted IDs 2 and 3 fail | ACCEPTED BASELINE / NO NEW REGRESSION |
+| P24-TRAY-PACKAGE-01 | Production package and installed GNOME tray | `npm run pack`; `scripts/build_deb.py`; packaging pytest; rootd reinstall; gateway/Desktop restart; StatusNotifier/dbusmenu inspection | Build/stamp source `25f1d0fd6`; packaging `8 passed`; gateway active; packaged Desktop running; Hafiye StatusNotifier `Active`; all required tray items enabled with stateful labels | PASS / INSTALLED SUPPORT |
+
+Synthetic D-Bus click injection returned an Electron dbusmenu adapter error and
+is not counted as physical click evidence. Product action routing is covered at
+the real preload/renderer callback contracts, and the installed menu/state is
+live. P24 remains open for the separate physical Jarvis acceptance rows.

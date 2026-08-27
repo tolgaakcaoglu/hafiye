@@ -1237,3 +1237,20 @@ silently treated as passing.
   failure did not recur.
 - This issue is separate from the still-open physical P24 voice acceptance;
   P24 remains open.
+
+## KI-064 — System tray controls were stale placeholders or misleading toggles
+
+- Status: RESOLVED at source/package commit
+  `25f1d0fd6bbf7c646534509cd2d00c9717a0b2c9`.
+- `Pause Voice` previously sent a blind Composer voice toggle, so it could
+  start capture when voice was inactive and did not represent persistent TTS
+  state. Microphone, computer-control and privacy entries were disabled P3
+  placeholders; task/settings/session events did not reveal the hidden window.
+- The tray now mirrors canonical renderer state and routes actions through
+  persisted wake, voice preference/playback, existing privacy config and
+  emergency stop/resume boundaries. Computer-control pause intentionally uses
+  the broader existing emergency gate so input and root RPCs fail closed.
+- Targeted tests, full Desktop UI/Electron regression, typecheck, production
+  packaging and live GNOME StatusNotifier/dbusmenu inspection passed. Direct
+  synthetic D-Bus click injection was rejected by Electron and is not claimed
+  as physical click evidence; it does not reopen the verified source boundary.
