@@ -1093,9 +1093,10 @@ silently treated as passing.
   cleanly. Restore or reconfigure usable Gemini API quota through the normal
   Secret Service-backed Hafiye setup, then repeat the installed acceptance.
 
-## KI-060 — Local Qwen3 browser state payload causes an operational loop
+## KI-060 — Local Qwen3 browser state/model-runtime limitation
 
-- Status: OPEN / P24 ACCEPTANCE LIMITATION; no source regression established.
+- Status: OPEN / P24 ACCEPTANCE LIMITATION; runtime resource pressure is
+  mitigated in source, but practical browser/coding acceptance is still open.
 - On 2026-08-27, the installed Desktop model picker selected the real local
   Qwen3-4B GGUF route and a Composer terminal marker task completed through
   the loopback CUDA endpoint. A separate real local browser attempt reached
@@ -1105,10 +1106,13 @@ silently treated as passing.
   without channel search, video/playback verification, or a clean final turn.
 - This is not accepted as P24.10 or full P24.11 practical browser
   qualification. No success was inferred from the navigation alone. Source
-  commit `4bfe7add708935f9d364dc65364e5c58e58c9144` now applies bounded,
-  model-compatible defaults to omitted native-browser state requests, and the
-  focused tests pass. The mitigation still requires an independent real
-  acceptance replay.
+  commit `4bfe7add708935f9d364dc65364e5c58e58c9144` applies bounded,
+  model-compatible defaults to omitted native-browser state requests. Source
+  commit `bc8151b42f0e35d4e9b908b5696adeb51a92d86b` additionally limits large
+  Qwen3 contexts to one llama.cpp server slot, because the upstream automatic
+  slot count created four 65K KV slots on this host. The focused tests and
+  installed runtime check pass, but the mitigation still requires an
+  independent real browser acceptance replay.
 - A separate installed Qwen3-4B read-only coding qualification request was
   stopped after producing no final agent response; the Randevu worktree was
   unchanged. This does not establish a coding-agent acceptance or a source
@@ -1123,3 +1127,11 @@ silently treated as passing.
   --context-size 65536` and returned ready/CUDA/HTTP-200 health afterward.
   This remains a host/model-runtime limitation, not evidence of a wrong Gemini
   key or a new Hafiye route regression.
+- A controlled comparison confirmed the resource contribution: with
+  `LLAMA_ARG_N_PARALLEL=1`, the installed Qwen3-4B Hafiye terminal path wrote
+  and verified a marker in about 24 seconds; without the source fix, the same
+  path used the upstream automatic four-slot default and looped until the
+  120-second bound. After installing `bc8151b42`, an environment-free restart
+  logged `n_slots=1` and returned `AUTO→CUDA`/HTTP-200 health. A subsequent
+  local model attempt still exhibited a model-side repeated tool/log action,
+  so no browser or coding acceptance is claimed.

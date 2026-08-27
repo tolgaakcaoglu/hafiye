@@ -755,3 +755,19 @@ This confirms a provider project/credit-ledger blocker across the tested
 current model families; it is not a Qwen fallback or model-picker mismatch.
 
 | P24-GEMINI-TRANSPORT-CHECK-01 | Native versus documented Gemini transport | Same Secret Service-backed key/model via `v1beta/models/{model}:generateContent` and Google's `/v1beta/openai/chat/completions` endpoint | Both transports return HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted`; no Hafiye transport defect is established | NOT ACCEPTED / KI-059 |
+
+## P24 local runtime slot hardening — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-QWEN3-SLOT-UNIT-01 | Large-context Qwen3 slot policy | `.venv/bin/pytest -q tests/hermes_cli/test_local_runtime.py`; `.venv/bin/ruff check hermes_cli/local_runtime.py tests/hermes_cli/test_local_runtime.py`; `git diff --check` | `14 passed`; the compatibility helper forwards `--parallel 1` only for Qwen3 contexts above 40,960 and leaves other models/contexts unchanged | PASS / SOURCE |
+| P24-QWEN3-SLOT-INSTALLED-01 | Installed managed runtime command | Rebuild/package source `bc8151b42f0e35d4e9b908b5696adeb51a92d86b`; root-broker reinstall; `env -u LLAMA_ARG_N_PARALLEL /usr/bin/hafiye runtime server restart qwen3-4b-q4_k_m --backend AUTO --context-size 65536`; inspect llama-server log and health | Installed manifest matches `bc8151b42`; environment-free startup logged `n_slots=1`; runtime was ready with `AUTO→CUDA`, Qwen3-4B on port 11435, and HTTP health 200; package doctor remained `ok=true`, `blockers=[]` with optional Cargo warning | PASS / INSTALLED |
+| P24-QWEN3-SLOT-AGENT-01 | Local agent behavior after slot mitigation | Installed `/usr/bin/hafiye ask --provider custom --model .../qwen3-4b-q4_k_m.gguf --toolsets terminal` with a `/tmp` marker; compare explicit one-slot and source-default one-slot runs | Explicit one-slot run created/read the marker and returned its final marker in about 24 seconds. The source-default run also created the marker, but the model then repeated a `log` action and did not return the requested clean final response. This is not a browser/coding acceptance | NOT ACCEPTED / KI-060 |
+| P24-QWEN3-BROWSER-01 | Local native-browser agent behavior after slot mitigation | Installed Qwen3-4B `hafiye ask --toolsets browser` with only `browser_native`, bounded state requests, and the real Firefox window | The model navigated/retrieved the real Firefox state, but the host AT-SPI tree remained non-actionable and the model emitted a success marker despite explaining the blocker; no video/channel/playback success was claimed | NOT ACCEPTED / KI-060 |
+| P24-FINAL-REGRESSION-03 | Regression after runtime slot source change | Targeted local/browser/policy/coding/runtime suite; canonical historical five-node comparison; installed package doctor and gateway health | Targeted suite `213 passed`; exact upstream comparison `3 passed, 2 failed`, with only accepted whitelist IDs 2 and 3 failing; package doctor `ok=true`, `blockers=[]`; gateway health HTTP 200. No new/different regression | PASS / AUTOMATED; P24 ACCEPTANCE STILL OPEN |
+
+The one-slot compatibility change reduces the measured host/KV-cache pressure,
+but Qwen3-4B still produced a repeated tool/log loop and the real native
+browser accessibility tree remains non-actionable. It does not promote P24.9,
+P24.10, P24.11, or P24.14 to PASS. The product route remains Gemini/NORMAL;
+Gemini generation remains blocked by KI-059.

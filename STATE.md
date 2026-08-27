@@ -9,12 +9,11 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 4bfe7add708935f9d364dc65364e5c58e58c9144
-  (P24 native-browser hardening: explicit nested `success:false` / `ok:false`
-  results are classified as failures, failed actions cannot finalize as
-  success without fresh state, and omitted native browser state requests use
-  bounded defaults of 200 nodes and depth 20.) Earlier source identities
-  remain recorded below.
+- Current Hafiye source HEAD: bc8151b42f0e35d4e9b908b5696adeb51a92d86b
+  (P24 runtime hardening after the native-browser fix: large-context Qwen3
+  servers use one llama.cpp slot to avoid multiplying the KV-cache footprint
+  on this resource-constrained host.) Earlier source identities remain
+  recorded below.
 - Current repository/documentation closure HEAD:
   `2d78f2a50` (substantive documentation closure; this metadata pointer is
   kept separate from the source HEAD).
@@ -113,7 +112,7 @@ qualification subtask is complete with a measured host resource warning.
 Unaccepted P23 rows remain open and must not be represented as passed.
 
 P24 — Hafiye Jarvis experience convergence: source implementation and
-automated verification are complete at `4bfe7add`, but the phase remains open
+automated verification are complete at `bc8151b42`, but the phase remains open
 for installed real-machine acceptance. The user explicitly added this binding
 phase on 2026-08-27 to make the installed product operate as one assistant
 loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
@@ -2599,3 +2598,31 @@ offline replay remain unaccepted. No P25 or release tag was created.
 - The managed local server was then recovered with `/usr/bin/hafiye runtime server restart qwen3-4b-q4_k_m --backend AUTO --context-size 65536`. The post-recovery health check reported the Qwen3 model ready on port 11435, requested backend `AUTO`, selected backend `CUDA`, and HTTP health 200. No route configuration was changed; the product route remains `gemini/gemini-3.1-flash-lite` with `NORMAL` privacy.
 - The new bounded-state source mitigation prevents the previously observed unbounded accessibility payload at the tool boundary, but it does not by itself satisfy the local browser acceptance. P24.9, P24.10, P24.12, physical voice/recovery checks, P23 replays, and the explicitly deferred offline replay remain open. No P25 or release tag was created.
 - Final post-source regression rerun after `4bfe7add` completed with targeted backend `153 passed`, P24 UI `93 passed`, Desktop `npm run typecheck` exit 0, packaging tests `15 passed`, and the canonical upstream comparison `3 passed, 2 failed`. The two failures are accepted historical whitelist IDs 2 and 3; no new/different failure was found. The repository was clean before this documentation update.
+
+### P24 local runtime slot hardening — 2026-08-27
+
+- A real installed Qwen3-4B comparison isolated a resource contribution in the
+  managed llama.cpp server. With the upstream automatic slot count, the server
+  initialized four 65K slots and a terminal agent attempt repeatedly invoked
+  the same tool until the 120-second bound. With `LLAMA_ARG_N_PARALLEL=1`, the
+  same installed Hafiye path wrote/read a `/tmp` marker and returned its final
+  marker in about 24 seconds.
+- Source commit `bc8151b42f0e35d4e9b908b5696adeb51a92d86b` now applies
+  `--parallel 1` to Qwen3 contexts above 40,960 only. The change is covered by
+  `tests/hermes_cli/test_local_runtime.py` (`14 passed`) and leaves other model
+  families and smaller contexts on llama.cpp's upstream behavior.
+- The package was rebuilt and installed through the existing root broker. The
+  installed manifest reports source `bc8151b42f0e35d4e9b908b5696adeb51a92d86b`,
+  pinned upstream `f293e7206b4ddd66042329442c6afebc19a8808d`, and baseline merge
+  `2ac06b131a237916432503ac67bbcada6dbea39e`. An environment-free Qwen3-4B
+  restart logged `n_slots=1`, selected `CUDA` under `AUTO`, and returned
+  ready/HTTP-200 health; package doctor remains `ok=true`, `blockers=[]`.
+- The subsequent installed local Qwen3 attempt still repeated a `log` action
+  instead of returning a clean final response, and the bounded native-browser
+  attempt still lacked an actionable AT-SPI tree. No browser/coding acceptance
+  is claimed; KI-060 remains open as a practical local-model limitation.
+- Post-change targeted local/browser/policy/runtime tests returned `213 passed`.
+  The exact historical upstream comparison returned `3 passed, 2 failed`; only
+  accepted whitelist IDs 2 and 3 failed. Gemini remains the configured
+  `NORMAL` route, with the same Secret-Service credential and current provider
+  quota blocker KI-059; no credential was printed or written to the repository.

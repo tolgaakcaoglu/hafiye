@@ -789,7 +789,7 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`4bfe7add708935f9d364dc65364e5c58e58c9144`; these implementation marks do not
+`bc8151b42f0e35d4e9b908b5696adeb51a92d86b`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
 rebuilt/reinstalled from the package containing the source checkpoint above;
 physical acceptance remains open.
@@ -837,9 +837,10 @@ physical acceptance remains open.
       rejected before any browser tool event by Gemini HTTP 429
       `RESOURCE_EXHAUSTED`; KI-059 records the active provider quota blocker.
       The source-level native-browser boundary now applies default state bounds
-      of 200 nodes and depth 20. A fresh installed local Qwen3 Composer replay
-      selected the real local model through the picker but hit local provider
-      context overflow before browser acceptance; KI-060 remains open.
+      of 200 nodes and depth 20. The latest runtime hardening also starts
+      large-context Qwen3 servers with one llama.cpp slot; a fresh installed
+      local Qwen3 Composer replay still did not produce a clean browser
+      acceptance, so KI-060 remains open.
       Final acceptance remains open.
 - [ ] P24.11 Qualify and select a practical agent-capable local-first default
       through registry capability metadata. Keep Qwen2 validation-only and
@@ -868,10 +869,11 @@ route endpoint correction is in `10bd0b8f` and has real source and installed
 CLI `LOCAL_ONLY` Qwen3-4B route replays. These source checks have a real
 GNOME/AT-SPI tool-boundary replay, but they do not themselves satisfy P24.10.
 P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
-evidence exists. The latest source hardening is `4bfe7add`: explicit native
+evidence exists. The latest source hardening is `bc8151b42`: explicit native
 browser failure envelopes are classified correctly, final success is gated
-on a fresh browser state, and omitted native-browser state is bounded to 200
-nodes/depth 20. The user's explicitly deferred offline replay is not
+on a fresh browser state, omitted native-browser state is bounded to 200
+nodes/depth 20, and large-context Qwen3 runtime instances are limited to one
+server slot on this host. The user's explicitly deferred offline replay is not
 marked PASS.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
@@ -922,3 +924,24 @@ is claimed.
   fresh requests return provider HTTP 429 `RESOURCE_EXHAUSTED` with
   `prepayment credits are depleted` (KI-059). The route was restored to
   Gemini/NORMAL after local testing.
+
+### P24 local runtime slot hardening — 2026-08-27
+
+- A real installed comparison showed that llama.cpp's automatic four-slot
+  configuration multiplied the 65K Qwen3 KV-cache footprint on this host. An
+  explicit one-slot diagnostic completed a Qwen3-4B terminal marker task in
+  about 24 seconds, while the automatic-slot run looped until its 120-second
+  bound.
+- Source commit `bc8151b42f0e35d4e9b908b5696adeb51a92d86b` now forwards
+  `--parallel 1` only for Qwen3 contexts above 40,960. The source test file
+  returned `14 passed`; the rebuilt installed package reported the same source
+  commit and an environment-free restart logged `n_slots=1`, `AUTO→CUDA`, and
+  HTTP-200 readiness. Other model families and smaller contexts are unchanged.
+- This reduces the host/KV pressure but does not qualify Qwen3-4B for the
+  P24 browser/coding acceptance: a later local attempt still repeated a tool
+  action, and native Firefox state remained non-actionable. KI-060 remains
+  open; P24.9, P24.10, P24.11, P24.12 and P24.14 remain unchecked.
+- The post-change targeted suite returned `213 passed`; the exact historical
+  upstream comparison returned `3 passed, 2 failed`, only accepted whitelist
+  IDs 2 and 3. Gemini remains the configured NORMAL route and KI-059 remains
+  the provider-generation blocker.
