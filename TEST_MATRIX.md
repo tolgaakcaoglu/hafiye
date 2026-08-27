@@ -924,3 +924,15 @@ live. P24 remains open for the separate physical Jarvis acceptance rows.
 | P24-MODEL-CATALOG-UI-02 | Full Desktop regression | `npm run test:ui`; `npm run typecheck` | UI `5,581 passed`; typecheck exit 0 | PASS |
 | P24-MODEL-CATALOG-UPSTREAM-01 | Exact historical comparison | Canonical five-node command | `3 passed, 2 failed`; only accepted IDs 2 and 3 fail | ACCEPTED BASELINE / NO NEW REGRESSION |
 | P24-MODEL-CATALOG-PACKAGE-01 | Installed Model page and catalog backend | Production pack/deb; rootd reinstall; installed stamp; authenticated `/api/local-runtime/models`; real window state | Source `ecace1972`; gateway active; Hafiye visible; all three Qwen3.8 entries `downloadable` | PASS / INSTALLED SUPPORT |
+
+## P24 managed local-runtime Turkish localization repair — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-MODEL-I18N-01 | Turkish i18n/runtime component contract | `../../node_modules/.bin/vitest run --project ui src/app/settings/local-runtime-settings.test.tsx src/i18n/runtime.test.ts --reporter=dot` | `2 files / 13 passed`; Turkish navigation, runtime controls, trusted catalog purpose/auth/resource copy and absence of the former English download action asserted | PASS |
+| P24-MODEL-I18N-02 | Full Desktop regression | `npm run test:ui -- --reporter=dot`; `npm run typecheck`; changed-file ESLint; `git diff --check` | UI `588 files / 5,582 passed`; typecheck, scoped lint and diff check exit 0. Whole-repository lint retains nine unrelated pre-existing errors | PASS / EXISTING LINT DIAGNOSTIC |
+| P24-MODEL-I18N-UPSTREAM-01 | Exact historical comparison | Canonical five-node command | `3 passed, 2 failed`; only accepted whitelist IDs 2 and 3 failed | ACCEPTED BASELINE / NO NEW REGRESSION |
+| P24-MODEL-I18N-PACKAGE-01 | Installed Turkish Model page | `npm run pack`; `scripts/build_deb.py`; root-broker reinstall; package doctor; isolated real installed Electron render and DOM readback | Package/stamp source `9f315f6a6`; doctor OK with optional Cargo warning; target screenshot shows Turkish navigation/runtime/catalog copy; old `Download verified GGUF` absent and `Doğrulanmış GGUF’u indir` present | PASS / INSTALLED VISUAL |
+
+This localization repair does not promote model qualification/default-route
+state or any open physical P24 acceptance row.

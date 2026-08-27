@@ -1267,3 +1267,20 @@ silently treated as passing.
   typecheck, production package installation and live catalog response pass.
 - The three catalog models remain explicit downloads with pending
   qualification; this fix does not download or select them automatically.
+
+## KI-066 — Managed Local GGUF Runtime ignored the Turkish locale
+
+- Status: RESOLVED at source/package commit
+  `9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0`.
+- The newly mounted runtime/catalog surface used hard-coded English for its
+  headings, actions, placeholders, authentication/conflict messages and
+  backend-owned catalog purpose/resource warnings. The Settings sidebar also
+  hard-coded `Hafiye Control Center` and `Computer`.
+- The surface now consumes the canonical Desktop i18n state. Known product
+  catalog copy is translated by trusted catalog ID without changing backend
+  metadata, qualification, resource warning codes, model selection or route
+  semantics; unknown catalog entries retain backend-provided copy.
+- Focused tests, all 5,582 Desktop UI tests, typecheck, changed-file lint,
+  production packaging/rootd reinstall and real installed Electron visual/DOM
+  verification passed. The exact upstream comparison remains `3 passed, 2
+  failed`, only accepted historical IDs 2 and 3.

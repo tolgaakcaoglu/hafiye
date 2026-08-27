@@ -1107,3 +1107,19 @@ is claimed.
   `[...müzik çalıyor...]`; the former import failure did not recur. Gateway
   health remained HTTP 200. This is package/STT support evidence only; physical
   P24 voice and full Jarvis acceptance remain open.
+
+### P24 managed local-runtime Turkish localization repair — 2026-08-27
+
+- [x] Route the loaded Model page's managed GGUF headings, actions,
+  placeholders, status messages, trusted catalog descriptions/warnings and
+  Settings navigation labels through the existing Desktop locale state.
+- [x] Verify Turkish rendering with focused i18n/runtime tests, full Desktop
+  UI regression, typecheck, changed-file lint, exact upstream comparison,
+  production packaging and a real installed Electron screenshot/DOM readback.
+- Source commit: `9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0`.
+  The installed target surface now shows `Hafiye Kontrol Merkezi`,
+  `Bilgisayar`, `Yerel GGUF Çalışma Zamanı` and Turkish catalog warnings and
+  download actions. KI-066 is resolved.
+- This repair does not change any P24 completion checkbox, model qualification
+  or default route. P24 remains open for the existing physical and complete
+  Jarvis acceptance work.

@@ -11,12 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (Local GGUF catalog visibility
+- Current Hafiye source HEAD (managed local-runtime Turkish localization
   checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  ecace19727b8f26d372e1ea6e18ed05706ad5ef9
+  9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -775,6 +775,18 @@ P0 computer-use acceptance requires:
   llama.cpp runtime and model qualification architecture are unchanged.
 - The pinned upstream commit, baseline merge, remotes and preserved upstream
   history are unchanged.
+
+## P24 managed local-runtime Turkish localization patch group
+
+- Hafiye source/test commit:
+  `9f315f6a6b20d7f37e5a933b6f810c3b8ef975e0`.
+- The upstream-derived Desktop Settings/Model composition now routes Hafiye's
+  managed GGUF runtime labels through the existing i18n context. Trusted
+  Hafiye catalog presentation copy is localized by backend-owned catalog ID;
+  backend model metadata, capability/qualification state and route policy are
+  unchanged.
+- The pinned upstream commit, baseline merge, remotes and preserved upstream
+  history are unchanged. No upstream source commit was rewritten.
 
 ## P17 Control Center patch group
 
