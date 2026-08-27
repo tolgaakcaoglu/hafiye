@@ -789,7 +789,7 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`ee380ba75a21b8559ccb523b77b8cd511359a9ff`; these implementation marks do not
+`139f5f9491aa46adebbca932b255ad2b87141702`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
 rebuilt/reinstalled from the package containing the source checkpoint above;
 physical acceptance remains open.
@@ -861,6 +861,12 @@ physical acceptance remains open.
       `npm run typecheck`, production packaging, root-broker reinstall, and a
       real installed Desktop launch verified the repaired `/usr/bin/hafiye`
       command. This does not replace the required physical shortcut acceptance.
+- [x] Repair the packaged managed local-STT child environment so the internal
+      `hermes_cli.voice_runtime` module remains importable after generic
+      subprocess sanitization. Source/test commit `139f5f949`; user-supplied
+      STT commands remain sanitized, and the installed authenticated
+      `/api/audio/transcribe` path returned HTTP 200. Physical voice acceptance
+      remains open.
 - [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
       wake, visible transcript, short acknowledgement, coding flow, YouTube
       flow, truthful blocker, three repeated turns, barge-in, local/offline,
@@ -875,13 +881,14 @@ route endpoint correction is in `10bd0b8f` and has real source and installed
 CLI `LOCAL_ONLY` Qwen3-4B route replays. These source checks have a real
 GNOME/AT-SPI tool-boundary replay, but they do not themselves satisfy P24.10.
 P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
-evidence exists. The latest source hardening is `ee380ba75`: explicit native
+evidence exists. The latest source hardening is `139f5f949`: explicit native
 browser failure envelopes are classified correctly, final success is gated
 on a fresh browser state, omitted native-browser state is bounded to 200
-nodes/depth 20, and large-context Qwen3 runtime instances are limited to one
-server slot on this host; the installed legacy GNOME emergency binding is
-repaired only for the reserved Hafiye ownership marker. The user's explicitly
-deferred offline replay is not marked PASS.
+nodes/depth 20, large-context Qwen3 runtime instances are limited to one
+server slot on this host, the installed legacy GNOME emergency binding is
+repaired only for the reserved Hafiye ownership marker, and the packaged
+managed STT child receives the exact Hafiye backend module root. The user's
+explicitly deferred offline replay is not marked PASS.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,
@@ -1058,3 +1065,23 @@ is claimed.
 - This does not promote P24.9/P24.10/P24.11/P24.12 or P24.14: browser/coding
   practical qualification, active-turn restart recovery, and physical
   acceptance are still outstanding. Gemini/NORMAL remains the product route.
+
+### P24 packaged managed STT module-path repair — 2026-08-27
+
+- A real installed Desktop log showed the managed local STT child failing with
+  `ModuleNotFoundError: No module named 'hermes_cli'` when launched outside the
+  source checkout. The generic child-environment sanitizer had removed the
+  backend module root needed by Hafiye's own managed runtime.
+- Source/test commit `139f5f9491aa46adebbca932b255ad2b87141702` restores only
+  the exact Hafiye backend root for the managed `hermes_cli.voice_runtime`
+  command. User-provided STT command templates continue to use the ordinary
+  sanitized environment.
+- The broad voice/gateway regression set returned `311 passed, 12 skipped, 2
+  warnings`. The Desktop was repacked, the Debian package was rebuilt and
+  reinstalled through `hafiye-rootd`, and package doctor remained OK with only
+  the existing optional `cargo: not found` warning.
+- From `/tmp`, the authenticated installed `/api/audio/transcribe` request
+  returned HTTP 200 with `provider=local_command` and
+  `[...müzik çalıyor...]`; the former import failure did not recur. Gateway
+  health remained HTTP 200. This is package/STT support evidence only; physical
+  P24 voice and full Jarvis acceptance remain open.

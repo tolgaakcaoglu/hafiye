@@ -1205,3 +1205,23 @@ silently treated as passing.
 - Post-restart local Qwen3-4B terminal/file execution and independent marker
   verification pass, but that evidence does not establish practical browser or
   coding-agent qualification and does not replace an active-turn restart test.
+
+## KI-063 — Packaged managed STT child could not import Hafiye modules
+
+- Status: RESOLVED at source commit
+  `139f5f9491aa46adebbca932b255ad2b87141702`.
+- A real installed Desktop log showed the managed local STT child failing with
+  `ModuleNotFoundError: No module named 'hermes_cli'` when started outside the
+  source checkout. The generic subprocess sanitizer removed the installed
+  backend root from `PYTHONPATH`, including for Hafiye's own managed
+  `hermes_cli.voice_runtime` child.
+- The fix restores only the exact Hafiye backend root for the managed internal
+  STT command after sanitization. User-supplied STT command templates retain
+  the ordinary sanitized environment and are not given the internal path.
+- The focused source and voice/gateway regression set returned `311 passed,
+  12 skipped, 2 warnings`. After repackaging and root-broker installation, an
+  authenticated installed `/api/audio/transcribe` request from `/tmp` returned
+  HTTP 200 with `provider=local_command` and `[...müzik çalıyor...]`; the import
+  failure did not recur.
+- This issue is separate from the still-open physical P24 voice acceptance;
+  P24 remains open.

@@ -598,7 +598,7 @@ current observed comparison subset is 2, 3, and 5.
 ## P24 Hafiye Jarvis experience convergence — source implementation and final acceptance
 
 P24 was defined on 2026-08-27 by binding user direction. The current source
-implementation checkpoint is `ee380ba75a21b8559ccb523b77b8cd511359a9ff`; the
+implementation checkpoint is `139f5f9491aa46adebbca932b255ad2b87141702`; the
 installed package was rebuilt/reinstalled from that source checkpoint, whose
 manifest contains the pinned upstream and baseline merge identities below.
 Implementation and automated evidence below do not promote
@@ -858,3 +858,18 @@ remains the configured product route.
 The local marker pass does not qualify Qwen3 for the required browser/coding
 flows or satisfy active-turn restart recovery. The persistent route remains
 Gemini/NORMAL and P24 remains open.
+
+## P24 packaged managed STT module-path repair — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-STT-SOURCE-01 | Managed versus user-defined local STT subprocess environment | `.venv/bin/pytest -q tests/tools/test_hafiye_voice_runtime_hooks.py tests/tools/test_wake_word.py tests/tools/test_voice_mode.py tests/tools/test_voice_stop_phrase.py tests/tools/test_voice_cli_integration.py tests/tools/test_transcription_tools.py tests/gateway/test_voice_command.py tests/gateway/test_auto_voice_reply_format.py tests/gateway/test_streaming_tts_consumer.py tests/gateway/test_completion_delivery.py` | `311 passed, 12 skipped, 2 warnings`; managed `hermes_cli.voice_runtime` receives the exact Hafiye backend root after sanitization, while user command templates remain sanitized | PASS / SOURCE REGRESSION |
+| P24-STT-PACKAGE-01 | Production package and installed service after STT repair | `cd apps/desktop && npm run pack`; `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; root-broker `apt-get --reinstall`; `/usr/bin/hafiye package doctor`; gateway health | Package rebuilt/reinstalled with manifest source `139f5f9491aa46adebbca932b255ad2b87141702`; package doctor OK with only optional `cargo: not found`; gateway health HTTP 200/`ok=true` | PASS / INSTALLED SUPPORT |
+| P24-STT-RELAY-01 | Installed Hafiye HTTP transcription boundary | From `/tmp`, authenticated POST of a generated WAV to `http://127.0.0.1:9120/api/audio/transcribe` | HTTP 200, `provider=local_command`, transcript `[...müzik çalıyor...]`; no `ModuleNotFoundError: No module named 'hermes_cli'` | PASS / INSTALLED SUPPORT |
+| P24-STT-DESKTOP-01 | Desktop regression after managed STT source change | `cd apps/desktop && npx vitest run --project ui` over the seven Jarvis/voice files; `npm run typecheck`; `npx vitest run --project electron`; packaging pytest | UI `93 passed`; typecheck exit 0; Electron `1,616 passed, 3 skipped`; packaging `15 passed` | PASS / DESKTOP REGRESSION |
+| P24-STT-UPSTREAM-01 | Exact historical upstream comparison after managed STT source change | Canonical five-ID command from `STATE.md` | `3 passed, 2 failed`; only accepted whitelist IDs 2 and 3 failed, with no new/different failure | ACCEPTED BASELINE / NO NEW REGRESSION |
+
+The STT repair is not a physical microphone/wake acceptance. P24 remains open;
+the physical P24 acceptance, practical coding/browser completion, provider
+availability, restart during an active recoverable turn, and the explicitly
+deferred offline replay are not promoted by these rows.

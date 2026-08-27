@@ -9,10 +9,10 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: ee380ba75a21b8559ccb523b77b8cd511359a9ff
-  (P24 Desktop hardening after the runtime/browser fixes: legacy GNOME
-  emergency bindings are repaired in place only when their reserved Hafiye
-  ownership marker matches.) Earlier source identities remain recorded below.
+- Current Hafiye source HEAD: 139f5f9491aa46adebbca932b255ad2b87141702
+  (P24 packaged managed-STT hardening: the internal whisper.cpp child gets
+  the exact installed backend import root after generic subprocess
+  sanitization.) Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `0ae35e028fabdb8efe17a9d7d65cd1d433e6f82d` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
@@ -111,7 +111,7 @@ qualification subtask is complete with a measured host resource warning.
 Unaccepted P23 rows remain open and must not be represented as passed.
 
 P24 — Hafiye Jarvis experience convergence: source implementation and
-automated verification are complete at `ee380ba75`, but the phase remains open
+automated verification are complete at `139f5f949`, but the phase remains open
 for installed real-machine acceptance. The user explicitly added this binding
 phase on 2026-08-27 to make the installed product operate as one assistant
 loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
@@ -130,11 +130,11 @@ stable final assistant response, so no P24 acceptance row is promoted.
 
 The installed package is `hafiye 0.20.5-1` and its
 `/usr/lib/hafiye/package-manifest.json` now carries source
-`ee380ba75a21b8559ccb523b77b8cd511359a9ff`, the pinned upstream commit, and
+`139f5f9491aa46adebbca932b255ad2b87141702`, the pinned upstream commit, and
 the baseline merge commit. The package was rebuilt and reinstalled through the
-existing `hafiye-rootd` boundary; the selected-route endpoint and emergency
-binding fixes are now in the installed package. The live Desktop process remains
-under
+existing `hafiye-rootd` boundary; the selected-route endpoint, emergency
+binding, and packaged managed-STT module-path fixes are now in the installed
+package. The live Desktop process remains under
 `/usr/lib/hafiye/desktop`, the user autostart entry targets that installed
 binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
 returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
@@ -912,7 +912,7 @@ bugs are not being fixed by Hafiye.
    long-running managed-desktop emergency stop. Keep the explicitly deferred
    offline replay unaccepted.
 2. Re-run the real Randevu and YouTube Composer scenarios with the installed
-   `ee380ba75` package once the Gemini quota is usable. Do not promote a
+   `139f5f949` package once the Gemini quota is usable. Do not promote a
    partial tool trace to P24 acceptance.
 3. Run the final P24/P23 regression matrices and close P24 only if every
    installed real-machine acceptance item is genuinely green; do not create
@@ -2812,3 +2812,33 @@ offline replay remain unaccepted. No P25 or release tag was created.
   browser/coding qualification, physical voice acceptance, and active-turn
   restart recovery remain open; the persistent product route remains
   Gemini/NORMAL.
+
+### P24 packaged managed STT module-path repair — 2026-08-27
+
+- A real installed Desktop log exposed a Hafiye packaging defect: the managed
+  local STT child failed with `ModuleNotFoundError: No module named
+  'hermes_cli'` when launched from outside the source checkout. The generic
+  subprocess environment sanitizer correctly removed the backend's internal
+  `PYTHONPATH`, but the Hafiye-owned managed `hermes_cli.voice_runtime` child
+  still needed that exact installed module root.
+- Source commit `139f5f9491aa46adebbca932b255ad2b87141702` adds a narrow managed
+  runtime path helper. It restores only the exact Hafiye backend root for the
+  managed local STT command after sanitization; user-supplied STT commands keep
+  the ordinary sanitized environment.
+- The focused source and voice/gateway regression command returned `311 passed,
+  12 skipped, 2 warnings`. The production Desktop was repacked, the Debian
+  package was rebuilt and reinstalled through `hafiye-rootd`, and package doctor
+  remained OK with only the existing optional `cargo: not found` warning.
+- From `/tmp`, an authenticated real installed `/api/audio/transcribe` request
+  returned HTTP 200 with `provider=local_command` and the managed transcript
+  (`[...müzik çalıyor...]`); the former `hermes_cli` import error did not recur.
+  Gateway health remained HTTP 200 and the installed manifest carries source
+  `139f5f949`, pinned upstream `f293e7206b4ddd66042329442c6afebc19a8808d`, and
+  baseline merge `2ac06b131a237916432503ac67bbcada6dbea39e`.
+- Post-fix Desktop verification passed: the seven-file Jarvis/voice UI matrix
+  returned `93 passed`, `npm run typecheck` exited 0, the Electron project
+  returned `1,616 passed, 3 skipped`, and packaging tests returned `15 passed`.
+  The exact historical five-node comparison returned `3 passed, 2 failed`;
+  only accepted whitelist IDs 2 and 3 failed. `git diff --check` is clean.
+- This repairs the packaged STT boundary but is not a physical P24 wake,
+  transcript, speech, barge-in, or full Jarvis acceptance. P24 remains open.

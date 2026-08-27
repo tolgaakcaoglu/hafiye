@@ -11,11 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P24 Desktop emergency-binding repair checkpoint;
+- Current Hafiye source HEAD (P24 packaged managed-STT module-path repair
+  checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  ee380ba75a21b8559ccb523b77b8cd511359a9ff
+  139f5f9491aa46adebbca932b255ad2b87141702
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -699,6 +700,20 @@ P0 computer-use acceptance requires:
   in the installed package: a real launch changed the live gsettings command
   to `/usr/bin/hafiye emergency-stop --reason=global-hotkey`. The pinned Hermes
   commit, baseline merge, and upstream history were not changed.
+
+## P24 packaged managed STT module-path repair patch group
+
+- Hafiye source/test commit:
+  `139f5f9491aa46adebbca932b255ad2b87141702`.
+- The patch is Hafiye packaging/runtime glue, not an upstream Hermes change.
+  It restores the exact installed Hafiye backend root for the managed
+  `hermes_cli.voice_runtime` child after generic subprocess environment
+  sanitization, while leaving user-supplied STT command environments
+  sanitized.
+- The installed authenticated `/api/audio/transcribe` path returned HTTP 200
+  after the patch, and the broad voice/gateway regression set returned
+  `311 passed, 12 skipped, 2 warnings`. The pinned Hermes commit, baseline
+  merge commit, and upstream history are unchanged.
 
 ## P17 Control Center patch group
 
