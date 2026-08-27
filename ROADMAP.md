@@ -789,7 +789,7 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`139f5f9491aa46adebbca932b255ad2b87141702`; these implementation marks do not
+`e00da6acd52d00a6bdb0f4c7094d01d154b26d57`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
 rebuilt/reinstalled from the package containing the source checkpoint above;
 physical acceptance remains open.
@@ -867,6 +867,10 @@ physical acceptance remains open.
       STT commands remain sanitized, and the installed authenticated
       `/api/audio/transcribe` path returned HTTP 200. Physical voice acceptance
       remains open.
+- [x] Add the pinned Qwen3.8-27B UD-IQ1_S entry to the backend-owned production
+      model catalog and expose verified one-click download in Settings and
+      first-run onboarding. This is a catalog/default recommendation only:
+      qualification is pending and the active/default agent route is unchanged.
 - [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
       wake, visible transcript, short acknowledgement, coding flow, YouTube
       flow, truthful blocker, three repeated turns, barge-in, local/offline,
@@ -889,6 +893,11 @@ server slot on this host, the installed legacy GNOME emergency binding is
 repaired only for the reserved Hafiye ownership marker, and the packaged
 managed STT child receives the exact Hafiye backend module root. The user's
 explicitly deferred offline replay is not marked PASS.
+
+The latest source checkpoint `e00da6acd` also installs the pinned Qwen3.8-27B
+catalog entry in the production package. Its verified download surface is
+green, but P24.11 remains open because catalog availability is not practical
+agent qualification or default-route selection.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,

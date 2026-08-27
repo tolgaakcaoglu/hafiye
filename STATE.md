@@ -9,10 +9,9 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 139f5f9491aa46adebbca932b255ad2b87141702
-  (P24 packaged managed-STT hardening: the internal whisper.cpp child gets
-  the exact installed backend import root after generic subprocess
-  sanitization.) Earlier source identities remain recorded below.
+- Current Hafiye source HEAD: e00da6acd52d00a6bdb0f4c7094d01d154b26d57
+  (Pinned Qwen3.8-27B production catalog/download integration and native
+  context compatibility.) Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `6895013dc18575f3a704a9288092a6d81a49bbf7` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
@@ -2842,3 +2841,40 @@ offline replay remain unaccepted. No P25 or release tag was created.
   only accepted whitelist IDs 2 and 3 failed. `git diff --check` is clean.
 - This repairs the packaged STT boundary but is not a physical P24 wake,
   transcript, speech, barge-in, or full Jarvis acceptance. P24 remains open.
+
+## P24 pinned Qwen3.8-27B catalog integration — 2026-08-27
+
+- Source commit `e00da6acd52d00a6bdb0f4c7094d01d154b26d57` adds
+  `unsloth/Qwen3.8-27B-GGUF` / `Qwen3.8-27B-UD-IQ1_S.gguf` to the
+  backend-owned production catalog. The catalog pins Hugging Face revision
+  `4ca720788d1e01f1bff70c033e0d0028fd02e502`, SHA-256
+  `3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887`,
+  and size `6,192,222,208` bytes.
+- Settings and first-run onboarding now expose one-click verified download.
+  Existing manual GGUF import/download remains available. The Desktop uses a
+  six-hour bounded request for multi-gigabyte downloads while the backend
+  keeps resumable `.part` behavior and refuses to overwrite a conflicting
+  registered model ID.
+- Catalog membership is not qualification: Qwen3.8 is
+  `qualification=pending`, is not selected as the active/default agent route,
+  and will remain so until the existing registry qualification contract has
+  real tool/coding/browser evidence. Qwen3-14B qualification and KI-046 are
+  unchanged.
+- The original Qwen3 40,960-token YaRN workaround is no longer applied to the
+  Qwen3.5/Qwen3.8 family, whose GGUF metadata supplies its larger native
+  context. The managed pinned llama.cpp checkout contains the `qwen35`
+  architecture implementation.
+- Verification: local-runtime pytest `17 passed`; focused Settings/onboarding
+  Vitest `6 passed`; full Desktop UI `5,575 passed`; Desktop typecheck exit 0;
+  Ruff and Python compilation passed; production `npm run pack` and Debian
+  build passed. The exact historical five-node comparison returned `3 passed,
+  2 failed`, only accepted whitelist IDs 2 and 3.
+- The Debian package was rebuilt/reinstalled through `hafiye-rootd`. Installed
+  manifest source is `e00da6acd`, package doctor is OK with only the existing
+  optional `cargo: not found` warning, gateway is active/HTTP 200, and the
+  authenticated installed `/api/local-runtime/models` response reports the
+  pinned entry as `downloadable`. The 6.19 GB model was intentionally not
+  auto-downloaded.
+- P24 remains open. This catalog integration does not satisfy P24.9–P24.12 or
+  the physical P24.14 acceptance, and the user-deferred offline replay remains
+  unaccepted.

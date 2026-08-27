@@ -873,3 +873,16 @@ The STT repair is not a physical microphone/wake acceptance. P24 remains open;
 the physical P24 acceptance, practical coding/browser completion, provider
 availability, restart during an active recoverable turn, and the explicitly
 deferred offline replay are not promoted by these rows.
+
+## P24 pinned Qwen3.8-27B production catalog — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-QWEN38-CATALOG-01 | Backend catalog, integrity metadata, conflict state and native context | `.venv/bin/python -m pytest -q tests/hermes_cli/test_local_runtime.py`; Ruff; `py_compile` | `17 passed`; exact revision/SHA/size and downloadable/installed/conflict states passed; Qwen3.8 does not receive the original Qwen3 40,960-token YaRN override | PASS / SOURCE |
+| P24-QWEN38-DESKTOP-01 | Settings and first-run one-click verified download | Focused UI Vitest; full `npm run test:ui`; `npm run typecheck` | Focused `6 passed`; full UI `5,575 passed`; typecheck exit 0; exact repo/file/model/revision/SHA request asserted on both surfaces | PASS / DESKTOP |
+| P24-QWEN38-UPSTREAM-01 | Exact historical five-ID comparison | Canonical P23 five-node command | `3 passed, 2 failed`; failures only accepted whitelist IDs 2 and 3 | ACCEPTED BASELINE / NO NEW REGRESSION |
+| P24-QWEN38-PACKAGE-01 | Production package and live installed catalog | `npm run pack`; `scripts/build_deb.py`; root-broker `apt-get --reinstall`; package doctor; authenticated installed `/api/local-runtime/models` | Manifest source `e00da6acd`; package doctor OK with optional Cargo warning; gateway active/HTTP 200; pinned Qwen3.8 entry reports `downloadable`, `qualification=pending` | PASS / INSTALLED CATALOG |
+
+The 6,192,222,208-byte GGUF was not automatically downloaded. Catalog
+availability does not promote Qwen3.8 to agent-qualified/default status and
+does not close P24.11 or P24.14.

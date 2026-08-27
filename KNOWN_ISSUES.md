@@ -768,6 +768,11 @@ silently treated as passing.
   `validation=false`, and `resource_warning=KI-046`. The Qwen2.5-0.5B smoke
   fixture is recorded separately as `validation=true`, `agent=false`; these
   are registry capability states, not model-name UI hacks or route changes.
+- The separately cataloged Qwen3.8-27B UD-IQ1_S download is intentionally
+  `qualification=pending`. It is visible as Hafiye's recommended catalog
+  download but is not an agent-qualified/default route until real workflow and
+  host-resource qualification is completed; no success state is inferred from
+  its model name or catalog membership.
 
 ## KI-047 — Qwen3 packaged Composer replay did not emit a tool call
 

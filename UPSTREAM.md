@@ -11,12 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P24 packaged managed-STT module-path repair
+- Current Hafiye source HEAD (pinned Qwen3.8-27B production catalog/download
   checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  139f5f9491aa46adebbca932b255ad2b87141702
+  e00da6acd52d00a6bdb0f4c7094d01d154b26d57
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -64,7 +64,8 @@ The Hafiye source history contains these separable logical groups:
 - persistent-gateway: user-scoped authenticated Hafiye backend service.
 - composer-tray-autostart: Composer lifecycle, tray, and XDG autostart.
 - local-model-runtime: managed llama.cpp/GGUF runtime, registry, server,
-  Desktop controls, and the Hugging Face GGUF download surface.
+  Desktop controls, the Hugging Face GGUF download surface, and a backend-owned
+  integrity-pinned production catalog.
 - gateway-environment-guard: shared subprocess environment construction for the
   persistent gateway child process.
 - providers-secret-service: provider credential ownership, Linux Secret
@@ -714,6 +715,22 @@ P0 computer-use acceptance requires:
   after the patch, and the broad voice/gateway regression set returned
   `311 passed, 12 skipped, 2 warnings`. The pinned Hermes commit, baseline
   merge commit, and upstream history are unchanged.
+
+## P24 pinned Qwen3.8-27B catalog patch group
+
+- Hafiye source/test commit:
+  `e00da6acd52d00a6bdb0f4c7094d01d154b26d57`.
+- The existing managed llama.cpp/GGUF boundary now publishes a backend-owned
+  production catalog entry for the exact Unsloth Qwen3.8-27B UD-IQ1_S file,
+  pinned by Hugging Face commit, SHA-256 and byte size. Desktop Settings and
+  onboarding consume that same catalog; no second configuration system was
+  added.
+- The patch keeps the model unqualified/non-default pending real Hafiye agent
+  evidence, preserves resumable downloads, rejects model-ID overwrite, and
+  avoids applying the original Qwen3 40,960-token YaRN workaround to the
+  Qwen3.5/Qwen3.8 native-context family.
+- The installed Hafiye package exposes the entry as downloadable. The pinned
+  Hermes commit, baseline merge commit, and upstream history are unchanged.
 
 ## P17 Control Center patch group
 
