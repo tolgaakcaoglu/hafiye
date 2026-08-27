@@ -933,30 +933,31 @@ silently treated as passing.
 ## KI-056 — Hafiye Jarvis assistant loop is not product-converged
 
 - Status: OPEN / P24 PRODUCT BLOCKER.
-- The component architecture exists, but the installed user experience is not
-  yet the binding Jarvis loop. Current live config records
-  `wake_word.enabled=false` and `voice.auto_tts=false`, so the product does not
-  normally wait for “Hafiye” or speak assistant responses after login.
-- Source inspection shows `wake.detected` stops wake capture, plays a cue,
-  activates a separate small wake indicator, starts a fresh session and asks
-  the main Composer voice hook to start. It does not open the compact Hafiye
-  Composer. Quick Entry is currently opened by login policy, tray, or global
-  shortcut instead.
-- The compact Composer declares all roadmap activity labels, but its bridge
-  currently maps generic gateway/session `busy` state primarily to WORKING and
-  does not receive the authoritative listening/transcribing/acknowledging/
-  thinking/speaking/tool/re-arm lifecycle. Voice transcription is submitted
-  directly through the main Composer path rather than first becoming visible
-  in the compact Composer field.
-- The existing voice-conversation implementation can listen, transcribe,
-  submit, stream Piper speech, handle barge-in, and reconcile wake after a
-  turn. These are reusable foundations, not proof that the installed unified
-  loop passes.
-- Current route state uses `gemini/gemini-3.1-pro-preview`; the Qwen2 fixture is
-  validation-only and Qwen3 remains non-default under KI-046. P24 must qualify
-  a practical capability-based local-first agent route without hiding the host
-  resource warning.
-- P24 in `HAFIYE_MASTER_ROADMAP.md` is the binding remediation plan. KI-056 is
-  resolved only after the installed-package real-machine acceptance passes for
-  physical wake, visible transcript, concise speech, real coding and YouTube
-  tasks, verification, repeated re-arm, interruption, privacy and recovery.
+- The P24 source convergence checkpoint is implemented and tested in
+  `0d98610a2558a09ceba34436f1f4362082ed3e83`. It now has one canonical
+  `BOOTING`→`IDLE_ARMED`→`WAKE_DETECTED`→voice/task/tool→`REARMING` state
+  reducer, wake-to-Composer routing, transcript publication before submit,
+  concise acknowledgement/completion speech, and task/tool/model/progress
+  state in the compact Composer. The source implementation is not itself the
+  installed real-machine acceptance.
+- The new source checkpoint is installed as `hafiye 0.20.5-1`; package doctor,
+  gateway health, voice doctor, OpenHands doctor, and the four required
+  computer-use readiness flags are green. P24 targeted UI/backend/package
+  tests are green and the exact upstream comparison is `2 failed, 3 passed`
+  with only historical whitelist IDs 2 and 3 failing.
+- The live configuration deliberately still records
+  `wake_word.enabled=false` and `voice.auto_tts=false`. Auto-arm must remain
+  consent/setting gated; no source or doctor result is physical microphone
+  consent. The actual wake→Composer→microphone→whisper.cpp→Piper sequence,
+  audible barge-in, and emergency-stop during a real managed desktop action
+  have not been replayed in this acceptance.
+- The local Qwen3-4B terminal/file agent workflows pass, but its natural-
+  language browser replay timed out without a tool call. The read-only
+  Randevu coding-agent replay also timed out after 180 seconds. Qwen3-14B
+  remains agent-qualified/selectable but non-default with the KI-046 resource
+  warning; Qwen2.5-0.5B remains validation-only.
+- P24.9/P24.10/P24.11/P24.12 and P24.14 remain open until the real coding,
+  YouTube, local-first selection, recovery/re-arm, repeated-turn and physical
+  acceptance evidence exists. P23 remains open; its user-deferred offline
+  item is not promoted here. KI-056 is resolved only after the installed
+  product passes the complete P24.14 real-machine acceptance.

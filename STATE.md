@@ -9,20 +9,15 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 822448adee3c4fce570cbda2323bebc18ab5c792
-  (This completes the post-roadmap implementation audit: packaged-runtime
-  provenance, product diagnostics/logging, canonical audit coverage, and the
-  packaged doctor boundary are corrected. The Settings/Composer/new-chat
-  model identity source is `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33`. The
-  Desktop Turkish-locale implementation is
-  `3c2ea9a7a9c119475aa0cee471b6cf982677d8a6`; the current source HEAD also
-  aligns the package/runtime Electron pin at `40.10.6`. The preceding Electron
-  dependency update is `312831690f5cc46767c58882fed5d98f611220d0`,
-  Python 3.14 package bootstrap source is `fd435cc85fe018ca238256fb19547db2e7064565`,
-  and earlier source identities remain recorded below.)
+- Current Hafiye source HEAD: 0d98610a2558a09ceba34436f1f4362082ed3e83
+  (This is the P24 Jarvis-loop source checkpoint: canonical interaction
+  state, wake-to-Composer routing, visible Turkish transcript, concise voice
+  presentation, task/tool/progress locality, local-model compatibility,
+  browser-native preference, and installed Desktop packaging.) Earlier source
+  identities remain recorded below.
 - Previous documentation closure HEAD:
-  `b75f95d09a432914dc8fb1dc6738540b3ed1c36f`; this session's documentation update follows source HEAD
-  `822448adee3c4fce570cbda2323bebc18ab5c792`.
+  `b75f95d09a432914dc8fb1dc6738540b3ed1c36f`; the current P24 documentation
+  update follows source HEAD `0d98610a2558a09ceba34436f1f4362082ed3e83`.
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -114,20 +109,33 @@ qualification subtask is complete with a measured host resource warning.
 P23.4 remains explicitly user-deferred; the other unaccepted final-machine
 rows remain open and must not be represented as passed.
 
-P24 — Hafiye Jarvis experience convergence: planned, not started. The user
-explicitly added this binding phase on 2026-08-27 to make the installed product
-operate as one assistant loop: login auto-arm, “Hafiye” wake, visible Composer,
-visible Turkish transcript, short spoken acknowledgement, real tool execution
-and verification, concise completion, then clean wake re-arm. P24 reuses the
+P24 — Hafiye Jarvis experience convergence: source implementation and
+automated verification are complete at `0d98610a`, but the phase remains open
+for installed real-machine acceptance. The user explicitly added this binding
+phase on 2026-08-27 to make the installed product operate as one assistant
+loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
+transcript, short spoken acknowledgement, real tool execution and
+verification, concise completion, then clean wake re-arm. P24 reuses the
 fixed architecture and does not create a second agent/runtime.
+
+The P24 source checkpoint is installed as Debian package `hafiye 0.20.5-1`.
+Its manifest and Electron install stamp both carry source
+`0d98610a2558a09ceba34436f1f4362082ed3e83`; the live Desktop process is under
+`/usr/lib/hafiye/desktop`, the user autostart entry targets that installed
+binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
+returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
+not yet accepted because physical wake/microphone/barge-in/emergency actions,
+the real coding and YouTube scenarios, and the user's deferred offline replay
+still require final real-machine evidence.
 
 The KI-043 source-level privileged-command boundary is now resolved: normal
 terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
 confirmation policies remain enforced, and the normal route is not changed.
-The clean Gemini Composer file-task replay now passes P23.6. The exact
+The clean Gemini Composer file-task replay still passes P23.6. The exact
 `Firefox'u aç.` replay remains unaccepted because Gemini performed unrelated
-privileged package remediation; the local Qwen3 replay also emitted no tool
-call.
+privileged package remediation; the local Qwen3 browser replay timed out
+without a tool call. The Randevu read-only local-agent replay also timed out,
+so neither P24 coding nor P24 YouTube acceptance is claimed.
 
 ## Verified working
 
@@ -2225,16 +2233,12 @@ tests exist. The master roadmap requires the final real-machine sequence.
   still the first incomplete phase; deferred P23.2/P23.3/P23.4/P23.5/P23.14/
   P23.15 evidence remains unaccepted exactly as recorded in ROADMAP.md.
 
-### Exact next action
+### Previous exact next action
 
-1. Authenticate Git for the Hafiye GitHub origin and run the normal,
-   non-force `git push origin main`; the current Codex session has no HTTPS
-   credential and the attempted push was rejected before any remote mutation.
-2. When the user requests implementation, begin the P24 baseline and canonical
-   interaction-state work recorded below. P24 may remediate P23 failures; rerun
-   every affected P23 row afterward using the installed post-P24 package.
-3. Do not mark P23 or P24 complete and do not create a release tag until their
-   respective required real-machine evidence is genuinely green.
+The earlier implementation-audit action was to authenticate Git for the
+Hafiye GitHub origin and run a normal, non-force `git push origin main`. That
+operational credential blocker is unchanged; no remote mutation was attempted
+by this session.
 
 ### P24 planning record — 2026-08-27
 
@@ -2257,3 +2261,70 @@ tests exist. The master roadmap requires the final real-machine sequence.
 - Exact next implementation action when authorized: capture the P24.1 installed
   baseline, add failing tests for wake-to-Composer/state/transcript/speech
   contracts, then implement the single canonical interaction state machine.
+
+### P24 implementation and installed-package verification — 2026-08-27
+
+- Source checkpoint: `0d98610a2558a09ceba34436f1f4362082ed3e83`
+  (`feat: converge Jarvis voice interaction loop`). It adds the canonical
+  `BOOTING` through `REARMING` interaction reducer, shared wake/Composer
+  lifecycle, pre-submit Turkish transcript publication, concise acknowledgement
+  and completion speech, task/tool/model/progress/locality state, local-Qwen
+  compatibility, native-browser preference, and related regression coverage.
+- The clean Electron package was built with `cd apps/desktop && npm run pack`;
+  `npm run test:desktop:all` passed with the clean install stamp
+  `0d98610a2558` on `main`. The real combined package was built with
+  `python scripts/build_deb.py --json`; its manifest records the same source
+  commit, pinned upstream commit, and baseline merge commit.
+- The package was installed through the normal interactive Ptyxis/sudo path.
+  `dpkg-query` reports `hafiye 0.20.5-1`; `/usr/lib/hafiye/package-manifest.json`
+  and `/usr/lib/hafiye/desktop/resources/install-stamp.json` both carry the
+  source checkpoint. The live installed Desktop process is
+  `/usr/lib/hafiye/desktop/hafiye-desktop` and the user autostart entry targets
+  the installed binary.
+- Installed package doctor returned `ok=true` with `blockers=[]`. The user
+  gateway is enabled/active and
+  `curl http://127.0.0.1:9120/api/health` returned
+  `{"ok":true,"version":"0.20.5","auth_required":false}`. Voice doctor
+  and OpenHands doctor are green; computer-use-linux reports
+  `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`,
+  `can_send_development_input=true`, `can_query_windows=true`, and an empty
+  blockers list.
+- Installed-binary Electron smoke opened the real `/usr/lib/hafiye/desktop`
+  binary, rendered a Hafiye document with one root child, and matched the
+  `0d98610a` install stamp. The workspace packaged Electron acceptance remains
+  green: 116 files, 1,615 tests passed, 3 skipped; the P24 targeted UI suite
+  passed 93/93 and Desktop typecheck passed. The P24 backend/local/browser/
+  policy/OpenHands/project matrix passed 793 tests after excluding three
+  unrelated existing gateway fixture failures; the exact P23 backend target
+  matrix passed 261 tests with 2 skips.
+- The exact historical five-ID comparison after this source checkpoint was
+  `2 failed, 3 passed`. Only whitelist IDs 2 and 3 failed; IDs 1, 4, and 5
+  passed. This is an improvement within `ACCEPTED_UPSTREAM_BASELINE`, not a
+  new/different regression.
+- Real local Qwen3-4B terminal/file agent workflows pass. The local browser
+  natural-language replay timed out without a tool call, and the Randevu
+  read-only coding-agent replay timed out after 180 seconds. Neither is
+  promoted to P24 acceptance. Qwen3-14B remains qualified/selectable but
+  non-default with `KI-046` resource warning; Qwen2.5-0.5B remains
+  validation-only.
+- P24 remains open. Live configuration still has
+  `wake_word.enabled=false` and `voice.auto_tts=false`; auto-arm therefore
+  remains correctly consent/setting gated. No physical “Hafiye” wake,
+  microphone transcript, audible barge-in, emergency-stop during a real
+  managed desktop action, three-turn replay, final coding replay, final
+  YouTube replay, or offline replay was claimed. P23 remains open and P23.4
+  remains explicitly user-deferred.
+
+### Exact next actions
+
+1. In the installed Hafiye UI, explicitly enable wake listening after granting
+   microphone consent; do not infer consent from source or doctor output.
+2. Replay P24.14's physical wake/transcript/short-speech, coding, YouTube,
+   repeated re-arm, barge-in, emergency-stop, reconnect, and affected P23
+   checks. Keep the offline item deferred as instructed by the user.
+3. Investigate the local Qwen3 browser and Randevu timeouts with evidence; do
+   not make Qwen3 the default while its host/resource and practical workflow
+   evidence remain incomplete.
+4. Run the final regression matrix after those replays. Mark P24 complete only
+   when every required installed real-machine item is green; do not create
+   P25 or a release tag.

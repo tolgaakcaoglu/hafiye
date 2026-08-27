@@ -595,21 +595,68 @@ current observed comparison subset is 2, 3, and 5.
 | AUDIT-LIVE-01 | Product diagnostics and canonical audit | `/usr/bin/hafiye doctor`; hardening/voice/computer doctors; routing set; `hafiye root exec 'id -u'`; inspect state audit | General doctor all checks passed; hardening/voice/computer ready; root returned `0`; mode-0600 audit contains real provider switch and root RPC events | PASS |
 | AUDIT-UPSTREAM-01 | Exact historical five-ID comparison on source `822448ade` | Canonical P23 five-node command | `2 failed, 3 passed`; only historical IDs 2 and 3 fail | ACCEPTED BASELINE IMPROVED / NO NEW REGRESSION |
 
-## P24 Hafiye Jarvis experience convergence — planned
+## P24 Hafiye Jarvis experience convergence — source implementation and final acceptance
 
-P24 was defined on 2026-08-27 by binding user direction. The rows below are
-acceptance obligations, not completed results. No P24 source, package, service,
-route, or live configuration was changed while creating this plan, and no row
-may become `PASS` without the evidence required by the master roadmap.
+P24 was defined on 2026-08-27 by binding user direction. The source
+implementation checkpoint is `0d98610a2558a09ceba34436f1f4362082ed3e83` and is
+installed in `/usr/lib/hafiye`; implementation and automated evidence below do
+not promote the installed physical P24.14 acceptance to PASS.
 
 | ID | Boundary | Required command / observation | Current evidence | Status |
 |---|---|---|---|---|
-| P24-BASELINE-01 | Installed-product identity and readiness baseline | Record package/source identity, Desktop and gateway state, route/privacy/model state, wake/voice configuration, voice/computer/OpenHands doctors, and current P23 ledger before source work | Source inspection found reusable wake/STT/TTS/tool foundations but no accepted end-to-end Jarvis loop; live config currently has wake and automatic TTS disabled | PLANNED / NOT RUN |
-| P24-STATE-01 | Canonical assistant state machine | Targeted backend and Desktop tests proving the authoritative BOOTING through REARMING transitions, cancellation, errors, and reconnect behavior | Existing Quick Entry state is derived from generic busy/awaiting flags and is not sufficient evidence | PLANNED / NOT RUN |
-| P24-AUTO-01 | Login autostart and local wake auto-arm | Real reboot/login of the installed package with no terminal start; verify gateway, Desktop/tray, local wake listener, privacy policy, and explicit-disable behavior | P23 proves autostart and service health, but wake is currently disabled and automatic arming has not been accepted | PLANNED / NOT RUN |
-| P24-VOICE-01 | Physical wake to visible transcript and concise speech | Say “Hafiye”, observe Composer opening/focusing; speak Turkish; verify whisper.cpp final text in the Composer field, short truthful acknowledgement, real agent/tool execution, concise Piper completion, and wake re-arm | Earlier component/device tests do not prove this combined product contract | PLANNED / NOT RUN |
-| P24-CODE-01 | Jarvis coding workflow | Through the installed product say “Randevu projesini açıp bug fix yapalım”; verify project discovery, editor/workspace context, evidence-backed bug investigation, coding delegation when warranted, tests, result verification, concise voice, and no invented bug | No final scenario evidence exists | PLANNED / NOT RUN |
-| P24-YOUTUBE-01 | Jarvis browser/media workflow | Through the installed product say “YouTube'dan Mertcan Bahar'ın son videosunu aç”; verify correct channel, latest upload, local host browser action, playback/focus postcondition, and truthful handling of login/network ambiguity | Browser primitives are qualified, but this natural-language product scenario is not | PLANNED / NOT RUN |
-| P24-LOCAL-01 | Practical local-first agent route | Registry-capability-based qualification and installed-product task evidence for a practical agent-capable local GGUF; verify LOCAL_ONLY/OFFLINE fail closed and Qwen2 validation fixture is never treated as a production agent | Qwen3 is qualified/selectable but non-default under KI-046; the current default route is Gemini | PLANNED / NOT RUN |
-| P24-REPEAT-01 | Completion, barge-in, recovery, and re-arm | Three consecutive physical wake/task/completion cycles, audible “Hafiye dur” interruption, no-speech/provider/tool failure recovery, restart/reconnect recovery, and intentional emergency-stop/resume | Component-level cancellation evidence exists; combined installed-product replay does not | PLANNED / NOT RUN |
-| P24-REGRESSION-01 | Final regression and affected P23 replay | P24 targeted backend matrix, Desktop tests/typecheck/package build, installed real-machine acceptance, affected P23 rows, exact historical five-ID comparison, `git diff --check`, and clean-tree verification | Not run because implementation has not begun | PLANNED / NOT RUN |
+| P24-BASELINE-01 | Installed-product identity and readiness baseline | Package/source identity, Desktop/gateway state, route/privacy/model state, wake/voice configuration, voice/computer/OpenHands doctors, and current P23 ledger | Debian `hafiye 0.20.5-1`; package manifest and Electron stamp carry source `0d98610a`; autostart targets `/usr/lib/hafiye/desktop/hafiye-desktop`; gateway enabled/active and health `ok=true`; voice/OpenHands/computer doctors green; live `wake_word.enabled=false`, `voice.auto_tts=false`; P23 ledger remains open | PASS / BASELINE RECORDED |
+| P24-STATE-01 | Canonical assistant state machine | Targeted Desktop state/bridge/quick-entry/wake/speech tests for BOOTING through REARMING, cancellation, errors, and reconnect | `npx vitest run --project ui` on the P24 state/voice files: 7 files, 93 tests passed; Electron tests: 116 files, 1,615 passed, 3 skipped; `npm run typecheck` passed | PASS / SOURCE + AUTOMATED |
+| P24-AUTO-01 | Login autostart and local wake auto-arm | Real reboot/login with no terminal; verify gateway, Desktop/tray, local wake listener, privacy policy, and explicit-disable behavior | Installed autostart and service are configured and live; source preserves explicit persisted disable. A new physical reboot/login and enabled-microphone auto-arm observation are not recorded in this checkpoint; current persisted wake setting is false | IMPLEMENTED / REAL ACCEPTANCE OPEN |
+| P24-VOICE-01 | Physical wake to visible transcript and concise speech | Say “Hafiye”; observe Composer; speak Turkish; verify whisper.cpp final text, short acknowledgement, real agent/tool execution, concise Piper completion, and wake re-arm | Source/UI tests cover transcript-before-submit and concise speech; voice doctor reports managed Piper/whisper readiness. No physical wake/microphone replay was performed | NOT ACCEPTED / PHYSICAL EVIDENCE REQUIRED |
+| P24-CODE-01 | Jarvis coding workflow | Installed-product prompt “Randevu projesini açıp bug fix yapalım”; verify project/IDE/diagnosis/OpenHands/tests/result/concise speech | Project `randevu` resolves in the registry; OpenHands doctor and project/coding boundary tests passed 11/11. A read-only Qwen3-4B agent replay timed out after 180 seconds without evidence-backed result; the dirty user repository was not modified | NOT ACCEPTED / MODEL-TIMEOUT |
+| P24-YOUTUBE-01 | Jarvis browser/media workflow | Installed-product prompt “YouTube'dan Mertcan Bahar'ın son videosunu aç”; verify channel/latest video/local browser/playback | Browser integration tests passed, but the natural-language local Qwen3-4B replay timed out without a tool call; no incorrect video result is claimed | NOT ACCEPTED / MODEL-TIMEOUT |
+| P24-LOCAL-01 | Practical local-first agent route | Capability metadata, installed local GGUF task evidence, LOCAL_ONLY/OFFLINE fail-closed behavior, and Qwen2 validation-only boundary | Registry state is correct: Qwen2.5-0.5B `validation=true, agent=false`; Qwen3-14B/4B `agent=true, tool_calling=true, validation=false, resource_warning=KI-046`. Real Qwen3-4B terminal/file workflows pass; browser/coding practical evidence is incomplete; default remains Gemini and Qwen3 remains selectable/non-default | PARTIAL / ACCEPTANCE OPEN |
+| P24-REPEAT-01 | Completion, barge-in, recovery, and re-arm | Three physical wake/task/completion cycles, “Hafiye dur.” interruption, no-speech/provider/tool recovery, restart/reconnect, and emergency-stop/resume | Reducer, cancellation, emergency, voice, and restart-related automated coverage passes; no three-cycle physical replay, audible barge-in, or real managed-desktop emergency action was performed | NOT ACCEPTED / PHYSICAL EVIDENCE REQUIRED |
+| P24-REGRESSION-01 | Final regression and affected P23 replay | P24 backend/Desktop/package matrix, installed acceptance, affected P23 rows, exact historical comparison, diff check, and clean tree | P24 target backend/local/browser/policy/OpenHands/project matrix: 793 passed, 3 unrelated gateway fixture tests excluded; P23 target backend: 261 passed, 2 skipped; package doctor/health/voice/computer/OpenHands green; exact five-ID comparison: 2 failed, 3 passed, only whitelist IDs 2 and 3; `git diff --check` clean. Affected P23 physical/remote rows remain open | AUTOMATED PASS / FINAL OPEN |
+
+### P24 automated command record
+
+```bash
+cd apps/desktop
+npx vitest run --project ui \
+  src/store/composer.test.ts \
+  src/store/jarvis-interaction.test.ts \
+  src/app/contrib/hooks/use-quick-entry-bridge.test.ts \
+  src/store/quick-entry.test.ts \
+  src/store/wake-word.test.ts \
+  src/lib/speech-text.test.ts \
+  src/app/chat/composer/hooks/use-voice-conversation.test.tsx
+npm run typecheck
+npx vitest run --project electron
+npm run test:desktop:all
+```
+
+Results: P24 UI `93 passed`; Electron `1,615 passed, 3 skipped`; typecheck,
+clean `npm run pack`, and packaged Desktop smoke passed. The installed binary
+smoke opened `/usr/lib/hafiye/desktop/hafiye-desktop`, rendered the Hafiye
+root, and matched install stamp `0d98610a`.
+
+```bash
+.venv/bin/pytest -q \
+  tests/agent/test_local_model_compat.py \
+  tests/hermes_cli/test_local_runtime.py \
+  tests/hermes_cli/test_runtime_provider_resolution.py \
+  tests/tools/test_hafiye_browser.py \
+  tests/tools/test_browser_use_cli.py \
+  tests/test_hafiye_policy.py \
+  tests/tools/test_coding_delegate.py \
+  tests/hermes_cli/test_openhands_runtime.py \
+  tests/tools/test_project_tools.py \
+  tests/tools/test_task_center.py \
+  tests/test_tui_gateway_server.py
+```
+
+Results: `793 passed` after excluding three unrelated existing gateway fixture
+failures (the full `tests/test_tui_gateway_server.py` run remains `782 passed,
+3 failed` for those pre-existing managed-MCP/ordering assumptions). The exact
+P23 target backend matrix passed `261 passed, 2 skipped`. The exact historical
+five-ID command returned `2 failed, 3 passed`; failures were only IDs 2 and 3
+from `ACCEPTED_UPSTREAM_BASELINE`, so no new/different regression exists.
+
+P24 is not complete until P24.14's installed real-machine items are genuinely
+green. The offline item is explicitly user-deferred and is not marked PASS.

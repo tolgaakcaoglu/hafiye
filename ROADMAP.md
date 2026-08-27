@@ -787,29 +787,31 @@ must be replayed from the installed post-P24 package.
 
 ## P24 execution plan — Hafiye Jarvis experience convergence
 
-Status: PLANNED / NOT STARTED. Added by binding user direction on 2026-08-27.
-No P24 source implementation or acceptance result is claimed yet.
+Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
+Added by binding user direction on 2026-08-27. The source checkpoint is
+`0d98610a2558a09ceba34436f1f4362082ed3e83`; these implementation marks do not
+promote the physical P24.14 acceptance to PASS.
 
-- [ ] P24.1 Capture the installed-product baseline: package/source identity,
+- [x] P24.1 Capture the installed-product baseline: package/source identity,
       login/autostart state, current wake/voice settings, Composer behavior,
       agent route, and real microphone/browser/tool readiness.
-- [ ] P24.2 Implement one canonical interaction state machine spanning
+- [x] P24.2 Implement one canonical interaction state machine spanning
       `IDLE_ARMED → WAKE_DETECTED → LISTENING → TRANSCRIBING → ACKNOWLEDGING
       → THINKING/WORKING → SPEAKING → COMPLETED/ERROR → REARMING`.
-- [ ] P24.3 Auto-arm the local wake listener after graphical login and prior
+- [x] P24.3 Auto-arm the local wake listener after graphical login and prior
       microphone consent, while preserving an explicit persisted user disable.
-- [ ] P24.4 Make a real `wake.detected` event open/focus Hafiye Composer on the
+- [x] P24.4 Make a real `wake.detected` event open/focus Hafiye Composer on the
       active display without opening the full Desktop or requiring the hotkey.
-- [ ] P24.5 Show the final Turkish whisper.cpp transcript in the Composer field
+- [x] P24.5 Show the final Turkish whisper.cpp transcript in the Composer field
       before normal submission; preserve failed transcripts for correction and
       never submit empty speech.
-- [ ] P24.6 Add the short spoken-assistant presentation contract: concise
+- [x] P24.6 Add the short spoken-assistant presentation contract: concise
       acknowledgement before work, concise verified completion/blocker after
       work, detailed output visual only, Piper Turkish TTS, no long automatic
       model-response reading.
-- [ ] P24.7 Feed real session/task/tool/model/progress/cancellation state into
+- [x] P24.7 Feed real session/task/tool/model/progress/cancellation state into
       Composer instead of reducing voice work to a generic busy boolean.
-- [ ] P24.8 Make tool-backed work and postcondition verification mandatory for
+- [x] P24.8 Make tool-backed work and postcondition verification mandatory for
       actionable voice requests; preserve rootd, privacy, audit, stop and
       emergency boundaries.
 - [ ] P24.9 Implement and verify the coding-assistant flow for “Randevu
@@ -824,7 +826,7 @@ No P24 source implementation or acceptance result is claimed yet.
 - [ ] P24.12 Make completion, failure, cancellation, no-speech, provider/tool
       error, restart and suspend/resume converge on clean microphone release,
       Composer lifecycle and verified wake re-arm.
-- [ ] P24.13 Add automated state, Desktop, gateway, voice, policy, tool,
+- [x] P24.13 Add automated state, Desktop, gateway, voice, policy, tool,
       package and regression tests specified by the master roadmap.
 - [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
       wake, visible transcript, short acknowledgement, coding flow, YouTube
@@ -832,6 +834,11 @@ No P24 source implementation or acceptance result is claimed yet.
       restart recovery, affected P23 replays and exact upstream comparison.
 - [ ] Mark P24 complete only after every P24.14 item is genuinely green and
       create separate source and documentation closure identities.
+
+P24.1–P24.8 and P24.13 are source-level implementation checkpoints backed by
+targeted tests and the installed package smoke check. P24.9–P24.12 and P24.14
+remain open until their real task/voice/recovery evidence exists. The user's
+explicitly deferred offline replay is not marked PASS.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,

@@ -11,12 +11,11 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (post-roadmap implementation audit and packaged
-  runtime hardening; the Settings/Composer model identity, Debian bootstrap,
-  Desktop local-GGUF download, Electron
-  packaging, computer-use MCP startup-gate, and KI-043 source/test commits
-  remain below):
-  822448adee3c4fce570cbda2323bebc18ab5c792
+- Current Hafiye source HEAD (P24 Jarvis interaction-loop source checkpoint;
+  earlier implementation-audit, model identity, Debian bootstrap, Desktop
+  local-GGUF download, Electron packaging, computer-use MCP startup-gate, and
+  KI-043 source/test commits remain below):
+  0d98610a2558a09ceba34436f1f4362082ed3e83
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -101,6 +100,11 @@ The Hafiye source history contains these separable logical groups:
 - cancellation-emergency-stop: one gateway-owned cancellation controller,
   durable ESTOP/root-RPC gating, Desktop/voice/tray/CLI stop surfaces, and
   GNOME Wayland global-keybinding fallback.
+- jarvis-interaction-loop: one canonical Desktop interaction reducer,
+  wake-to-Composer activation, visible Turkish transcript publication,
+  concise Piper acknowledgement/completion speech, task/tool/model/progress
+  locality state, local-Qwen compatibility, native-browser preference, and
+  installed-package regression coverage.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -131,8 +135,8 @@ exact five test IDs were:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-After the implementation audit, the latest exact-node comparison on source
-`822448ade` measured `2 failed, 3 passed`. Only historical items 2 and 3
+After the P24 source checkpoint, the latest exact-node comparison on source
+`0d98610a` measured `2 failed, 3 passed`. Only historical items 2 and 3
 reproduced; items 1, 4, and 5 passed. No new or different Hafiye regression was
 found. The earlier local browser reconnect diagnostic is tracked as KI-019,
 and the current observed comparison subset is therefore items 2 and 3.
