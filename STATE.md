@@ -15,7 +15,7 @@ Last updated: 2026-08-27
   on this resource-constrained host.) Earlier source identities remain
   recorded below.
 - Current repository/documentation closure HEAD:
-  `2d78f2a50` (substantive documentation closure; this metadata pointer is
+  `e8ffb8615` (substantive documentation closure; this metadata pointer is
   kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
   `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
