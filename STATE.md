@@ -14,7 +14,7 @@ Last updated: 2026-08-27
   the exact installed backend import root after generic subprocess
   sanitization.) Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `0ae35e028fabdb8efe17a9d7d65cd1d433e6f82d` (substantive documentation
+  `6895013dc18575f3a704a9288092a6d81a49bbf7` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
   `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
