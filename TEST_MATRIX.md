@@ -720,6 +720,19 @@ The installed route was restored to `gemini/gemini-3.1-flash-lite` with
 `NORMAL` locality after the local replay. The local terminal PASS does not
 promote P24.10, P24.12, physical voice acceptance, or P24.14 to PASS.
 
+## P24 bounded native-browser replay and local runtime recovery — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-BROWSER-BOUND-01 | Native browser state payload bound | `.venv/bin/pytest -q tests/tools/test_hafiye_browser.py`; focused agent/browser suite; Ruff; `git diff --check` | Native browser tests `17 passed`; focused source suite `153 passed`; Ruff and diff check clean. Omitted `state` forwards `max_nodes=200`, `max_depth=20`; explicit bounds remain preserved | PASS / SOURCE |
+| P24-PACKAGE-04 | Installed package after browser bound | `cd apps/desktop && npm run pack`; `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; rootd package reinstall; package doctor; gateway health | Manifest source `4bfe7add708935f9d364dc65364e5c58e58c9144`; pinned upstream/baseline values correct; package doctor `ok=true`, `blockers=[]`; gateway health HTTP 200 | PASS / INSTALLED SOURCE |
+| P24-YOUTUBE-LOCAL-02 | Fresh installed local Composer browser replay | Real installed Desktop; model picker `LOCAL (127.0.0.1:11435) → Qwen3 4b Q4_k_m.Gguf`; Composer submission; gateway and llama.cpp logs | Model selection and local provider routing were real, but the turn ended with `Context length exceeded (136 tokens)` before verified `browser_native` result/video/playback/final response. Logs showed approximately 6,571/3,868-token contexts and KV-cache pressure | NOT ACCEPTED / KI-060 |
+| P24-LOCAL-RUNTIME-RECOVERY-01 | Managed local runtime recovery | `/usr/bin/hafiye runtime server restart qwen3-4b-q4_k_m --backend AUTO --context-size 65536`; post-restart health | Server recovered with Qwen3-4B ready on `127.0.0.1:11435`, `AUTO → CUDA`, HTTP health 200; route/privacy restored to Gemini/NORMAL | PASS / RECOVERY; ACCEPTANCE STILL OPEN |
+
+The bounded source behavior mitigates the previously observed 1.1 MB native
+accessibility result, but the fresh local browser replay still fails at the
+local model/runtime context boundary. It is not a P24.10 or P24.14 pass.
+
 ## P24 Gemini credential and model-picker recheck — 2026-08-27
 
 | ID | Boundary | Command / observation | Result | Status |

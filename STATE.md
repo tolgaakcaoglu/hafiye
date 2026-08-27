@@ -9,11 +9,12 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 2a56c25e8f050cec25259197097bb116919844ae
-  (P24 native-browser failure hardening: explicit nested `success:false` /
-  `ok:false` results are classified as failures and a failed native browser
-  action cannot finalize as success without a fresh successful state.) Earlier
-  source identities remain recorded below.
+- Current Hafiye source HEAD: 4bfe7add708935f9d364dc65364e5c58e58c9144
+  (P24 native-browser hardening: explicit nested `success:false` / `ok:false`
+  results are classified as failures, failed actions cannot finalize as
+  success without fresh state, and omitted native browser state requests use
+  bounded defaults of 200 nodes and depth 20.) Earlier source identities
+  remain recorded below.
 - Current repository/documentation closure HEAD:
   `e9b38d13c` (substantive documentation closure; this metadata pointer is
   kept separate from the source HEAD).
@@ -112,7 +113,7 @@ qualification subtask is complete with a measured host resource warning.
 Unaccepted P23 rows remain open and must not be represented as passed.
 
 P24 — Hafiye Jarvis experience convergence: source implementation and
-automated verification are complete at `2a56c25e`, but the phase remains open
+automated verification are complete at `4bfe7add`, but the phase remains open
 for installed real-machine acceptance. The user explicitly added this binding
 phase on 2026-08-27 to make the installed product operate as one assistant
 loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
@@ -122,7 +123,7 @@ fixed architecture and does not create a second agent/runtime.
 
 The installed package is `hafiye 0.20.5-1` and its
 `/usr/lib/hafiye/package-manifest.json` now carries source
-`2a56c25e8f050cec25259197097bb116919844ae`, the pinned upstream commit, and
+`4bfe7add708935f9d364dc65364e5c58e58c9144`, the pinned upstream commit, and
 the baseline merge commit. The package was rebuilt and reinstalled through the
 existing `hafiye-rootd` boundary; the selected-route endpoint fix is now in
 the installed backend. The live Desktop process remains under
@@ -2478,7 +2479,7 @@ by this session.
   latest packaged YouTube Composer attempt is NOT ACCEPTED. P24.10 and the
   complete P24.14 acceptance remain open; no browser success is inferred from
   earlier partial evidence.
-- The exact historical five-ID comparison after source commit `2a56c25e`
+- The exact historical five-ID comparison after source commit `4bfe7add`
   returned `3 failed, 2 passed`: only accepted whitelist IDs 2 and 3 failed;
   IDs 1, 4, and 5 passed. No new or different upstream regression was found.
 
@@ -2589,3 +2590,11 @@ offline replay remain unaccepted. No P25 or release tag was created.
   constraints, but produced no final agent response before it was stopped;
   the project worktree was unchanged. This is supporting evidence only, not a
   P24.9 coding-agent acceptance.
+
+### P24 bounded native-browser replay and local runtime recovery — 2026-08-27
+
+- The installed package was rebuilt from source `4bfe7add708935f9d364dc65364e5c58e58c9144` and its manifest was verified against the pinned upstream commit and baseline merge. The source browser suite returned `17 passed`; the broader targeted Hafiye suite returned `153 passed`; Ruff and `git diff --check` were clean.
+- A fresh installed Desktop Composer run used the actual model picker to select `LOCAL (127.0.0.1:11435) → Qwen3 4b Q4_k_m.Gguf`, which resolved to `custom:local-(127.0.0.1:11435)` and the GGUF model path. The real Composer submission reached the local provider path but ended with the visible provider error `Context length exceeded (136 tokens)` before a verified browser result or clean final response. P24.10 remains NOT ACCEPTED.
+- Gateway evidence for that run recorded local Qwen3 context failures at approximately 6,571 and 3,868 input tokens. The managed llama.cpp log also recorded stale long-running slots, KV-cache allocation failures, and context overflow. This is retained as KI-060 host/model-runtime pressure; it is not evidence of a wrong Gemini key or a new Hafiye routing defect.
+- The managed local server was then recovered with `/usr/bin/hafiye runtime server restart qwen3-4b-q4_k_m --backend AUTO --context-size 65536`. The post-recovery health check reported the Qwen3 model ready on port 11435, requested backend `AUTO`, selected backend `CUDA`, and HTTP health 200. No route configuration was changed; the product route remains `gemini/gemini-3.1-flash-lite` with `NORMAL` privacy.
+- The new bounded-state source mitigation prevents the previously observed unbounded accessibility payload at the tool boundary, but it does not by itself satisfy the local browser acceptance. P24.9, P24.10, P24.12, physical voice/recovery checks, P23 replays, and the explicitly deferred offline replay remain open. No P25 or release tag was created.

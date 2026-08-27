@@ -789,7 +789,7 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`2a56c25e8f050cec25259197097bb116919844ae`; these implementation marks do not
+`4bfe7add708935f9d364dc65364e5c58e58c9144`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
 rebuilt/reinstalled from the package containing the source checkpoint above;
 physical acceptance remains open.
@@ -836,6 +836,10 @@ physical acceptance remains open.
       Composer replay used the real Gemini model shown in the UI but was
       rejected before any browser tool event by Gemini HTTP 429
       `RESOURCE_EXHAUSTED`; KI-059 records the active provider quota blocker.
+      The source-level native-browser boundary now applies default state bounds
+      of 200 nodes and depth 20. A fresh installed local Qwen3 Composer replay
+      selected the real local model through the picker but hit local provider
+      context overflow before browser acceptance; KI-060 remains open.
       Final acceptance remains open.
 - [ ] P24.11 Qualify and select a practical agent-capable local-first default
       through registry capability metadata. Keep Qwen2 validation-only and
@@ -864,9 +868,10 @@ route endpoint correction is in `10bd0b8f` and has real source and installed
 CLI `LOCAL_ONLY` Qwen3-4B route replays. These source checks have a real
 GNOME/AT-SPI tool-boundary replay, but they do not themselves satisfy P24.10.
 P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
-evidence exists. The latest source hardening is `2a56c25e`: explicit native
-browser failure envelopes are classified correctly and final success is gated
-on a fresh browser state. The user's explicitly deferred offline replay is not
+evidence exists. The latest source hardening is `4bfe7add`: explicit native
+browser failure envelopes are classified correctly, final success is gated
+on a fresh browser state, and omitted native-browser state is bounded to 200
+nodes/depth 20. The user's explicitly deferred offline replay is not
 marked PASS.
 
 P24 is not a new generic runtime or technology-selection phase. It converges

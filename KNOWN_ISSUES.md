@@ -1099,11 +1099,22 @@ silently treated as passing.
   model repeated the same state request until the 360-second test deadline,
   without channel search, video/playback verification, or a clean final turn.
 - This is not accepted as P24.10 or full P24.11 practical browser
-  qualification. No source change was made and no success was inferred from
-  the navigation alone. A future acceptance replay may use a bounded,
-  model-compatible state request only if it is implemented as a genuine
-  product behavior and independently verified.
+  qualification. No success was inferred from the navigation alone. Source
+  commit `4bfe7add708935f9d364dc65364e5c58e58c9144` now applies bounded,
+  model-compatible defaults to omitted native-browser state requests, and the
+  focused tests pass. The mitigation still requires an independent real
+  acceptance replay.
 - A separate installed Qwen3-4B read-only coding qualification request was
   stopped after producing no final agent response; the Randevu worktree was
   unchanged. This does not establish a coding-agent acceptance or a source
   defect.
+- A fresh installed Composer replay selected the local Qwen3-4B route through
+  the real model picker and reached the local provider path, but ended before a
+  browser result with `Context length exceeded (136 tokens)`. Gateway logs
+  recorded approximately 6,571/3,868-token local contexts; the managed
+  llama.cpp log showed stale long-running slots and KV-cache allocation/context
+  failures. The managed server was recovered with
+  `/usr/bin/hafiye runtime server restart qwen3-4b-q4_k_m --backend AUTO
+  --context-size 65536` and returned ready/CUDA/HTTP-200 health afterward.
+  This remains a host/model-runtime limitation, not evidence of a wrong Gemini
+  key or a new Hafiye route regression.
