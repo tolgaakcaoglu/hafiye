@@ -9,9 +9,10 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: beec5bd9c061b4c538e7916ee152c29264f6b8ad
-  (Pinned Qwen3.8-27B production catalog/download integration and native
-  context compatibility.) Earlier source identities remain recorded below.
+- Current Hafiye source HEAD: 53e783e8c8ee6c88b2ecff2cff4954512deb386a
+  (Pinned OrcaRouter/Ollama Qwen3.8-27B Uncensored and gated Hugging Face
+  Qwen3.8 Flash Next security-research catalog integration.) Earlier source
+  identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `8a8546e454bd1f2b48bd9ed5e09e704329f46972` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
@@ -129,7 +130,7 @@ stable final assistant response, so no P24 acceptance row is promoted.
 
 The installed package is `hafiye 0.20.5-1` and its
 `/usr/lib/hafiye/package-manifest.json` now carries source
-`139f5f9491aa46adebbca932b255ad2b87141702`, the pinned upstream commit, and
+`53e783e8c8ee6c88b2ecff2cff4954512deb386a`, the pinned upstream commit, and
 the baseline merge commit. The package was rebuilt and reinstalled through the
 existing `hafiye-rootd` boundary; the selected-route endpoint, emergency
 binding, and packaged managed-STT module-path fixes are now in the installed
@@ -220,6 +221,12 @@ package is installed and the installed native-browser recovery tests pass.
   filename, optional model id/revision/SHA-256, and a Download GGUF action.
   A successful download is registered in the private llama.cpp model
   registry and becomes selectable for Load / start.
+- The backend-owned Desktop/onboarding catalog now also exposes the exact
+  `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M` text/tool GGUF layer and the
+  gated two-shard `orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF` IQ2_M
+  security-research model. Ollama is an acquisition source only; inference
+  remains Hafiye-managed llama.cpp. Both entries are `qualification=pending`,
+  non-default, integrity-pinned, and carry current-host resource warnings.
 - KI-043 source hardening is present at the shared terminal boundary. Direct,
   absolute, env/command-wrapped, quoted, shell-wrapped, and chained
   escalation binaries are not executed by the normal terminal; FULL_AUTONOMOUS
@@ -2882,3 +2889,36 @@ offline replay remain unaccepted. No P25 or release tag was created.
 - P24 remains open. This catalog integration does not satisfy P24.9–P24.12 or
   the physical P24.14 acceptance, and the user-deferred offline replay remains
   unaccepted.
+
+## P24 security-research model catalog extension — 2026-08-27
+
+- Source commit `53e783e8c8ee6c88b2ecff2cff4954512deb386a` adds two
+  backend-owned catalog entries without adding Ollama as an inference runtime:
+  `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M` is imported from its immutable
+  Ollama model-layer digest into Hafiye-managed llama.cpp, while
+  `orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF` uses the exact gated Hugging
+  Face revision and both IQ2_M shards.
+- Desktop Settings and first-run onboarding send only the trusted catalog ID.
+  The backend owns URLs, revisions, filenames, byte sizes and SHA-256 values;
+  downloads resume, verify every shard, reject conflicting IDs, repair a
+  missing split shard, and remove corrupt partial content. Gated downloads use
+  the Secret-Service-hydrated `HF_TOKEN` and do not expose it to the renderer.
+- Neither model was automatically downloaded. Both report
+  `qualification=pending` and remain non-default. The Ollama model layer is
+  16,810,714,496 bytes and omits the separate vision projector; Flash Next
+  IQ2_M totals 80,086,292,992 bytes and requires approved Hugging Face access.
+  Their uncensored/security-research purpose does not bypass KI-043, rootd,
+  privacy, audit, or emergency-stop boundaries. KI-046 remains open.
+- Verification: local-runtime backend `20 passed`; focused Settings/onboarding
+  UI `7 passed`; full Desktop UI `586 files / 5,576 passed`; Desktop typecheck,
+  Ruff, Python compilation and `git diff --check` passed. The canonical
+  upstream comparison returned `3 passed, 2 failed`, only accepted historical
+  IDs 2 and 3. Packaging tests returned `8 passed`.
+- The production Desktop and Debian package were rebuilt and installed through
+  `hafiye-rootd`. Package manifest and Desktop stamp carry source `53e783e8c`;
+  package doctor is OK with only optional `cargo: not found`; gateway is
+  enabled/active and healthy. The authenticated installed catalog reports both
+  new entries as `downloadable`, `qualification=pending`, with exact source and
+  auth metadata. The installed Desktop was restarted from the packaged binary.
+- P24 remains open; no phase, release tag, default route, or model qualification
+  state changed.

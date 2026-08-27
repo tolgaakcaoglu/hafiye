@@ -11,12 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (pinned Qwen3.8-27B production catalog/download
+- Current Hafiye source HEAD (pinned Qwen3.8 security-research catalog/download
   checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  beec5bd9c061b4c538e7916ee152c29264f6b8ad
+  53e783e8c8ee6c88b2ecff2cff4954512deb386a
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -734,6 +734,24 @@ P0 computer-use acceptance requires:
   Qwen3.5/Qwen3.8 native-context family.
 - The installed Hafiye package exposes the entry as downloadable. The pinned
   Hermes commit, baseline merge commit, and upstream history are unchanged.
+
+## P24 security-research model catalog extension patch group
+
+- Hafiye source/test commit:
+  `53e783e8c8ee6c88b2ecff2cff4954512deb386a`.
+- The existing Hafiye-managed llama.cpp/GGUF catalog now includes the immutable
+  text/tool GGUF layer from Ollama tag
+  `orcarouter/Qwen3.8-27B-Uncensored:q4_K_M` and both pinned IQ2_M shards from
+  gated Hugging Face repository
+  `orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF`.
+- Ollama remains an acquisition source, not a second inference runtime. The
+  renderer sends only catalog IDs; backend-owned metadata, per-file SHA-256,
+  resumable transfer, gated `HF_TOKEN` handling and split-shard repair remain
+  inside the Hafiye adapter boundary.
+- Both entries remain unqualified/non-default with explicit host-resource and
+  security-research warnings. The fixed upstream pin, baseline merge, remotes,
+  history, llama.cpp architecture and model qualification semantics are
+  unchanged.
 
 ## P17 Control Center patch group
 

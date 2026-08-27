@@ -886,3 +886,17 @@ deferred offline replay are not promoted by these rows.
 The 6,192,222,208-byte GGUF was not automatically downloaded. Catalog
 availability does not promote Qwen3.8 to agent-qualified/default status and
 does not close P24.11 or P24.14.
+
+## P24 security-research model catalog extension — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-SEC-CATALOG-01 | Backend-owned Ollama/Hugging Face metadata, split-shard lifecycle, auth and integrity | `.venv/bin/python -m pytest -q tests/hermes_cli/test_local_runtime.py`; Ruff; `py_compile` | `20 passed`; exact Ollama layer and two HF shard pins, trusted-ID orchestration, HF bearer use, missing-shard repair, digest rejection and safe delete passed | PASS / SOURCE |
+| P24-SEC-CATALOG-UI-01 | Settings/onboarding catalog presentation and trusted-ID download | Focused Vitest; full `npm --workspace apps/desktop run test:ui`; `npm --workspace apps/desktop run typecheck` | Focused `7 passed`; full `586 files / 5,576 passed`; typecheck exit 0; Ollama source, security purpose and gated HF requirement rendered | PASS / DESKTOP |
+| P24-SEC-CATALOG-NET-01 | Published immutable artifacts | HTTP HEAD and four-byte range probe against pinned Ollama blob; unauthenticated HEAD against exact HF shard | Ollama returned HTTP 200, `Content-Length=16,810,714,496`, and `GGUF` magic; gated HF shard returned expected HTTP 401 without a token | PASS / METADATA TRANSPORT |
+| P24-SEC-CATALOG-UPSTREAM-01 | Exact historical five-ID comparison | Canonical P23 five-node command | `3 passed, 2 failed`; failures only accepted historical IDs 2 and 3 | ACCEPTED BASELINE / NO NEW REGRESSION |
+| P24-SEC-CATALOG-PACKAGE-01 | Production package and live installed catalog | `npm run pack`; `scripts/build_deb.py`; packaging pytest; rootd reinstall; package doctor; gateway restart; authenticated installed catalog | Package source/stamp `53e783e8c`; packaging `8 passed`; doctor OK with optional Cargo warning; gateway healthy; both entries `downloadable`, `qualification=pending` | PASS / INSTALLED CATALOG |
+
+No large model was automatically downloaded. The 15.7 GiB Ollama model layer
+and 74.6 GiB gated Flash Next split weights remain explicit, unqualified,
+non-default downloads under KI-046. P24 remains open.

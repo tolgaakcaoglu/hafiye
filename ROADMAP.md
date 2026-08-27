@@ -871,6 +871,11 @@ physical acceptance remains open.
       model catalog and expose verified one-click download in Settings and
       first-run onboarding. This is a catalog/default recommendation only:
       qualification is pending and the active/default agent route is unchanged.
+- [x] Add the pinned OrcaRouter Qwen3.8-27B Uncensored Q4_K_M Ollama GGUF
+      layer and gated two-shard Qwen3.8 Flash Next Uncensored IQ2_M security-
+      research entry to the same backend-owned catalog. Downloads are selected
+      by trusted catalog ID, SHA-256 verified, resumable/repairable, and exposed
+      in Settings/onboarding. Neither model is qualified or default on this host.
 - [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
       wake, visible transcript, short acknowledgement, coding flow, YouTube
       flow, truthful blocker, three repeated turns, barge-in, local/offline,
@@ -894,10 +899,10 @@ repaired only for the reserved Hafiye ownership marker, and the packaged
 managed STT child receives the exact Hafiye backend module root. The user's
 explicitly deferred offline replay is not marked PASS.
 
-The latest source checkpoint `beec5bd9c` also installs the pinned Qwen3.8-27B
-catalog entry in the production package. Its verified download surface is
-green, but P24.11 remains open because catalog availability is not practical
-agent qualification or default-route selection.
+The latest source checkpoint `53e783e8c` extends the installed Qwen3.8 catalog
+with the pinned OrcaRouter Ollama GGUF layer and gated Flash Next split GGUF.
+Its verified download surface is green, but P24.11 remains open because catalog
+availability is not practical agent qualification or default-route selection.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,

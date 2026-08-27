@@ -773,6 +773,13 @@ silently treated as passing.
   download but is not an agent-qualified/default route until real workflow and
   host-resource qualification is completed; no success state is inferred from
   its model name or catalog membership.
+- The Qwen3.8-27B Uncensored Q4_K_M catalog artifact is 15.7 GiB and exceeds
+  this host's 10 GiB VRAM/practical qualification envelope. The Qwen3.8 Flash
+  Next Uncensored IQ2_M split weights total 80,086,292,992 bytes (74.6 GiB),
+  require Hugging Face access approval plus `HF_TOKEN`, and are likewise
+  unqualified/non-default. Both remain selectable downloads for explicit
+  evaluation; their uncensored/security-research profile never bypasses
+  Hafiye privilege, privacy, audit, emergency-stop, or root-broker boundaries.
 
 ## KI-047 — Qwen3 packaged Composer replay did not emit a tool call
 
