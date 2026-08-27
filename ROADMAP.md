@@ -1127,3 +1127,16 @@ is claimed.
 - This repair does not change any P24 completion checkbox, model qualification
   or default route. P24 remains open for the existing physical and complete
   Jarvis acceptance work.
+
+### P24 managed catalog concurrent-download repair — 2026-08-27
+
+- [x] Preserve the immutable Ollama model-layer SHA/size after verifying them
+  against the official live manifest; do not accept the corrupt transfer.
+- [x] Serialize each catalog model's complete download/registration boundary
+  across concurrent Desktop and process callers using a non-blocking local
+  file lock, then re-read install/conflict state after acquiring it.
+- [x] Verify the source, package, accepted-upstream and real installed gateway
+  boundaries. Source/package commit `4d4cde3dbf864d485bb49a12fe8a3f1f6ab7c1f2`;
+  KI-067 is resolved.
+- This repair does not download or qualify the model and does not change any
+  P24 completion checkbox. P24 remains open.

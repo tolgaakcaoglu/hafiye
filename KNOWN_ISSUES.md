@@ -1289,3 +1289,21 @@ silently treated as passing.
 - Final installed visual QA additionally verifies that the runtime version
   diagnostic is Turkish and that neither `built with` nor the duplicated
   `NVIDIA NVIDIA` prefix remains.
+
+## KI-067 — Concurrent catalog downloads corrupted the shared partial GGUF
+
+- Status: RESOLVED at source/package commit
+  `4d4cde3dbf864d485bb49a12fe8a3f1f6ab7c1f2`.
+- Multiple Desktop/process requests for the same catalog model could enter the
+  backend simultaneously and write one `.part` file. The final fail-closed
+  checksum correctly rejected and removed the corrupt transfer, but the
+  15.7 GiB attempt was wasted and surfaced a checksum mismatch.
+- The expected SHA and size were revalidated against the official Ollama
+  manifest and were not weakened or replaced with the corrupt observed hash.
+  The full model download and registry update are now protected by a
+  per-model, cross-process non-blocking `flock`; a competing caller is rejected
+  before touching the partial file, and state is refreshed inside the lock.
+- Focused runtime and packaging tests passed `29`; the installed gateway smoke
+  returned HTTP 400 `already in progress` under a held lock and created no
+  partial file. The exact upstream comparison remains only accepted IDs 2 and
+  3. The model remains an explicit, pending, non-default download.

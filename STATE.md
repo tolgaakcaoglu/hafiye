@@ -9,10 +9,10 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf
-  (The loaded Model page and managed Local GGUF Runtime/catalog surface use
-  the active Desktop locale; the Turkish package is installed and visually
-  verified.)
+- Current Hafiye source HEAD: 4d4cde3dbf864d485bb49a12fe8a3f1f6ab7c1f2
+  (Managed catalog downloads are serialized per model across Desktop/process
+  callers; the production package is installed and the live gateway boundary
+  rejects a competing writer before it can touch the shared partial file.)
   Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `b2a5d152c92ab5bb441e6a96da30faf5f84d61f2` (substantive documentation
@@ -3007,3 +3007,29 @@ offline replay remain unaccepted. No P25 or release tag was created.
   present. KI-066 is resolved.
 - P24 remains open. No model was downloaded, qualified or made default, and
   none of the deferred physical Jarvis acceptance rows were promoted.
+
+## P24 managed catalog concurrent-download repair — 2026-08-27
+
+- A real 15.7 GiB Ollama catalog attempt failed integrity verification with
+  expected SHA-256 `3445102e...` and observed `a1e2731d...`. The failed
+  temporary file was removed by the existing fail-closed checksum path.
+- The official Ollama `q4_K_M` manifest still identifies the model layer as
+  SHA-256 `3445102e9cde5d562508642c100a2f5ac3368a5a3f748442811d7a95daee3bec`
+  with size `16,810,714,496`; an independent published SHA list agrees. The
+  catalog pin was therefore not changed.
+- Source commit `4d4cde3dbf864d485bb49a12fe8a3f1f6ab7c1f2` adds a
+  per-model non-blocking `flock` around the complete catalog transfer and
+  registry mutation. Concurrent Desktop/process requests can no longer write
+  the same `.part`; a competing request fails before transfer with an explicit
+  already-in-progress error. State is re-read after lock acquisition.
+- Verification: local runtime + packaging `29 passed`; focused runtime
+  `21 passed`; Ruff, `py_compile`, and `git diff --check` passed. The exact
+  upstream comparison returned `3 passed, 2 failed`, only accepted historical
+  IDs 2 and 3.
+- The production package/stamp now reports source `4d4cde3dbf86`; package
+  doctor is `ok=true`, `blockers=[]` with only optional `cargo: not found`.
+  The restarted live gateway lists the three catalog entries and a real
+  authenticated download request made while the lock was held returned HTTP
+  400 `already in progress`; no partial file was created. KI-067 is resolved.
+- The large model was not downloaded, qualified, selected, or made default.
+  P24 and its existing physical acceptance work remain open.

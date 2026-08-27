@@ -936,3 +936,16 @@ live. P24 remains open for the separate physical Jarvis acceptance rows.
 
 This localization repair does not promote model qualification/default-route
 state or any open physical P24 acceptance row.
+
+## P24 managed catalog concurrent-download repair — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-CATALOG-LOCK-01 | Per-model catalog transfer/registration serialization | `.venv/bin/python -m pytest -q tests/hermes_cli/test_local_runtime.py`; Ruff; `py_compile`; `git diff --check` | `21 passed`; competing writer is rejected before `_download_catalog_file` and no partial file is created; quality checks exit 0 | PASS / SOURCE |
+| P24-CATALOG-LOCK-02 | Packaging regression | `PATH="$PWD/.venv/bin:$PATH" .venv/bin/pytest -q tests/hermes_cli/test_local_runtime.py tests/packaging/test_hafiye_deb.py` | `29 passed in 78.00s` | PASS |
+| P24-CATALOG-LOCK-03 | Immutable upstream artifact metadata | Official Ollama `q4_K_M` registry manifest plus live blob headers/range probe | Model layer SHA `3445102e...`, size `16,810,714,496`, `GGUF` magic; catalog pin remains correct | PASS / NETWORK METADATA |
+| P24-CATALOG-LOCK-04 | Installed cross-process gateway boundary | Production pack/deb, rootd reinstall, gateway/Desktop restart; hold installed per-model lock and POST authenticated catalog download endpoint | Package/stamp source `4d4cde3dbf86`; HTTP 400 `already in progress`; target `.part` absent; package doctor `ok=true`, `blockers=[]` | PASS / INSTALLED |
+| P24-CATALOG-LOCK-05 | Exact historical comparison | Canonical five-node command | `3 passed, 2 failed`; only accepted historical IDs 2 and 3 failed | ACCEPTED BASELINE / NO NEW REGRESSION |
+
+No large model download or qualification is claimed by these rows. P24 remains
+open for its existing physical and complete Jarvis acceptance.

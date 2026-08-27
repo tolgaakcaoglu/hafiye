@@ -11,12 +11,12 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (managed local-runtime Turkish localization
+- Current Hafiye source HEAD (managed catalog concurrent-download repair
   checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  4935c91b7ee5e1c2b35ba92b54fe1d321234ffbf
+  4d4cde3dbf864d485bb49a12fe8a3f1f6ab7c1f2
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -786,6 +786,17 @@ P0 computer-use acceptance requires:
   Hafiye catalog presentation copy is localized by backend-owned catalog ID;
   backend model metadata, capability/qualification state and route policy are
   unchanged.
+- The pinned upstream commit, baseline merge, remotes and preserved upstream
+  history are unchanged. No upstream source commit was rewritten.
+
+## P24 managed catalog concurrent-download patch group
+
+- Hafiye source/test commit:
+  `4d4cde3dbf864d485bb49a12fe8a3f1f6ab7c1f2`.
+- The Hafiye-managed GGUF catalog adapter now serializes each model's complete
+  download and registry mutation with a local cross-process lock. This closes
+  a Hafiye Desktop concurrency defect without changing Hermes provider APIs,
+  catalog artifact pins, llama.cpp architecture, qualification, or routing.
 - The pinned upstream commit, baseline merge, remotes and preserved upstream
   history are unchanged. No upstream source commit was rewritten.
 
