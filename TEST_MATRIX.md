@@ -691,3 +691,18 @@ by Gemini/NORMAL route restoration.
 
 P24 is not complete until P24.14's installed real-machine items are genuinely
 green. The offline item is explicitly user-deferred and is not marked PASS.
+
+## P24 installed browser hardening and credential recheck — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-BROWSER-GUARD-01 | Explicit native-browser failure cannot be reported as success | Red-first `.venv/bin/pytest -q tests/agent/test_display_tool_failure.py -x`; after fix `.venv/bin/pytest -q tests/agent/test_display_tool_failure.py tests/tools/test_hafiye_browser.py tests/run_agent/test_tool_call_guardrail_runtime.py tests/run_agent/test_file_mutation_verifier.py tests/agent/test_turn_finalizer_cleanup_guard.py` | Red-first `7 passed, 1 failed`; after source commit `2a56c25e8f050cec25259197097bb116919844ae`, `72 passed in 3.17s`; Ruff and `git diff --check` clean. Explicit/nested failure flags and fresh-state recovery are covered | PASS / SOURCE HARDENING |
+| P24-PACKAGE-03 | Installed artifact contains current source and remains healthy | `cd apps/desktop && npm run pack`; `.venv/bin/python scripts/build_deb.py --json`; rootd `apt-get --reinstall`; `/usr/bin/hafiye package doctor`; gateway health; installed Playwright launch | Manifest source `2a56c25e8f050cec25259197097bb116919844ae`; pinned upstream and baseline merge correct; package doctor OK with optional Cargo warning; health HTTP 200 `ok=true`; installed Desktop rendered Hafiye and `Gateway ready` | PASS / INSTALLED |
+| P24-GEMINI-CREDENTIAL-RECHECK-03 | Active credential and current provider availability | Profile-scoped Secret Service refs/get (masked only); installed `/usr/bin/hafiye ask --safe-mode --provider gemini --model gemini-3.5-flash ...`; same for `gemini-3.1-flash-lite`; real installed Composer | Both Gemini aliases are present/equal in Secret Service and the Desktop model is genuinely Gemini. Fresh CLI probes and Composer received `HTTP 429 RESOURCE_EXHAUSTED: prepayment credits are depleted`; no browser tool event occurred | NOT ACCEPTED / KI-059 OPERATIONAL BLOCKER |
+| P24-YOUTUBE-GEMINI-REPLAY-03 | Clean installed Gemini browser Composer | Installed Desktop Composer, visible model `gemini: gemini-3.5-flash`, exact constrained YouTube prompt | Provider rejected the first call with HTTP 429 before `browser_native`; no task success or browser state was claimed | NOT ACCEPTED / PROVIDER QUOTA |
+| P24-UPSTREAM-RECOVERY-02 | Exact historical five-ID comparison after browser hardening | Canonical P23 five-node command | `3 failed, 2 passed`; only accepted whitelist IDs 2 and 3 failed, IDs 1, 4, and 5 passed; no new/different failure | ACCEPTED BASELINE / NO NEW REGRESSION |
+
+The current Gemini credential is therefore a configured, correctly resolved
+credential rather than a missing-key or Qwen-route problem. The provider's
+current quota response must be resolved before another clean Gemini Composer
+acceptance can be accepted. No raw credential is stored in this matrix.

@@ -1012,6 +1012,12 @@ silently treated as passing.
   call took 131.8 seconds and the turn was interrupted before any native
   browser navigation. This is an additional clean-turn failure, not evidence
   of an invalid API key; P24.10 remains NOT ACCEPTED.
+- Source commit `2a56c25e8f050cec25259197097bb116919844ae` separately fixes a
+  genuine Hafiye boundary defect exposed by the earlier replay: explicit
+  nested native-browser failure envelopes are now classified as failures, and
+  final success is gated on a fresh successful browser state. This prevents a
+  false success but does not waive the still-open clean-turn acceptance or the
+  current provider-quota issue recorded in KI-059.
 
 ## KI-058 — LOCAL_ONLY route inherited the global provider endpoint
 
@@ -1033,3 +1039,24 @@ silently treated as passing.
   restored to Gemini/NORMAL. A real installed `/usr/bin/hafiye` replay then
   returned `P24_INSTALLED_LOCAL_ROUTE_OK` under `LOCAL_ONLY` and exited 0 before
   the same restoration. No cloud call was used in either local test.
+
+## KI-059 — Active Gemini project is rejecting requests for exhausted quota
+
+- Status: OPEN / OPERATIONAL PROVIDER BLOCKER; no missing-key or Hafiye route
+  defect is established.
+- On 2026-08-27, the active profile's Linux Secret Service was inspected
+  through the Hafiye credential path. Both `GEMINI_API_KEY` and
+  `GOOGLE_API_KEY` references were present, non-empty, and equal; only masked
+  metadata was inspected and the raw credential was neither printed nor
+  written to repository files. The installed gateway also logged its normal
+  `Linux Secret Service: applied 2 secrets` hydration.
+- Fresh real requests through installed `/usr/bin/hafiye ask` for both
+  `gemini-3.5-flash` and `gemini-3.1-flash-lite` returned Gemini HTTP 429
+  `RESOURCE_EXHAUSTED` with the provider message `Your prepayment credits are
+  depleted`. A real installed Composer replay showed the same provider error
+  before any browser tool event. This is a provider project/quota response,
+  not the earlier Qwen/Gemini endpoint mismatch.
+- P24 browser acceptance remains NOT ACCEPTED until a real clean Composer
+  turn can reach `browser_native`, verify the target video, and terminate
+  cleanly. Restore or reconfigure usable Gemini API quota through the normal
+  Secret Service-backed Hafiye setup, then repeat the installed acceptance.

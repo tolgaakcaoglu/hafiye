@@ -9,11 +9,11 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 10bd0b8f32b99b9a7ad91317dfb2f88b5204b927
-  (P24 route-endpoint hardening: selected Hafiye routes no longer inherit a
-  stale global provider URL; CLI/gateway/Desktop/cron/API paths carry the
-  selected endpoint, with regression coverage.) Earlier source identities
-  remain recorded below.
+- Current Hafiye source HEAD: 2a56c25e8f050cec25259197097bb116919844ae
+  (P24 native-browser failure hardening: explicit nested `success:false` /
+  `ok:false` results are classified as failures and a failed native browser
+  action cannot finalize as success without a fresh successful state.) Earlier
+  source identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `2c749c93d643d22c0e16ca2318aab4473094a4ef`.
 - Earlier documentation closure HEAD:
@@ -111,7 +111,7 @@ qualification subtask is complete with a measured host resource warning.
 Unaccepted P23 rows remain open and must not be represented as passed.
 
 P24 — Hafiye Jarvis experience convergence: source implementation and
-automated verification are complete at `10bd0b8f`, but the phase remains open
+automated verification are complete at `2a56c25e`, but the phase remains open
 for installed real-machine acceptance. The user explicitly added this binding
 phase on 2026-08-27 to make the installed product operate as one assistant
 loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
@@ -120,10 +120,8 @@ verification, concise completion, then clean wake re-arm. P24 reuses the
 fixed architecture and does not create a second agent/runtime.
 
 The installed package is `hafiye 0.20.5-1` and its
-`/usr/lib/hafiye/package-manifest.json` now carries packaging closure source
-`2c749c93d643d22c0e16ca2318aab4473094a4ef` (the package was built from the
-repository state containing source checkpoint
-`10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`), the pinned upstream commit, and
+`/usr/lib/hafiye/package-manifest.json` now carries source
+`2a56c25e8f050cec25259197097bb116919844ae`, the pinned upstream commit, and
 the baseline merge commit. The package was rebuilt and reinstalled through the
 existing `hafiye-rootd` boundary; the selected-route endpoint fix is now in
 the installed backend. The live Desktop process remains under
@@ -167,7 +165,9 @@ verified `P24_LOCAL_ONLY_QWEN3_OK`, and exited 0. The live route was restored
 to `gemini/gemini-3.1-flash-lite` with `NORMAL` privacy afterward. The same
 installed `/usr/bin/hafiye` path later completed
 `P24_INSTALLED_LOCAL_ROUTE_OK` through the loopback Qwen3-4B/CUDA server under
-`LOCAL_ONLY`, then restored Gemini/NORMAL again.
+`LOCAL_ONLY`, then restored Gemini/NORMAL again. The subsequent browser
+failure-classification hardening is in source commit `2a56c25e`; its rebuilt
+package is installed and the installed native-browser recovery tests pass.
 
 ## Verified working
 
@@ -2436,3 +2436,54 @@ by this session.
 3. Run the final regression matrix after those replays. Mark P24 complete only
    when every required installed real-machine item is green; do not create
    P25 or a release tag.
+
+### P24 installed browser hardening and Gemini credential recheck — 2026-08-27
+
+- A genuine Hafiye source defect was found during the installed Composer
+  replay. `browser_native` returned an explicit `success:false` envelope, but
+  the shared tool-failure classifier did not inspect nested `success`/`ok`
+  flags, and a later model text response could therefore look successful.
+  Source commit `2a56c25e8f050cec25259197097bb116919844ae` fixes the shared
+  classifier and adds a bounded per-turn native-browser verification gate: a
+  failed browser action must be followed by a fresh successful `state` before
+  final success; otherwise Hafiye returns a truthful blocker.
+- Red-first evidence was `7 passed, 1 failed` in
+  `tests/agent/test_display_tool_failure.py`. After the fix, the focused
+  browser/agent guard suite returned `72 passed in 3.17s`; changed-file Ruff
+  and `git diff --check` passed. The new tests cover explicit and nested
+  failure envelopes, failed-browser/no-fresh-state finalization, and recovery
+  after fresh state.
+- The installed package was rebuilt with `cd apps/desktop && npm run pack`,
+  rebuilt with `.venv/bin/python scripts/build_deb.py --json`, and reinstalled
+  through the existing `hafiye-rootd` boundary using `apt-get --reinstall`.
+  `/usr/lib/hafiye/package-manifest.json` now reports source
+  `2a56c25e8f050cec25259197097bb116919844ae`, pinned upstream
+  `f293e7206b4ddd66042329442c6afebc19a8808d`, and baseline merge
+  `2ac06b131a237916432503ac67bbcada6dbea39e`. Package doctor is OK with only
+  the existing optional `cargo: not found` warning; gateway health is HTTP
+  200 with `ok=true`.
+- A real Playwright launch of the installed Desktop rendered the Hafiye UI,
+  showed `Gateway ready`, and showed the active Composer model as
+  `gemini: gemini-3.5-flash`. This confirms the installed Desktop is not
+  silently using the Qwen model for that session.
+- The active profile's Linux Secret Service contains both Gemini aliases and
+  they resolve to the same non-empty credential; the raw value was not
+  printed or written to repository files. Fresh installed CLI probes for
+  `gemini-3.5-flash` and `gemini-3.1-flash-lite`, and the real packaged
+  Composer turn, all received Gemini `HTTP 429 RESOURCE_EXHAUSTED` with the
+  provider message `prepayment credits are depleted`. This is recorded as
+  operational issue KI-059, not as a missing-key or Hafiye routing defect.
+- Because the provider rejected the call before any browser tool event, the
+  latest packaged YouTube Composer attempt is NOT ACCEPTED. P24.10 and the
+  complete P24.14 acceptance remain open; no browser success is inferred from
+  earlier partial evidence.
+- The exact historical five-ID comparison after source commit `2a56c25e`
+  returned `3 failed, 2 passed`: only accepted whitelist IDs 2 and 3 failed;
+  IDs 1, 4, and 5 passed. No new or different upstream regression was found.
+
+The next actionable external step is to restore usable Gemini API quota for
+the active key/project (or configure another credential through the normal
+Secret Service-backed Hafiye setup), then repeat the installed clean Composer
+browser acceptance. Physical voice, barge-in, emergency-stop, coding,
+re-arm, and the explicitly deferred offline acceptance remain open as listed
+in P24 and P23; no phase is closed here.

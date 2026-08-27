@@ -789,11 +789,10 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`; these implementation marks do not
+`2a56c25e8f050cec25259197097bb116919844ae`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
-rebuilt/reinstalled from packaging closure
-`2c749c93d643d22c0e16ca2318aab4473094a4ef`, which contains the source
-checkpoint above; physical acceptance remains open.
+rebuilt/reinstalled from the package containing the source checkpoint above;
+physical acceptance remains open.
 
 - [x] P24.1 Capture the installed-product baseline: package/source identity,
       login/autostart state, current wake/voice settings, Composer behavior,
@@ -830,8 +829,11 @@ checkpoint above; physical acceptance remains open.
       Gemini replay reached the correct video/playback state, but did not
       terminate as a clean Composer task. A later clean-session Gemini 3.5
       replay spent 131.8 seconds in its first provider call, ran web search,
-      and was stopped before native browser work; final acceptance remains
-      open.
+      and was stopped before native browser work. The latest installed
+      Composer replay used the real Gemini model shown in the UI but was
+      rejected before any browser tool event by Gemini HTTP 429
+      `RESOURCE_EXHAUSTED`; KI-059 records the active provider quota blocker.
+      Final acceptance remains open.
 - [ ] P24.11 Qualify and select a practical agent-capable local-first default
       through registry capability metadata. Keep Qwen2 validation-only and
       retain Qwen3 KI-046/non-default status unless host evidence changes.
@@ -859,8 +861,10 @@ route endpoint correction is in `10bd0b8f` and has real source and installed
 CLI `LOCAL_ONLY` Qwen3-4B route replays. These source checks have a real
 GNOME/AT-SPI tool-boundary replay, but they do not themselves satisfy P24.10.
 P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
-evidence exists. The user's explicitly deferred offline replay is not marked
-PASS.
+evidence exists. The latest source hardening is `2a56c25e`: explicit native
+browser failure envelopes are classified correctly and final success is gated
+on a fresh browser state. The user's explicitly deferred offline replay is not
+marked PASS.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,
