@@ -319,6 +319,27 @@ def _get_local_command_template() -> Optional[str]:
     return None
 
 
+def _managed_local_stt_command() -> Optional[str]:
+    """Return the managed whisper command, if the Hafiye runtime is ready.
+
+    Keeping this decision separate from arbitrary user command templates lets
+    the execution path add the packaged backend import path only to Hafiye's
+    own runtime child.  User-configured ``HERMES_LOCAL_STT_COMMAND`` commands
+    continue to receive the normal sanitized environment without an implicit
+    Hermes module path.
+    """
+    if os.getenv(LOCAL_STT_COMMAND_ENV, "").strip():
+        return None
+    try:
+        from hermes_cli.voice_runtime import default_local_stt_command
+
+        if _has_managed_whisper_runtime(_load_stt_config()):
+            return default_local_stt_command()
+    except Exception:
+        logger.debug("Managed whisper.cpp runtime probe failed", exc_info=True)
+    return None
+
+
 def _has_local_command() -> bool:
     return _get_local_command_template() is not None
 
@@ -2118,7 +2139,8 @@ def _transcribe_local_command(
             "prompts — proceeding without the prompt."
         )
 
-    command_template = _get_local_command_template()
+    managed_command = _managed_local_stt_command()
+    command_template = managed_command or _get_local_command_template()
     if not command_template:
         return {
             "success": False,
@@ -2153,6 +2175,10 @@ def _transcribe_local_command(
             from tools.environments.local import hermes_subprocess_env
 
             child_env = hermes_subprocess_env(inherit_credentials=False)
+            if managed_command is not None:
+                from hermes_cli.voice_runtime import add_managed_runtime_pythonpath
+
+                add_managed_runtime_pythonpath(child_env)
             subprocess.run(
                 shlex.split(command),
                 check=True,

@@ -381,6 +381,30 @@ def default_local_stt_command() -> str:
     )
 
 
+def add_managed_runtime_pythonpath(env: dict[str, str]) -> dict[str, str]:
+    """Make the packaged Hafiye modules importable by the managed STT child.
+
+    The managed whisper command intentionally uses the active interpreter
+    (usually the user-owned Hafiye venv), while the ``hermes_cli`` source is
+    shipped beside the interpreter under the Debian package backend root.
+    ``hermes_subprocess_env()`` correctly strips that root from generic child
+    processes to prevent Hermes modules from shadowing a user's project.  The
+    managed STT child is an explicit Hafiye internal runtime, so it is the one
+    narrow exception: prepend the exact package/source root that owns this
+    module and preserve any unrelated user ``PYTHONPATH`` entries.
+
+    Mutating the supplied mapping keeps this helper usable immediately after
+    the common secret-scrubbing environment builder has run.
+    """
+    backend_root = Path(__file__).resolve().parent.parent
+    existing = str(env.get("PYTHONPATH") or "")
+    entries = [str(backend_root)]
+    if existing:
+        entries.extend(part for part in existing.split(os.pathsep) if part)
+    env["PYTHONPATH"] = os.pathsep.join(entries)
+    return env
+
+
 def _whisper_candidates(
     requested: str,
     *,

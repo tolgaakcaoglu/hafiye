@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from hermes_cli import voice_runtime
@@ -23,6 +24,62 @@ def test_managed_whisper_command_template_is_used(monkeypatch):
     assert "hermes_cli.voice_runtime stt" in command
     assert "{input_path}" in command
     assert "{output_dir}" in command
+
+
+def test_managed_runtime_pythonpath_adds_only_the_packaged_backend_root():
+    env = {"PYTHONPATH": "/opt/user-python"}
+
+    result = voice_runtime.add_managed_runtime_pythonpath(env)
+
+    backend_root = str(Path(voice_runtime.__file__).resolve().parent.parent)
+    assert result is env
+    assert result["PYTHONPATH"].split(os.pathsep) == [backend_root, "/opt/user-python"]
+
+
+def test_managed_local_stt_child_gets_backend_import_path(monkeypatch, tmp_path):
+    monkeypatch.delenv(transcription_tools.LOCAL_STT_COMMAND_ENV, raising=False)
+    monkeypatch.setattr(transcription_tools, "_has_managed_whisper_runtime", lambda config: True)
+
+    sample_wav = tmp_path / "input.wav"
+    sample_wav.write_bytes(b"wav")
+
+    output_dir = tmp_path / "transcript-output"
+    output_dir.mkdir()
+    (output_dir / "transcript.txt").write_text("merhaba", encoding="utf-8")
+
+    class _TempDir:
+        def __enter__(self):
+            return str(output_dir)
+
+        def __exit__(self, *exc):
+            return False
+
+    captured = {}
+
+    monkeypatch.setattr(transcription_tools.tempfile, "TemporaryDirectory", lambda **kwargs: _TempDir())
+    monkeypatch.setattr(
+        transcription_tools,
+        "_prepare_local_audio",
+        lambda *args, **kwargs: (str(sample_wav), None),
+    )
+    monkeypatch.setattr(
+        "tools.environments.local.hermes_subprocess_env",
+        lambda **kwargs: {"PYTHONPATH": "/opt/user-python", "SAFE": "1"},
+    )
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["env"] = kwargs["env"]
+        return transcription_tools.subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(transcription_tools.subprocess, "run", fake_run)
+
+    result = transcription_tools._transcribe_local_command(str(sample_wav), "base")
+
+    assert result["success"] is True
+    assert captured["env"]["SAFE"] == "1"
+    backend_root = str(Path(voice_runtime.__file__).resolve().parent.parent)
+    assert captured["env"]["PYTHONPATH"].split(os.pathsep) == [backend_root, "/opt/user-python"]
 
 
 def test_managed_piper_does_not_import_piper_into_hermes(monkeypatch, tmp_path: Path):
