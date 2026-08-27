@@ -885,6 +885,13 @@ further reduction within `ACCEPTED_UPSTREAM_BASELINE`, with no new/different
 regression. P24 remains open because installed voice, recovery/re-arm,
 coding/browser, and physical acceptance evidence is still incomplete.
 
+The final post-source automated rerun after `4bfe7add` recorded targeted
+backend `153 passed`, P24 UI `93 passed`, Desktop typecheck exit 0, packaging
+tests `15 passed`, and the canonical five-node comparison `3 passed, 2 failed`.
+The two failures are accepted historical whitelist IDs 2 and 3; no
+new/different regression was found. These automated results do not replace the
+still-open installed physical acceptance.
+
 ### P24 credential/model-picker recheck — 2026-08-27
 
 The active Gemini credential was revalidated through both configured Secret

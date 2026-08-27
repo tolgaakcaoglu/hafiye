@@ -42,6 +42,11 @@ silently treated as passing.
   2 failed`; only historical IDs 2 and 3 failed, while IDs 1, 4, and 5
   passed. This further reduction remains inside the accepted whitelist and
   does not add a Hafiye regression or change the historical five-ID set.
+- The final targeted comparison after source commit `4bfe7add` returned the
+  same `3 passed, 2 failed` result, with only whitelist IDs 2 and 3 failing.
+  Targeted Hafiye backend tests (`153 passed`), P24 UI tests (`93 passed`),
+  Desktop typecheck, and packaging tests (`15 passed`) were also clean; no
+  new/different regression was found.
 
 ## KI-002 — System Python is outside the Hermes constraint
 
