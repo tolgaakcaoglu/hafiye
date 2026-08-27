@@ -248,6 +248,116 @@ def test_native_navigation_without_target_rejects_non_browser_focus(monkeypatch)
     assert "firefox/chromium" in result["error"].lower()
 
 
+def test_native_navigation_recovers_unique_browser_when_composer_has_focus(monkeypatch):
+    calls = []
+
+    def fake_call(tool, args, **kwargs):
+        calls.append((tool, args))
+        if tool == "focused_window":
+            return json.dumps(
+                {
+                    "structuredContent": {
+                        "focused_window": {
+                            "app_id": "hafiye.desktop",
+                            "pid": 10,
+                            "title": "Hafiye",
+                            "window_id": 11,
+                        }
+                    }
+                }
+            )
+        if tool == "list_windows":
+            return json.dumps(
+                {
+                    "result": json.dumps(
+                        {
+                            "windows": [
+                                {
+                                    "app_id": "firefox_firefox.desktop",
+                                    "pid": 20,
+                                    "title": "Firefox",
+                                    "window_id": 21,
+                                    "wm_class": "firefox_firefox",
+                                    "focused": False,
+                                    "hidden": False,
+                                }
+                            ]
+                        }
+                    )
+                }
+            )
+        return json.dumps({"ok": True})
+
+    monkeypatch.setattr(native_browser, "_call_managed_tool", fake_call)
+
+    result = json.loads(
+        native_browser.browser_native(
+            "navigate",
+            url="https://example.test",
+            task_id="task-recover",
+        )
+    )
+
+    assert result["success"] is True
+    assert [tool for tool, _ in calls] == [
+        "focused_window",
+        "list_windows",
+        "activate_window",
+        "press_key",
+        "type_text",
+        "press_key",
+    ]
+    assert calls[2][1] == {
+        "window_id": 21,
+        "pid": 20,
+        "app_id": "firefox_firefox.desktop",
+        "title": "Firefox",
+        "wm_class": "firefox_firefox",
+    }
+
+
+def test_native_navigation_refuses_ambiguous_browser_recovery(monkeypatch):
+    def fake_call(tool, args, **kwargs):
+        if tool == "focused_window":
+            return json.dumps(
+                {
+                    "structuredContent": {
+                        "focused_window": {
+                            "app_id": "hafiye.desktop",
+                            "window_id": 11,
+                        }
+                    }
+                }
+            )
+        if tool == "list_windows":
+            return json.dumps(
+                {
+                    "structuredContent": {
+                        "windows": [
+                            {
+                                "app_id": "firefox_firefox.desktop",
+                                "window_id": 21,
+                                "focused": False,
+                            },
+                            {
+                                "app_id": "chromium.desktop",
+                                "window_id": 22,
+                                "focused": False,
+                            },
+                        ]
+                    }
+                }
+            )
+        return json.dumps({"ok": True})
+
+    monkeypatch.setattr(native_browser, "_call_managed_tool", fake_call)
+
+    result = json.loads(native_browser.browser_native("navigate", url="https://example.test"))
+
+    assert result["success"] is False
+    assert "unique" in result["error"].lower()
+
+
 def test_native_readiness_uses_pinned_doctor(monkeypatch):
     monkeypatch.setattr(native_browser.sys, "platform", "linux")
     monkeypatch.setattr(

@@ -83,7 +83,8 @@ _NATIVE_BROWSER_SCHEMA: Dict[str, Any] = {
                 "description": (
                     "Exact compositor window id. Required for click/type/press/scroll; "
                     "navigate and state may use the focused Firefox/Chromium window "
-                    "when omitted."
+                    "when omitted, then conservatively recover one unique visible "
+                    "browser window if Composer owns focus."
                 ),
             },
             "pid": {"type": "integer"},
@@ -273,6 +274,23 @@ def _find_focused_window(value: Any) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _find_windows(value: Any) -> list[Dict[str, Any]]:
+    """Find a managed-MCP window list in any transport result envelope."""
+    payload = _decode_result(value)
+    if isinstance(payload, dict):
+        windows = payload.get("windows")
+        if isinstance(windows, list):
+            return [window for window in windows if isinstance(window, dict)]
+        for key in ("result", "data", "structuredContent"):
+            nested = payload.get(key)
+            found = _find_windows(nested)
+            if found:
+                return found
+    elif isinstance(payload, list):
+        return [window for window in payload if isinstance(window, dict)]
+    return []
+
+
 def _is_supported_browser_window(window: Dict[str, Any]) -> bool:
     identity = " ".join(
         str(window.get(key) or "")
@@ -290,6 +308,58 @@ def _is_supported_browser_window(window: Dict[str, Any]) -> bool:
             "edge",
         )
     )
+
+
+def _browser_target(window: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        key: window[key]
+        for key in ("window_id", "pid", "app_id", "title", "wm_class")
+        if window.get(key) is not None
+    }
+
+
+def _discover_browser_target(
+    *,
+    task_id: Optional[str],
+    session_id: Optional[str],
+    user_task: Optional[str],
+) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Safely recover a browser target when another app owns compositor focus.
+
+    Composer normally owns focus while an agent turn is running.  A native
+    browser action without an explicit target must therefore not stop at the
+    current focused application.  Recovery is deliberately conservative: use
+    one visible browser, or one explicitly focused browser, and refuse to
+    guess when multiple browser windows are equally plausible.
+    """
+    result = _call_managed_tool(
+        "list_windows",
+        {},
+        task_id=task_id,
+        session_id=session_id,
+        user_task=user_task,
+    )
+    if _result_failed(result):
+        return None, "The browser-window list query failed; pass an exact browser window_id."
+
+    candidates = [
+        window
+        for window in _find_windows(result)
+        if not window.get("hidden") and _is_supported_browser_window(window)
+    ]
+    focused = [window for window in candidates if window.get("focused") is True]
+    if len(focused) == 1:
+        target = _browser_target(focused[0])
+    elif len(candidates) == 1:
+        target = _browser_target(candidates[0])
+    else:
+        return None, (
+            "No unique visible Firefox/Chromium window was found. Use action='windows' "
+            "and pass the exact window_id."
+        )
+    if not target:
+        return None, "The browser window list did not expose a usable target id."
+    return target, None
 
 
 def _focused_browser_target(
@@ -319,11 +389,7 @@ def _focused_browser_target(
             "No focused Firefox/Chromium window was found. Use action='windows' "
             "and pass the exact browser window_id."
         )
-    target = {
-        key: window[key]
-        for key in ("window_id", "pid", "app_id", "title", "wm_class")
-        if window.get(key) is not None
-    }
+    target = _browser_target(window)
     if not target:
         return None, "The focused browser did not expose a usable target id. Pass an exact window_id from action='windows'."
     return target, None
@@ -486,10 +552,22 @@ def browser_native(
             user_task=user_task,
         )
         if target_error:
-            return json.dumps(
-                {"success": False, "route": "native", "action": action, "error": target_error},
-                ensure_ascii=False,
+            target, discovery_error = _discover_browser_target(
+                task_id=task_id,
+                session_id=session_id,
+                user_task=user_task,
             )
+            if discovery_error:
+                return json.dumps(
+                    {
+                        "success": False,
+                        "route": "native",
+                        "action": action,
+                        "error": f"{target_error} {discovery_error}",
+                    },
+                    ensure_ascii=False,
+                )
+            target_error = None
     else:
         target_error = _require_target(action, target)
     if target_error:
