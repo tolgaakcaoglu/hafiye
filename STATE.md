@@ -15,8 +15,8 @@ Last updated: 2026-08-27
   action cannot finalize as success without a fresh successful state.) Earlier
   source identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `17ae16790712e96e5390350533608ddf9810c7dc` (substantive documentation
-  closure; this metadata pointer is kept separate from the source HEAD).
+  `c7753f868` (substantive documentation closure; this metadata pointer is
+  kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
   `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
   change the Hafiye source checkpoint or installed package source.
