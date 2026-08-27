@@ -127,13 +127,21 @@ export function createGnomeEmergencyStopFallback(
           const existingName = readCustomValue(gsettings, 'name')
           const existingCommand = readCustomValue(gsettings, 'command')
           const existingBinding = readCustomValue(gsettings, 'binding')
+          // A Hafiye installation can be upgraded from a checkout where the
+          // same reserved binding pointed at the legacy Hermes launcher. The
+          // name + binding are the ownership marker for this reserved object;
+          // allow that command path to be repaired in place. Still fail closed
+          // for a path whose name or accelerator was changed by somebody else.
+          const ownedBindingMarker =
+            existingName === GNOME_EMERGENCY_STOP_NAME &&
+            existingBinding === GNOME_EMERGENCY_STOP_BINDING
 
           // Never overwrite an unrelated user keybinding if a future GNOME
           // version or another tool happens to claim the reserved object path.
           if (
             (existingName && existingName !== GNOME_EMERGENCY_STOP_NAME) ||
-            (existingCommand && existingCommand !== command) ||
-            (existingBinding && existingBinding !== GNOME_EMERGENCY_STOP_BINDING)
+            (existingBinding && existingBinding !== GNOME_EMERGENCY_STOP_BINDING) ||
+            (existingCommand && existingCommand !== command && !ownedBindingMarker)
           ) {
             return false
           }

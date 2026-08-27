@@ -64,4 +64,20 @@ describe('createGnomeEmergencyStopFallback', () => {
     expect(fallback.register()).toBe(false)
     expect(fake.calls).toHaveLength(0)
   })
+
+  it('repairs a legacy Hafiye binding that still targets the Hermes launcher', () => {
+    const fake = fakeGSettings([GNOME_EMERGENCY_STOP_PATH])
+    const prefix = 'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:' + GNOME_EMERGENCY_STOP_PATH
+    fake.values.set(`${prefix}/name`, "'Hafiye Emergency Stop'")
+    fake.values.set(`${prefix}/command`, "'/home/tolga/.local/bin/hermes' emergency-stop --reason=global-hotkey")
+    fake.values.set(`${prefix}/binding`, `'${GNOME_EMERGENCY_STOP_BINDING}'`)
+
+    const fallback = createGnomeEmergencyStopFallback('/usr/bin/hafiye', undefined, fake.gsettings)
+
+    expect(fallback.register()).toBe(true)
+    const updatedCommand = fake.values.get(`${prefix}/command`) ?? ''
+    expect(updatedCommand).toContain('/usr/bin/hafiye')
+    expect(updatedCommand).not.toContain('/home/tolga/.local/bin/hermes')
+    expect(updatedCommand).toContain('emergency-stop --reason=global-hotkey')
+  })
 })
