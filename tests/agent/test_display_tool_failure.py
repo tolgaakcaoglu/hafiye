@@ -79,6 +79,41 @@ class TestDetectToolFailureMemory:
 class TestDetectToolFailureStructured:
     """Generic path: any tool that returns {"error": ...} JSON."""
 
+    def test_explicit_success_false_without_top_level_error_is_failure(self):
+        """Native tool envelopes must not be presented as successful work."""
+        result = json.dumps(
+            {
+                "success": False,
+                "route": "native",
+                "action": "click",
+                "failure": {
+                    "ok": False,
+                    "code": "desktop_action_failed",
+                    "detail": "stale accessibility element",
+                },
+            }
+        )
+
+        is_failure, suffix = _detect_tool_failure("browser_native", result)
+
+        assert is_failure is True
+        assert "desktop_action_failed" in suffix
+        assert "stale accessibility" in suffix
+
+    def test_nested_ok_false_without_top_level_error_is_failure(self):
+        result = json.dumps(
+            {
+                "result": json.dumps(
+                    {"ok": False, "code": "window_not_found"}
+                )
+            }
+        )
+
+        is_failure, suffix = _detect_tool_failure("browser_native", result)
+
+        assert is_failure is True
+        assert "window_not_found" in suffix
+
     def test_read_file_error_surfaced(self):
         result = json.dumps({
             "path": "/nope/missing.py",
@@ -118,4 +153,3 @@ class TestGetCuteToolMessageFailureSuffix:
         ok = json.dumps({"success": True, "data": "hi"})
         line = get_cute_tool_message("web_search", {"query": "hi"}, 0.2, result=ok)
         assert "[" not in line.split("0.2s", 1)[1]
-

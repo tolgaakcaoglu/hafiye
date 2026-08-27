@@ -374,6 +374,112 @@ def test_default_run_conversation_warns_without_guardrail_halt():
     assert any("repeated_exact_failure_warning" in content for content in tool_contents)
 
 
+def test_failed_native_browser_action_cannot_finalize_as_success_without_fresh_state():
+    """A browser action failure must not be hidden by a prose success claim."""
+    agent = _make_agent("browser_native", max_iterations=10)
+    failed = json.dumps(
+        {
+            "success": False,
+            "route": "native",
+            "action": "click",
+            "failure": {
+                "ok": False,
+                "code": "desktop_action_failed",
+                "detail": "stale accessibility element",
+            },
+        }
+    )
+    responses = [
+        _mock_response(
+            content="",
+            finish_reason="tool_calls",
+            tool_calls=[
+                _mock_tool_call(
+                    "browser_native",
+                    json.dumps({"action": "click", "window_id": 7, "element_index": 1}),
+                    "c-browser-fail",
+                )
+            ],
+        ),
+        _mock_response(content="The requested video is open."),
+        _mock_response(content="The requested video is open."),
+        _mock_response(content="The requested video is open."),
+    ]
+    agent.client.chat.completions.create.side_effect = responses
+
+    with (
+        patch("run_agent.handle_function_call", return_value=failed),
+        patch.object(agent, "_persist_session"),
+        patch.object(agent, "_save_trajectory"),
+        patch.object(agent, "_cleanup_task_resources"),
+    ):
+        result = agent.run_conversation("Open the requested video")
+
+    assert result["turn_exit_reason"] == "browser_verification_failed"
+    assert "doğrulanamadı" in result["final_response"]
+    assert "The requested video is open." not in result["final_response"]
+    assert agent.client.chat.completions.create.call_count == 4
+
+
+def test_successful_native_browser_state_clears_failure_completion_gate():
+    """A fresh successful state read permits a subsequently grounded answer."""
+    agent = _make_agent("browser_native", max_iterations=10)
+    failed = json.dumps(
+        {
+            "success": False,
+            "route": "native",
+            "action": "click",
+            "failure": {"ok": False, "code": "desktop_action_failed"},
+        }
+    )
+    state = json.dumps(
+        {
+            "success": True,
+            "route": "native",
+            "action": "state",
+            "steps": [{"tool": "get_app_state", "result": {"title": "Target video"}}],
+        }
+    )
+    responses = [
+        _mock_response(
+            content="",
+            finish_reason="tool_calls",
+            tool_calls=[
+                _mock_tool_call(
+                    "browser_native",
+                    json.dumps({"action": "click", "window_id": 7, "element_index": 1}),
+                    "c-browser-fail",
+                )
+            ],
+        ),
+        _mock_response(
+            content="",
+            finish_reason="tool_calls",
+            tool_calls=[
+                _mock_tool_call(
+                    "browser_native",
+                    json.dumps({"action": "state", "window_id": 7}),
+                    "c-browser-state",
+                )
+            ],
+        ),
+        _mock_response(content="The target video is verified as open."),
+    ]
+    agent.client.chat.completions.create.side_effect = responses
+
+    with (
+        patch("run_agent.handle_function_call", side_effect=[failed, state]),
+        patch.object(agent, "_persist_session"),
+        patch.object(agent, "_save_trajectory"),
+        patch.object(agent, "_cleanup_task_resources"),
+    ):
+        result = agent.run_conversation("Open the requested video")
+
+    assert result["final_response"] == "The target video is verified as open."
+    assert result["turn_exit_reason"].startswith("text_response")
+    assert agent.client.chat.completions.create.call_count == 3
+
+
 
 
 def test_guardrail_halt_emits_final_response_through_stream_delta_callback():

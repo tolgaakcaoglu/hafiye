@@ -1332,6 +1332,53 @@ def _trim_error(msg: str) -> str:
     return msg
 
 
+def _explicit_failure_detail(value: Any, *, depth: int = 0) -> str | None:
+    """Return a compact detail for an explicit structured failure envelope.
+
+    Tool adapters do not all put their failure text at the same level.  In
+    particular, managed MCP responses may be wrapped in ``result`` and
+    ``browser_native`` returns ``success:false`` with a nested ``failure``
+    object.  The execution layer needs the same failure truth as the display
+    layer; otherwise a failed external action is logged and presented as a
+    successful tool call.
+    """
+    if depth > 4:
+        return None
+    payload = safe_json_loads(value) if isinstance(value, str) else value
+    if not isinstance(payload, dict):
+        return None
+
+    explicit_failure = (
+        payload.get("isError") is True
+        or payload.get("success") is False
+        or payload.get("ok") is False
+    )
+    if explicit_failure:
+        direct = (
+            payload.get("error")
+            or payload.get("message")
+            or payload.get("detail")
+        )
+        code = payload.get("code")
+        if direct and code:
+            return f"{code}: {direct}"
+        if direct:
+            return str(direct)
+        if code:
+            return str(code)
+        for key in ("failure", "result", "data", "structuredContent"):
+            nested = _explicit_failure_detail(payload.get(key), depth=depth + 1)
+            if nested:
+                return nested
+        return "error"
+
+    for key in ("failure", "result", "data", "structuredContent"):
+        nested = _explicit_failure_detail(payload.get(key), depth=depth + 1)
+        if nested:
+            return nested
+    return None
+
+
 def _detect_tool_failure(tool_name: str, result: str | None) -> tuple[bool, str]:
     """Inspect a tool result string for signs of failure.
 
@@ -1363,6 +1410,14 @@ def _detect_tool_failure(tool_name: str, result: str | None) -> tuple[bool, str]
         if isinstance(data, dict):
             if data.get("success") is False and "exceed the limit" in data.get("error", ""):
                 return True, " [full]"
+
+    # Explicit failure flags are authoritative even when the adapter does not
+    # also emit a top-level ``error`` field.  This covers managed MCP transport
+    # envelopes and Hafiye's native browser result shape, for example
+    # ``{"success": false, "failure": {"code": ...}}``.
+    explicit_detail = _explicit_failure_detail(data)
+    if explicit_detail:
+        return True, f" [{_trim_error(explicit_detail)}]"
 
     # Structured error in JSON result (any tool that surfaces {"error": ...}).
     if isinstance(data, dict):

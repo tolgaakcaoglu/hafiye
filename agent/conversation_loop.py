@@ -8117,6 +8117,53 @@ def run_conversation(
                 ):
                     messages.pop()
 
+                # A failed native-browser action is not allowed to disappear
+                # behind a final prose claim.  Give the model a bounded chance
+                # to read fresh browser state; after that, return a controlled
+                # truthful blocker instead of forwarding an unverified success.
+                try:
+                    from agent.native_browser_verification import (
+                        build_verification_nudge,
+                        verification_blocker,
+                    )
+
+                    _native_browser_nudge = build_verification_nudge(agent)
+                    _native_browser_blocker = verification_blocker(agent)
+                except Exception:
+                    logger.debug("native browser finalization gate failed", exc_info=True)
+                    _native_browser_nudge = None
+                    _native_browser_blocker = None
+
+                if _native_browser_nudge:
+                    agent._verification_stop_nudges = (
+                        getattr(agent, "_verification_stop_nudges", 0) + 1
+                    )
+                    final_msg["finish_reason"] = "verification_required"
+                    agent._emit_interim_assistant_message(final_msg)
+                    append_message(messages, final_msg)
+                    try:
+                        agent._flush_messages_to_session_db(messages, conversation_history)
+                    except Exception:
+                        logger.debug("native browser interim flush failed", exc_info=True)
+                    append_message(messages, {
+                        "role": "user",
+                        "content": _native_browser_nudge,
+                        "_verification_stop_synthetic": True,
+                    })
+                    agent._session_messages = messages
+                    _pending_verification_response = final_response
+                    _pending_verification_response_previewed = (
+                        agent._interim_content_was_streamed(final_response or "")
+                    )
+                    final_response = None
+                    continue
+
+                if _native_browser_blocker:
+                    final_response = _native_browser_blocker
+                    final_msg["content"] = final_response
+                    final_msg["finish_reason"] = "browser_verification_failed"
+                    _turn_exit_reason = "browser_verification_failed"
+
                 try:
                     from agent.verification_stop import (
                         build_verify_on_stop_nudge,
@@ -8307,7 +8354,8 @@ def run_conversation(
                         exc_info=True,
                     )
 
-                _turn_exit_reason = f"text_response(finish_reason={finish_reason})"
+                if _turn_exit_reason != "browser_verification_failed":
+                    _turn_exit_reason = f"text_response(finish_reason={finish_reason})"
                 if not agent.quiet_mode:
                     agent._safe_print(f"🎉 Conversation completed after {api_call_count} OpenAI-compatible API call(s)")
                 break

@@ -8282,6 +8282,17 @@ class AIAgent:
             function_result,
             failed=failed,
         )
+        # A failed native browser action must not be followed immediately by
+        # an unverified text-only success claim.  Keep this provider-neutral
+        # and tool-bound: the browser wrapper's explicit result is the source
+        # of truth, while the conversation loop provides a bounded fresh-state
+        # recovery opportunity.
+        try:
+            from agent.native_browser_verification import record_tool_result
+
+            record_tool_result(self, tool_name, function_result, failed=failed)
+        except Exception:
+            logger.debug("native browser verification bookkeeping failed", exc_info=True)
         # Identical-call stall guards (agent.stall_guards): notice-only, no
         # blocking. Observed on the RAW result (before the loop-warning suffix
         # below, whose embedded count changes per call and would defeat
