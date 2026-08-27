@@ -50,14 +50,14 @@ _SELECTOR_KEYS = (
 _NATIVE_BROWSER_SCHEMA: Dict[str, Any] = {
     "name": "browser_native",
     "description": (
-        "Explicit native desktop browser route through Hafiye's managed "
-        "computer-use-linux MCP provider. Use browser_* structured tools by "
-        "default. Use this only when the task explicitly requires the user's "
-        "already-authenticated normal Linux browser session and structured "
-        "automation cannot safely reuse it. Start with action='windows' or "
-        "action='focused', bind an exact window_id, then use action='state' "
-        "before page actions. This route never launches a new browser profile "
-        "and never reads cookies."
+        "Preferred native desktop browser route on Linux through Hafiye's "
+        "managed computer-use-linux MCP provider. Use this for browser tasks "
+        "that must operate on the user's already-open Firefox/Chromium window; "
+        "do not use browser_exec for that desktop session. Start with "
+        "action='windows' or action='focused', bind an exact window_id, then "
+        "use action='state' before page actions. This route never launches a "
+        "new browser profile and never reads cookies. After mutations, read "
+        "fresh state and verify the requested page or media is actually open."
     ),
     "parameters": {
         "type": "object",
@@ -80,7 +80,11 @@ _NATIVE_BROWSER_SCHEMA: Dict[str, Any] = {
             },
             "window_id": {
                 "type": "integer",
-                "description": "Exact compositor window id. Required for mutations when possible.",
+                "description": (
+                    "Exact compositor window id. Required for click/type/press/scroll; "
+                    "navigate and state may use the focused Firefox/Chromium window "
+                    "when omitted."
+                ),
             },
             "pid": {"type": "integer"},
             "app_id": {"type": "string"},
@@ -191,7 +195,20 @@ def _result_failed(value: Any) -> bool:
         return True
     if payload.get("success") is False or payload.get("ok") is False:
         return True
-    return bool(payload.get("error"))
+    if payload.get("error"):
+        return True
+
+    # registry.dispatch may wrap the managed MCP response in a transport
+    # envelope whose actual JSON lives under ``result`` or
+    # ``structuredContent``.  Inspect those layers too: otherwise a native
+    # action such as activate_window returning ``ok:false`` was reported as a
+    # successful browser_native step, and the model kept repeating the stale
+    # window id instead of seeing the recovery signal.
+    for key in ("result", "data", "structuredContent"):
+        nested = payload.get(key)
+        if isinstance(nested, (dict, str)) and _result_failed(nested):
+            return True
+    return False
 
 
 def _call_managed_tool(
@@ -239,6 +256,77 @@ def _require_target(action: str, target: Dict[str, Any]) -> Optional[str]:
         "Use action='windows' first and pass window_id (or another exact "
         "window selector)."
     )
+
+
+def _find_focused_window(value: Any) -> Optional[Dict[str, Any]]:
+    """Find the focused-window record in any managed-MCP result envelope."""
+    payload = _decode_result(value)
+    if isinstance(payload, dict):
+        focused = payload.get("focused_window")
+        if isinstance(focused, dict):
+            return focused
+        for key in ("result", "data", "structuredContent"):
+            nested = payload.get(key)
+            found = _find_focused_window(nested)
+            if found:
+                return found
+    return None
+
+
+def _is_supported_browser_window(window: Dict[str, Any]) -> bool:
+    identity = " ".join(
+        str(window.get(key) or "")
+        for key in ("app_id", "app_name", "title", "wm_class")
+    ).lower()
+    return any(
+        name in identity
+        for name in (
+            "firefox",
+            "chromium",
+            "google-chrome",
+            "chrome",
+            "brave",
+            "microsoft-edge",
+            "edge",
+        )
+    )
+
+
+def _focused_browser_target(
+    *,
+    task_id: Optional[str],
+    session_id: Optional[str],
+    user_task: Optional[str],
+) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Resolve the currently focused browser without trusting model-made IDs.
+
+    The focused-window lookup is intentionally limited to browser identities.
+    A missing target must never make a native browser operation act on an
+    arbitrary focused terminal or another desktop application.
+    """
+    result = _call_managed_tool(
+        "focused_window",
+        {},
+        task_id=task_id,
+        session_id=session_id,
+        user_task=user_task,
+    )
+    if _result_failed(result):
+        return None, "The focused-window query failed; pass an exact browser window_id from action='windows'."
+    window = _find_focused_window(result)
+    if not window or not _is_supported_browser_window(window):
+        return None, (
+            "No focused Firefox/Chromium window was found. Use action='windows' "
+            "and pass the exact browser window_id."
+        )
+    target = {
+        key: window[key]
+        for key in ("window_id", "pid", "app_id", "title", "wm_class")
+        if window.get(key) is not None
+    }
+    if not target:
+        return None, "The focused browser did not expose a usable target id. Pass an exact window_id from action='windows'."
+    return target, None
 
 
 def _safe_navigation_url(url: Any) -> Optional[str]:
@@ -391,7 +479,19 @@ def browser_native(
             user_task=user_task,
         )
 
-    target_error = _require_target(action, target)
+    if not target and action in {"navigate", "state"}:
+        target, target_error = _focused_browser_target(
+            task_id=task_id,
+            session_id=session_id,
+            user_task=user_task,
+        )
+        if target_error:
+            return json.dumps(
+                {"success": False, "route": "native", "action": action, "error": target_error},
+                ensure_ascii=False,
+            )
+    else:
+        target_error = _require_target(action, target)
     if target_error:
         return json.dumps(
             {"success": False, "route": "native", "action": action, "error": target_error},
@@ -408,6 +508,9 @@ def browser_native(
         )
     if action == "state":
         state_args = dict(target)
+        # Accessibility trees can be very large. Request a screenshot only
+        # when the model explicitly asks for visual verification.
+        state_args["include_screenshot"] = bool(args.get("include_screenshot", False))
         for key_name in ("include_screenshot", "max_nodes", "max_depth"):
             if key_name in args:
                 state_args[key_name] = args[key_name]

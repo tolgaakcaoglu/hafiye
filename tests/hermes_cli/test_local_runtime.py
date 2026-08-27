@@ -102,11 +102,14 @@ def test_local_model_registry_exposes_evidence_backed_capability_state(tmp_path:
     manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
     qwen2_source = tmp_path / "qwen2.5-0.5b-instruct-q4.gguf"
     qwen3_source = tmp_path / "qwen3-14b-q4_k_m.gguf"
+    qwen3_small_source = tmp_path / "qwen3-4b-q4_k_m.gguf"
     qwen2_source.write_bytes(b"qwen2-validation-fixture")
     qwen3_source.write_bytes(b"qwen3-agent-fixture")
+    qwen3_small_source.write_bytes(b"qwen3-small-agent-fixture")
 
     qwen2 = manager.import_model(qwen2_source, "qwen2.5-0.5b-instruct-q4")
     qwen3 = manager.import_model(qwen3_source, "qwen3-14b-q4_k_m")
+    qwen3_small = manager.import_model(qwen3_small_source, "qwen3-4b-q4_k_m")
 
     assert qwen2["capabilities"] == {
         "validation": True,
@@ -120,10 +123,17 @@ def test_local_model_registry_exposes_evidence_backed_capability_state(tmp_path:
         "tool_calling": True,
         "resource_warning": "KI-046",
     }
+    assert qwen3_small["capabilities"] == {
+        "validation": False,
+        "agent": True,
+        "tool_calling": True,
+        "resource_warning": "KI-046",
+    }
     persisted = json.loads(manager.paths.registry.read_text(encoding="utf-8"))
     by_id = {item["id"]: item for item in persisted["models"]}
     assert by_id["qwen2.5-0.5b-instruct-q4"]["capabilities"]["agent"] is False
     assert by_id["qwen3-14b-q4_k_m"]["capabilities"]["agent"] is True
+    assert by_id["qwen3-4b-q4_k_m"]["capabilities"]["tool_calling"] is True
 
 
 def test_unknown_local_model_stays_unqualified(tmp_path: Path):

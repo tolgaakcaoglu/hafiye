@@ -586,6 +586,32 @@ GOOGLE_MODEL_OPERATIONAL_GUIDANCE = (
     "Don't stop with a plan — execute it.\n"
 )
 
+# Hafiye's installed Linux experience owns the user's existing Firefox/Chromium
+# window through the managed computer-use provider.  Keep this separate from
+# the generic computer-use block so it is still present when the MCP desktop
+# tools are progressively disclosed behind tool_search.
+NATIVE_BROWSER_GUIDANCE = (
+    "# Hafiye native browser route\n"
+    "When `browser_native` is available on Linux, use it for browser tasks "
+    "that must operate on the user's already-open desktop browser. For a named "
+    "site, channel, or video, use `web_search` first to obtain an exact, safe "
+    "canonical URL. Then use `browser_native` with action='navigate' and that "
+    "URL; when no window_id is supplied, navigate/state safely resolve the "
+    "currently focused Firefox/Chromium window. Use action='windows' or "
+    "action='focused' when you need to inspect targets, and never invent a "
+    "window id. Use native accessibility state/actions for follow-up clicks. "
+    "Do not use `browser_exec` or invent a Chrome session: that harness cannot "
+    "attach to the user's Firefox window. Native state omits screenshots by "
+    "default; request one only for visual verification. For a 'latest video' "
+    "request, opening a channel homepage is not completion: navigate to its "
+    "official `/videos` page, identify the newest item, open its concrete "
+    "`/watch?v=...` URL, and verify that the focused window is on the video "
+    "player. Never claim that a 'latest videos' tab was clicked unless a real "
+    "native action succeeded, and never invent a video id or declare success "
+    "from a channel URL alone. After navigation or a click, read fresh state "
+    "and verify the requested page/video is actually open."
+)
+
 
 # Guidance injected into the system prompt when the computer_use toolset
 # is active. Universal — works for any model (Claude, GPT, open models).

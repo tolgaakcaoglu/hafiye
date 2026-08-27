@@ -113,9 +113,11 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     getSettings: () => ipcRenderer.invoke('hermes:quick-entry:settings:get'),
     setSettings: patch => ipcRenderer.invoke('hermes:quick-entry:settings:set', patch),
     submit: payload => ipcRenderer.send('hermes:quick-entry:submit', payload),
+    showForVoice: () => ipcRenderer.send('hermes:quick-entry:show', { voice: true }),
     startVoice: () => ipcRenderer.send('hermes:quick-entry:start-voice'),
     stop: () => ipcRenderer.send('hermes:quick-entry:stop'),
     dismiss: () => ipcRenderer.send('hermes:quick-entry:dismiss'),
+    publishTranscript: (transcript: string) => ipcRenderer.invoke('hermes:quick-entry:transcript', transcript),
     // Primary renderer → main → quick window: gateway connection state + the
     // recent-session options the target picker offers. Main caches the latest
     // payload so a freshly spawned quick window starts from truth.
@@ -146,6 +148,12 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:quick-entry:welcome', listener)
 
       return () => ipcRenderer.removeListener('hermes:quick-entry:welcome', listener)
+    },
+    onTranscript: callback => {
+      const listener = (_event, transcript) => callback(transcript)
+      ipcRenderer.on('hermes:quick-entry:transcript', listener)
+
+      return () => ipcRenderer.removeListener('hermes:quick-entry:transcript', listener)
     },
     onStartVoice: callback => {
       const listener = () => callback()

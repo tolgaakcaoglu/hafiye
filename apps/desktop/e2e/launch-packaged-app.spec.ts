@@ -1,11 +1,6 @@
 import { expect, test } from './test'
 
-import {
-  PACKAGED_BINARY_PATH,
-  type PackagedAppFixture,
-  packagedBinaryExists,
-  setupPackagedApp,
-} from './fixtures'
+import { PACKAGED_BINARY_PATH, type PackagedAppFixture, packagedBinaryExists, setupPackagedApp } from './fixtures'
 import { expectVisualSnapshot } from './visual-snapshot'
 
 /**
@@ -21,10 +16,7 @@ import { expectVisualSnapshot } from './visual-snapshot'
 let fixture: PackagedAppFixture | null = null
 
 test.beforeAll(async () => {
-  test.skip(
-    !packagedBinaryExists(),
-    `Built app binary not found: ${PACKAGED_BINARY_PATH}. Run 'npm run pack' first.`,
-  )
+  test.skip(!packagedBinaryExists(), `Built app binary not found: ${PACKAGED_BINARY_PATH}. Run 'npm run pack' first.`)
 
   fixture = await setupPackagedApp()
 })
@@ -34,9 +26,9 @@ test.afterAll(async () => {
   fixture = null
 })
 
-test('window opens with the Hermes title', async () => {
+test('window opens with the Hafiye title', async () => {
   const title = await fixture!.page.title()
-  expect(title).toContain('Hermes')
+  expect(title).toContain('Hafiye')
 })
 
 test('renderer loads and shows DOM content', async () => {
@@ -50,9 +42,11 @@ test('HUD composer remains fully inside the transparent window', async () => {
   const hudPagePromise = fixture!.app.waitForEvent('window')
 
   await fixture!.page.evaluate(() =>
-    (window as typeof window & {
-      hermesDesktop?: { hud?: { open: (options: { sessionId: null }) => Promise<void> } }
-    }).hermesDesktop?.hud?.open({ sessionId: null })
+    (
+      window as typeof window & {
+        hermesDesktop?: { hud?: { open: (options: { sessionId: null }) => Promise<void> } }
+      }
+    ).hermesDesktop?.hud?.open({ sessionId: null })
   )
 
   const hudPage = await hudPagePromise
@@ -85,7 +79,7 @@ test('HUD composer remains fully inside the transparent window', async () => {
       // Tailwind's standalone `translate: -50%` live and shifting the dock
       // half a window off-screen. Surface the computed value so a failure
       // says WHY the dock moved, not just that it did.
-      dockTranslate: getComputedStyle(dock).translate,
+      dockTranslate: getComputedStyle(dock).translate
     }
   })
 
@@ -114,33 +108,41 @@ test('HUD composer remains fully inside the transparent window', async () => {
   await hudPage.close()
 })
 
-test('boot progress overlay fades out or shows error state', async () => {
+test('boot progress resolves to setup or error state', async () => {
   const page = fixture!.page
   await page.waitForFunction(
     () => {
-      const root = document.getElementById('root')
+      const visible = (element: Element) => {
+        const node = element as HTMLElement
+        const style = window.getComputedStyle(node)
+        const rect = node.getBoundingClientRect()
 
-      if (!root) {
-        return false
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0
       }
 
-      const text = root.textContent ?? ''
+      const bodyText = document.body?.innerText ?? ''
+      const lower = bodyText.toLowerCase()
+      const setupVisible = [...document.querySelectorAll('h2, [role="heading"]')].some(
+        element => visible(element) && /set up hafiye desktop|hafiye desktop kurulumu/i.test(element.textContent ?? '')
+      )
+      const errorVisible = [...document.querySelectorAll('[role="alert"], [role="status"]')].some(
+        element => visible(element) && /error|hata|failed|başarısız/i.test(element.textContent ?? '')
+      )
+      const bootOverlayVisible = [...document.querySelectorAll('[role="progressbar"]')].some(visible)
 
-      // Error path: boot failure overlay renders an error message.
-      if (text.includes('error') || text.includes('Error') || text.includes('failed')) {
-        return true
-      }
-
-      // Success path: overlay disappears and the app renders. If there's
-      // no "boot" / "starting" / "installing" text visible, boot has
-      // completed (either to the main UI or to onboarding).
-      const bootIndicators = ['starting', 'resolving', 'spawning', 'waiting', 'installing']
-      const lower = text.toLowerCase()
-
-      return !bootIndicators.some((word) => lower.includes(word))
+      // BOOT_FAKE intentionally stops at the first-run setup gate, so the
+      // packaged smoke test accepts the visible setup choice as a valid
+      // terminal state. A visible error is the other honest terminal state.
+      // Inspect visibility rather than root.textContent: hidden chat/onboarding
+      // layers still contain the old "Starting Hermes" placeholder.
+      return (
+        setupVisible ||
+        errorVisible ||
+        (!bootOverlayVisible && !/starting|başlatılıyor|resolving|çözümleniyor/i.test(lower))
+      )
     },
     undefined,
-    { timeout: 60_000 },
+    { timeout: 60_000 }
   )
 })
 

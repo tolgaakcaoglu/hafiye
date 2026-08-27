@@ -169,6 +169,12 @@ class TestToolSurfaceSwap:
 
         entry = registry.get_entry("browser_exec")
         monkeypatch.setattr(entry, "check_fn", lambda: True)
+        native_entry = registry.get_entry("browser_native")
+        if native_entry is not None:
+            # This test covers the legacy Browser Use surface when the
+            # managed native route is unavailable.  Native readiness gets a
+            # separate precedence test below.
+            monkeypatch.setattr(native_entry, "check_fn", lambda: False)
         import model_tools
 
         defs = model_tools.get_tool_definitions(
@@ -176,6 +182,26 @@ class TestToolSurfaceSwap:
         )
         names = {t["function"]["name"] for t in defs}
         assert "browser_exec" in names
+
+    def test_native_browser_route_takes_precedence_over_browser_exec(self, monkeypatch):
+        """A ready managed desktop browser must win over the CLI harness."""
+        from tools.registry import registry
+
+        browser_exec = registry.get_entry("browser_exec")
+        native_browser = registry.get_entry("browser_native")
+        assert browser_exec is not None
+        assert native_browser is not None
+        monkeypatch.setattr(browser_exec, "check_fn", lambda: True)
+        monkeypatch.setattr(native_browser, "check_fn", lambda: True)
+
+        import model_tools
+
+        defs = model_tools.get_tool_definitions(
+            enabled_toolsets=["browser", "terminal"], quiet_mode=False
+        )
+        names = {t["function"]["name"] for t in defs}
+        assert "browser_native" in names
+        assert "browser_exec" not in names
 
 
 class TestFindCli:

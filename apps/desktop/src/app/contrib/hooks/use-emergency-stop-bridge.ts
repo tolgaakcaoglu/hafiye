@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { onGatewayEvent } from '@/contrib/events'
 import { stopVoicePlayback } from '@/lib/voice-playback'
+import { transitionJarvisInteraction } from '@/store/jarvis-interaction'
 import { notifyError } from '@/store/notifications'
 import { isAuxiliaryWindow } from '@/store/windows'
 
@@ -34,24 +35,32 @@ export function useEmergencyStopBridge({ requestGateway }: EmergencyStopBridgePa
       // Cut renderer-owned audio synchronously; the backend then interrupts
       // the active turn, all delegations, and registered host processes.
       stopVoicePlayback()
-      void requestGatewayRef.current('emergency.stop', { reason }, 10_000).catch(error =>
-        notifyError(error, 'Emergency stop failed')
-      )
+      transitionJarvisInteraction({ active: true, type: 'emergency' })
+      void requestGatewayRef
+        .current('emergency.stop', { reason }, 10_000)
+        .catch(error => notifyError(error, 'Emergency stop failed'))
     }
 
     const offShortcut = window.hermesDesktop?.onEmergencyStop?.(() => trigger('global-hotkey'))
     const offTray = window.hermesDesktop?.tray?.onEmergencyStop?.(() => trigger('tray'))
+
     const offGateway = onGatewayEvent('emergency.stop', () => {
       // A GNOME Wayland keybinding invokes the CLI directly, so the renderer
       // learns about that same cancellation through the gateway event rather
       // than relying on an Electron globalShortcut callback.
       stopVoicePlayback()
+      transitionJarvisInteraction({ active: true, type: 'emergency' })
+    })
+
+    const offGatewayResume = onGatewayEvent('emergency.resume', () => {
+      transitionJarvisInteraction({ active: false, type: 'emergency' })
     })
 
     return () => {
       offShortcut?.()
       offTray?.()
       offGateway()
+      offGatewayResume()
     }
   }, [])
 }

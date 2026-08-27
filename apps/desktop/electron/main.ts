@@ -144,6 +144,7 @@ import {
 } from './desktop-uninstall'
 import { describeDevCdpDecision, resolveDevCdpPort } from './dev-cdp'
 import { installEmbedReferer } from './embed-referer'
+import { createEmergencyStopShortcut, DEFAULT_EMERGENCY_STOP_SHORTCUT } from './emergency-stop-shortcut'
 import { createEventDeduper } from './event-dedupe'
 import {
   buildTerminalScript,
@@ -172,6 +173,7 @@ import {
 import { probeGatewayWebSocket } from './gateway-ws-probe'
 import { registerGitIpc } from './git-ipc'
 import { clearStaleGitLocks } from './gitlock'
+import { createGnomeEmergencyStopFallback, gnomeSessionSupportsFallback } from './gnome-emergency-stop'
 import { resolveHafiyeDataHome, resolveHafiyeStateHome, resolvePersistentGatewayPaths } from './hafiye-paths'
 import { readAndConsumeHandoffResult } from './handoff-result'
 import {
@@ -261,8 +263,6 @@ import {
   spliceRegistrySessionRows
 } from './profile-session-routing'
 import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
-import { createEmergencyStopShortcut, DEFAULT_EMERGENCY_STOP_SHORTCUT } from './emergency-stop-shortcut'
-import { createGnomeEmergencyStopFallback, gnomeSessionSupportsFallback } from './gnome-emergency-stop'
 import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
 import * as remoteLifecycle from './remote-lifecycle'
 import {
@@ -380,8 +380,7 @@ if (USER_DATA_OVERRIDE) {
 
 const DEV_SERVER = process.env.HERMES_DESKTOP_DEV_SERVER
 const IS_PACKAGED = app.isPackaged || Boolean(process.env.HERMES_DESKTOP_IS_PACKAGED)
-const IS_ELECTRON_DEV_RUN =
-  Boolean(process.defaultApp) || /[\\/]node_modules[\\/]electron[\\/]/.test(process.execPath)
+const IS_ELECTRON_DEV_RUN = Boolean(process.defaultApp) || /[\\/]node_modules[\\/]electron[\\/]/.test(process.execPath)
 const IS_MAC = process.platform === 'darwin'
 const IS_WINDOWS = process.platform === 'win32'
 const IS_WSL = isWslEnvironment()
@@ -706,9 +705,11 @@ function resolveHermesHome() {
 }
 
 const HERMES_HOME = resolveHermesHome()
+
 const HERMES_HOME_IS_EXPLICIT = Boolean(
   process.env.HERMES_HOME || USER_DATA_OVERRIDE || (IS_WINDOWS && readWindowsUserEnvVar('HERMES_HOME'))
 )
+
 const HAFIYE_STATE_HOME = HERMES_HOME_IS_EXPLICIT
   ? HERMES_HOME
   : resolveHafiyeStateHome({ env: process.env, home: app.getPath('home'), platform: process.platform })
@@ -1950,6 +1951,7 @@ function updateBootProgress(update, options: { allowDecrease?: boolean } = {}) {
   if (update.error !== undefined && update.error !== null) {
     normalizedUpdate.error = rebrandDesktopText(update.error)
   }
+
   const nextProgressRaw =
     typeof normalizedUpdate.progress === 'number'
       ? clampBootProgress(normalizedUpdate.progress)
@@ -2736,12 +2738,15 @@ async function getOriginUrl(updateRoot) {
 
 function emitUpdateProgress(payload) {
   const merged = { stage: 'idle', message: '', percent: null, error: null, ...payload, at: Date.now() }
+
   if (merged.message) {
     merged.message = rebrandDesktopText(merged.message)
   }
+
   if (merged.error) {
     merged.error = rebrandDesktopText(merged.error)
   }
+
   rememberLog(`[updates] ${merged.stage}: ${merged.message || merged.error || ''}`)
 
   for (const window of BrowserWindow.getAllWindows()) {
@@ -3590,8 +3595,7 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
 
     emitUpdateProgress({
       stage: 'restart',
-      message:
-        `Updating ${APP_NAME} — this window will close and the updater will open. Don’t reopen ${APP_NAME} yourself; it restarts automatically when the update finishes.`,
+      message: `Updating ${APP_NAME} — this window will close and the updater will open. Don’t reopen ${APP_NAME} yourself; it restarts automatically when the update finishes.`,
       percent: 100
     })
     repairMacUpdaterHelper(updater)
@@ -3796,7 +3800,15 @@ async function applyUpdates(opts: { stopSafeBlockers?: boolean } = {}) {
     const handoffOutcome = await observeUpdaterHandoff(child, UPDATE_HANDOFF_DWELL_MS)
 
     if (!handoffOutcome.ok) {
-      const message = rebrandDesktopText('Update failed to start: ' + handoffOutcome.message + '. ' + APP_NAME + ' will keep running — try again, or run `' + APP_NAME.toLowerCase() + ' update` from a terminal.')
+      const message = rebrandDesktopText(
+        'Update failed to start: ' +
+          handoffOutcome.message +
+          '. ' +
+          APP_NAME +
+          ' will keep running — try again, or run `' +
+          APP_NAME.toLowerCase() +
+          ' update` from a terminal.'
+      )
 
       rememberLog(`[updates] hand-off not viable, aborting quit: ${handoffOutcome.message}`)
       emitUpdateProgress({ stage: 'error', message, percent: null })
@@ -4140,7 +4152,15 @@ async function applyUpdatesPosixHandoff(opts: any) {
   const handoffOutcome = await observeUpdaterHandoff(child, UPDATE_HANDOFF_DWELL_MS)
 
   if (!handoffOutcome.ok) {
-    const message = rebrandDesktopText('Update failed to start: ' + handoffOutcome.message + '. ' + APP_NAME + ' will keep running — try again, or run `' + APP_NAME.toLowerCase() + ' update` from a terminal.')
+    const message = rebrandDesktopText(
+      'Update failed to start: ' +
+        handoffOutcome.message +
+        '. ' +
+        APP_NAME +
+        ' will keep running — try again, or run `' +
+        APP_NAME.toLowerCase() +
+        ' update` from a terminal.'
+    )
 
     rememberLog(`[updates] posix hand-off not viable, aborting quit: ${handoffOutcome.message}`)
     emitUpdateProgress({ stage: 'error', message, percent: null })
@@ -9551,11 +9571,13 @@ async function resolvePersistentGatewayConnection(profile: string) {
     }
 
     token = (await fs.promises.readFile(gatewayPaths.tokenFile, 'utf8')).trim()
+
     if (!/^[A-Za-z0-9_-]{32,128}$/.test(token)) {
       throw new Error('persistent gateway token has an invalid format')
     }
 
     descriptor = JSON.parse(await fs.promises.readFile(gatewayPaths.descriptorFile, 'utf8'))
+
     if (
       !descriptor ||
       descriptor.service !== 'hafiye-gateway.service' ||
@@ -9573,6 +9595,7 @@ async function resolvePersistentGatewayConnection(profile: string) {
   }
 
   const baseUrl = `http://127.0.0.1:${descriptor.port}`
+
   const connect = async () => {
     await waitForHermes(baseUrl, token, undefined, 'token')
     const wsUrl = `ws://127.0.0.1:${descriptor.port}/api/ws?token=${encodeURIComponent(token)}`
@@ -11998,6 +12021,7 @@ function writeComposerSettings(settings: ComposerSettings): void {
     const temporary = `${COMPOSER_CONFIG_PATH}.${process.pid}.tmp`
     fs.writeFileSync(temporary, JSON.stringify(settings, null, 2), { encoding: 'utf8', mode: 0o600 })
     fs.renameSync(temporary, COMPOSER_CONFIG_PATH)
+
     try {
       fs.chmodSync(COMPOSER_CONFIG_PATH, 0o600)
     } catch {
@@ -12039,14 +12063,17 @@ function reconcileComposerAutostart(settings: ComposerSettings): void {
     }
 
     fs.mkdirSync(path.dirname(entryPath), { recursive: true, mode: 0o700 })
+
     const entry = buildAutostartDesktopEntry({
       appPath: IS_ELECTRON_DEV_RUN ? app.getAppPath() : undefined,
       execPath: process.execPath,
       hidden: settings.launchMinimized
     })
+
     const temporary = `${entryPath}.${process.pid}.tmp`
     fs.writeFileSync(temporary, entry, { encoding: 'utf8', mode: 0o644 })
     fs.renameSync(temporary, entryPath)
+
     try {
       fs.chmodSync(entryPath, 0o644)
     } catch {
@@ -12102,6 +12129,10 @@ let quickEntryWindow = null
 // Latest state push from the primary renderer (connection + recent sessions),
 // replayed to a quick window that spawns after the push happened.
 let quickEntryLastState = null
+// The primary renderer publishes the final STT text here before submitting the
+// real agent turn. Keep it until the next summon so a freshly loaded compact
+// window cannot miss the transcript IPC message.
+let quickEntryVoiceTranscript = null
 
 function readQuickEntrySettings() {
   try {
@@ -12204,6 +12235,10 @@ function spawnQuickEntryWindow() {
     if (!win.isDestroyed() && quickEntryLastState) {
       win.webContents.send('hermes:quick-entry:state', quickEntryLastState)
     }
+
+    if (!win.isDestroyed() && quickEntryVoiceTranscript) {
+      win.webContents.send('hermes:quick-entry:transcript', quickEntryVoiceTranscript)
+    }
   })
 
   attachRendererConsoleCapture(win, 'quick-entry', rememberLog)
@@ -12223,7 +12258,19 @@ function repositionQuickEntryWindow(win) {
   }
 }
 
-function showQuickEntryWindow({ welcome = false }: { welcome?: boolean } = {}) {
+function sendQuickEntryVoiceStart(): void {
+  if (quickEntryWindow && !quickEntryWindow.isDestroyed()) {
+    quickEntryWindow.webContents.send('hermes:quick-entry:start-voice')
+  }
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('hermes:quick-entry:start-voice')
+  }
+}
+
+function showQuickEntryWindow({ welcome = false, voice = false }: { voice?: boolean; welcome?: boolean } = {}) {
+  quickEntryVoiceTranscript = null
+
   if (!quickEntryWindow || quickEntryWindow.isDestroyed()) {
     // Reveal the window this call created, not whatever `quickEntryWindow`
     // points at by the time the event lands.
@@ -12235,8 +12282,16 @@ function showQuickEntryWindow({ welcome = false }: { welcome?: boolean } = {}) {
         win.show()
         win.focus()
 
+        if (!win.isDestroyed()) {
+          win.webContents.send('hermes:quick-entry:shown')
+        }
+
         if (welcome && !win.isDestroyed()) {
           win.webContents.send('hermes:quick-entry:welcome')
+        }
+
+        if (voice && !win.isDestroyed()) {
+          sendQuickEntryVoiceStart()
         }
       }
     })
@@ -12252,6 +12307,10 @@ function showQuickEntryWindow({ welcome = false }: { welcome?: boolean } = {}) {
 
   if (welcome) {
     quickEntryWindow.webContents.send('hermes:quick-entry:welcome')
+  }
+
+  if (voice) {
+    sendQuickEntryVoiceStart()
   }
 }
 
@@ -14869,6 +14928,7 @@ ipcMain.handle('hermes:quick-entry:settings:set', async (_event, patch) => {
     enabled: patch?.enabled === undefined ? current.enabled : patch.enabled === true,
     shortcut: typeof patch?.shortcut === 'string' && patch.shortcut.trim() ? patch.shortcut : current.shortcut
   })
+
   const nextComposer = sanitizeComposerSettings({
     ...currentComposer,
     launchMinimized:
@@ -14877,7 +14937,9 @@ ipcMain.handle('hermes:quick-entry:settings:set', async (_event, patch) => {
     showOnLogin: patch?.showOnLogin === undefined ? currentComposer.showOnLogin : patch.showOnLogin === true,
     startAtLogin: patch?.startAtLogin === undefined ? currentComposer.startAtLogin : patch.startAtLogin === true,
     startGatewayAtLogin:
-      patch?.startGatewayAtLogin === undefined ? currentComposer.startGatewayAtLogin : patch.startGatewayAtLogin === true
+      patch?.startGatewayAtLogin === undefined
+        ? currentComposer.startGatewayAtLogin
+        : patch.startGatewayAtLogin === true
   })
 
   writeQuickEntrySettings(next)
@@ -14924,6 +14986,33 @@ ipcMain.on('hermes:quick-entry:submit', (_event, payload) => {
   })
 })
 
+// Wake-word path: the primary renderer asks the main process to reveal the
+// compact Composer before its voice hook starts capturing. This preserves the
+// single normal voice-submit path while making wake a real product entry point.
+ipcMain.on('hermes:quick-entry:show', (_event, options) => {
+  showQuickEntryWindow({ voice: options?.voice === true })
+})
+
+// Primary renderer → main → compact Composer: publish the final whisper.cpp
+// transcript before the same text is submitted to the gateway. The return
+// value lets the primary await the IPC handoff without making the compact
+// window responsible for agent submission.
+ipcMain.handle('hermes:quick-entry:transcript', async (_event, rawTranscript) => {
+  const transcript = typeof rawTranscript === 'string' ? rawTranscript.trim() : ''
+
+  if (!transcript) {
+    return { ok: false }
+  }
+
+  quickEntryVoiceTranscript = transcript
+
+  if (quickEntryWindow && !quickEntryWindow.isDestroyed()) {
+    quickEntryWindow.webContents.send('hermes:quick-entry:transcript', transcript)
+  }
+
+  return { ok: true }
+})
+
 // Primary renderer → main → quick window: gateway connection state + the
 // recent-session list for the target picker. Cached so a quick window spawned
 // AFTER the last push still boots from truth instead of "disconnected".
@@ -14938,9 +15027,7 @@ ipcMain.on('hermes:quick-entry:state', (_event, payload) => {
 ipcMain.on('hermes:quick-entry:dismiss', () => hideQuickEntryWindow())
 
 ipcMain.on('hermes:quick-entry:start-voice', () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('hermes:quick-entry:start-voice')
-  }
+  sendQuickEntryVoiceStart()
 })
 
 ipcMain.on('hermes:quick-entry:stop', () => {

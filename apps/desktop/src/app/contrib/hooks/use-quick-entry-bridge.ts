@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 
+import { $jarvisInteraction, type JarvisInteractionState } from '@/store/jarvis-interaction'
 import {
   initQuickEntryBridge,
   QUICK_TARGET_CURRENT,
@@ -24,6 +25,30 @@ interface QuickEntryBridgeParams {
 // The picker is a capture aid, not a session browser — a handful of recent
 // rows is the whole point.
 const QUICK_ENTRY_SESSION_OPTIONS = 5
+
+const VOICE_ACTIVE_STATES = [
+  'LISTENING',
+  'TRANSCRIBING',
+  'ACKNOWLEDGING',
+  'THINKING',
+  'WORKING',
+  'SPEAKING',
+  'COMPLETED',
+  'REARMING'
+] as const
+
+/** True when a wake-triggered voice turn has returned to a non-active state. */
+export function shouldCollapseQuickEntryAfterVoice(
+  previous: JarvisInteractionState,
+  current: JarvisInteractionState
+): boolean {
+  return (
+    Boolean(current.voiceTurnId) &&
+    current.voiceTurnId === previous.voiceTurnId &&
+    (current.state === 'IDLE_ARMED' || current.state === 'PAUSED') &&
+    VOICE_ACTIVE_STATES.includes(previous.state as (typeof VOICE_ACTIVE_STATES)[number])
+  )
+}
 
 function sessionOptions(): QuickEntrySessionOption[] {
   return $sessions
@@ -63,6 +88,7 @@ export function useQuickEntryBridge({
   submitText,
   toggleVoice
 }: QuickEntryBridgeParams): void {
+  const previousInteractionRef = useRef($jarvisInteraction.get())
   const submitTextRef = useRef(submitText)
   submitTextRef.current = submitText
   const startFreshRef = useRef(startFreshSessionDraft)
@@ -115,6 +141,7 @@ export function useQuickEntryBridge({
     const tray = window.hermesDesktop?.tray
     const offNewTask = tray?.onNewTask(() => startFreshRef.current())
     const offOpenSettings = tray?.onOpenSettings(() => openSettingsRef.current())
+
     const offOpenSession = tray?.onOpenSession(sessionId => {
       const delegate = sessionTileDelegate()
 
@@ -122,6 +149,7 @@ export function useQuickEntryBridge({
         void delegate.resumeTile(sessionId).catch(() => undefined)
       }
     })
+
     const offToggleVoice = tray?.onToggleVoice(() => toggleVoiceRef.current())
     const quickEntry = window.hermesDesktop?.quickEntry
     const offStartVoice = quickEntry?.onStartVoice?.(() => startVoiceRef.current())
@@ -155,14 +183,33 @@ export function useQuickEntryBridge({
     const push = () => {
       const activeRuntimeId = $activeSessionId.get()
       const activeState = activeRuntimeId ? $sessionStates.get()[activeRuntimeId] : undefined
-      const activity = $busy.get() ? 'WORKING' : $awaitingResponse.get() ? 'PAUSED' : 'IDLE'
+      const interaction = $jarvisInteraction.get()
+      const activity = interaction.state
+      const previousInteraction = previousInteractionRef.current
+      const voiceTurnSettled = shouldCollapseQuickEntryAfterVoice(previousInteraction, interaction)
+
+      previousInteractionRef.current = interaction
 
       api.pushState({
         activity,
         connected: $gatewayState.get() === 'open',
-        currentTask: activeState?.storedSessionId || undefined,
-        sessions: sessionOptions()
+        currentTask: interaction.taskId || activeState?.storedSessionId || undefined,
+        currentTool: interaction.currentTool || undefined,
+        error: interaction.error || undefined,
+        locality: interaction.locality || undefined,
+        model: interaction.model || activeState?.model || undefined,
+        progress: interaction.progress || undefined,
+        sessions: sessionOptions(),
+        voiceTurnId: interaction.voiceTurnId || undefined,
+        wakeArmed: interaction.wakeArmed
       })
+
+      // A wake invocation is one turn. Once its final speech/agent state has
+      // settled, collapse the compact Composer so the microphone can return
+      // to the background wake listener without leaving a stale capture UI.
+      if (voiceTurnSettled) {
+        api.dismiss()
+      }
     }
 
     push()
@@ -172,6 +219,7 @@ export function useQuickEntryBridge({
     const offBusy = $busy.listen(push)
     const offAwaiting = $awaitingResponse.listen(push)
     const offSessionStates = $sessionStates.listen(push)
+    const offJarvisInteraction = $jarvisInteraction.listen(push)
 
     return () => {
       offGateway()
@@ -179,6 +227,7 @@ export function useQuickEntryBridge({
       offBusy()
       offAwaiting()
       offSessionStates()
+      offJarvisInteraction()
     }
   }, [])
 }

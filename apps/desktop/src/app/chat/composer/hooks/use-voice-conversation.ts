@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useI18n } from '@/i18n'
+import { conciseSpeechText } from '@/lib/speech-text'
 import { startThinkingSound, stopThinkingSound } from '@/lib/thinking-sound'
 import { monitorSpeechDuringPlayback } from '@/lib/voice-barge-in'
 import {
@@ -32,6 +33,12 @@ interface VoiceConversationOptions {
    *  Fired when the user speaks while the model is still generating. */
   onInterrupt?: () => Promise<void> | void
   onStopWord?: () => void
+  /** Publishes the final transcript to the compact Jarvis Composer before the
+   *  same utterance enters the normal agent submit path. */
+  onTranscript?: (text: string) => Promise<void> | void
+  /** Canonical Jarvis state seam; status is intentionally not inferred from
+   *  the generic busy flag. */
+  onStatusChange?: (status: ConversationStatus) => void
   onSubmit: (text: string) => Promise<void> | void
   onTranscribeAudio?: (audio: Blob) => Promise<string>
   pendingResponse: () => PendingVoiceResponse | null
@@ -51,6 +58,8 @@ export function useVoiceConversation({
   onFatalError,
   onInterrupt,
   onStopWord,
+  onTranscript,
+  onStatusChange,
   onSubmit,
   onTranscribeAudio,
   pendingResponse,
@@ -117,6 +126,10 @@ export function useVoiceConversation({
   useEffect(() => {
     statusRef.current = status
   }, [status])
+
+  useEffect(() => {
+    onStatusChange?.(status)
+  }, [onStatusChange, status])
 
   const clearTurnTimeout = () => {
     if (turnTimeoutRef.current) {
@@ -185,6 +198,7 @@ export function useVoiceConversation({
 
           awaitingSpokenResponseRef.current = true
           dropSpeechSession()
+          await onTranscript?.(transcript)
           await onSubmit(transcript)
           setStatus('thinking')
         } catch (error) {
@@ -200,7 +214,7 @@ export function useVoiceConversation({
         turnClosingRef.current = false
       }
     },
-    [handle, onSubmit, onTranscribeAudio, voiceCopy.transcriptionFailed]
+    [handle, onSubmit, onTranscript, onTranscribeAudio, voiceCopy.transcriptionFailed]
   )
 
   const startListening = useCallback(async () => {
@@ -354,6 +368,7 @@ export function useVoiceConversation({
         awaitingSpokenResponseRef.current = true
         dropSpeechSession()
         consumePendingResponse()
+        await onTranscript?.(transcript)
         await onSubmit(transcript)
         setStatus('thinking')
       } catch (error) {
@@ -361,7 +376,7 @@ export function useVoiceConversation({
         resumeListening()
       }
     },
-    [consumePendingResponse, onSubmit, onTranscribeAudio, voiceCopy.transcriptionFailed]
+    [consumePendingResponse, onSubmit, onTranscript, onTranscribeAudio, voiceCopy.transcriptionFailed]
   )
 
   /**
@@ -417,9 +432,11 @@ export function useVoiceConversation({
       const response = pendingResponse()
 
       if (response && response.id === responseId) {
-        if (response.text.length > spokenSourceLengthRef.current) {
-          session.append(response.text.slice(spokenSourceLengthRef.current))
-          spokenSourceLengthRef.current = response.text.length
+        const speechText = conciseSpeechText(response.text)
+
+        if (speechText.length > spokenSourceLengthRef.current) {
+          session.append(speechText.slice(spokenSourceLengthRef.current))
+          spokenSourceLengthRef.current = speechText.length
         }
 
         if (!response.pending && !busyRef.current) {
@@ -459,7 +476,7 @@ export function useVoiceConversation({
         // this is a safety net for read-aloud-style entries into the loop.
         ensureBargeMonitor()
 
-        const playback = playSpeechText(response.text, { source: 'voice-conversation' })
+        const playback = playSpeechText(conciseSpeechText(response.text), { source: 'voice-conversation' })
         // playSpeechText performs its normal cleanup synchronously before
         // returning. Capture the sequence after that internal increment so
         // only a later, external stop suppresses the next listen cycle.

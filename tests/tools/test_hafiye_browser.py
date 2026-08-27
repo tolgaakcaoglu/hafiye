@@ -96,6 +96,95 @@ def test_native_state_and_click_preserve_exact_window_binding(monkeypatch):
     )
 
 
+def test_native_state_defaults_to_without_screenshot(monkeypatch):
+    calls = []
+
+    def fake_call(tool, args, **kwargs):
+        calls.append((tool, args))
+        return json.dumps({"ok": True})
+
+    monkeypatch.setattr(native_browser, "_call_managed_tool", fake_call)
+
+    result = json.loads(native_browser.browser_native("state", window_id=99))
+
+    assert result["success"] is True
+    assert calls == [("get_app_state", {"window_id": 99, "include_screenshot": False})]
+
+
+def test_native_navigation_can_use_focused_browser_without_model_id(monkeypatch):
+    calls = []
+
+    def fake_call(tool, args, **kwargs):
+        calls.append((tool, args))
+        if tool == "focused_window":
+            return json.dumps(
+                {
+                    "structuredContent": {
+                        "focused_window": {
+                            "app_id": "firefox_firefox.desktop",
+                            "pid": 123,
+                            "title": "Firefox",
+                            "window_id": 456,
+                            "wm_class": "firefox_firefox",
+                        }
+                    }
+                }
+            )
+        return json.dumps({"ok": True})
+
+    monkeypatch.setattr(native_browser, "_call_managed_tool", fake_call)
+
+    result = json.loads(native_browser.browser_native("navigate", url="https://example.test"))
+
+    assert result["success"] is True
+    assert calls == [
+        ("focused_window", {}),
+        (
+            "activate_window",
+            {
+                "window_id": 456,
+                "pid": 123,
+                "app_id": "firefox_firefox.desktop",
+                "title": "Firefox",
+                "wm_class": "firefox_firefox",
+            },
+        ),
+        (
+            "press_key",
+            {
+                "window_id": 456,
+                "pid": 123,
+                "app_id": "firefox_firefox.desktop",
+                "title": "Firefox",
+                "wm_class": "firefox_firefox",
+                "key": "Ctrl+L",
+            },
+        ),
+        (
+            "type_text",
+            {
+                "window_id": 456,
+                "pid": 123,
+                "app_id": "firefox_firefox.desktop",
+                "title": "Firefox",
+                "wm_class": "firefox_firefox",
+                "text": "https://example.test",
+            },
+        ),
+        (
+            "press_key",
+            {
+                "window_id": 456,
+                "pid": 123,
+                "app_id": "firefox_firefox.desktop",
+                "title": "Firefox",
+                "wm_class": "firefox_firefox",
+                "key": "Enter",
+            },
+        ),
+    ]
+
+
 def test_native_type_uses_accessibility_value_when_selector_is_given(monkeypatch):
     calls = []
 
@@ -124,7 +213,6 @@ def test_native_type_uses_accessibility_value_when_selector_is_given(monkeypatch
 @pytest.mark.parametrize(
     "kwargs, message",
     [
-        ({"action": "navigate", "url": "https://example.test"}, "requires a target window"),
         ({"action": "navigate", "window_id": 4, "url": "https://evil.test/?token=opaque-secret"}, "credential"),
         ({"action": "click", "window_id": 4}, "selector"),
     ],
@@ -134,6 +222,30 @@ def test_native_route_fails_closed_without_target_or_safe_input(kwargs, message)
 
     assert result["success"] is False
     assert message.lower() in result["error"].lower()
+
+
+def test_native_navigation_without_target_rejects_non_browser_focus(monkeypatch):
+    monkeypatch.setattr(
+        native_browser,
+        "_call_managed_tool",
+        lambda tool, args, **kwargs: json.dumps(
+            {
+                "structuredContent": {
+                    "focused_window": {
+                        "app_id": "org.gnome.Terminal",
+                        "pid": 123,
+                        "title": "Terminal",
+                        "window_id": 456,
+                    }
+                }
+            }
+        ),
+    )
+
+    result = json.loads(native_browser.browser_native("navigate", url="https://example.test"))
+
+    assert result["success"] is False
+    assert "firefox/chromium" in result["error"].lower()
 
 
 def test_native_readiness_uses_pinned_doctor(monkeypatch):
@@ -166,6 +278,25 @@ def test_native_failure_returns_structured_recovery_code_and_redacts(monkeypatch
     assert result["failure"]["code"] == "accessibility_unavailable"
     assert result["failure"]["blocker"] is True
     assert "sk-hafiye-secret" not in json.dumps(result)
+
+
+def test_nested_managed_failure_is_not_reported_as_native_success(monkeypatch):
+    """MCP transport envelopes must preserve an inner ok:false result."""
+    def fake_call(tool, args, **kwargs):
+        return json.dumps(
+            {
+                "result": json.dumps(
+                    {"implemented": True, "ok": False, "error": "stale window"}
+                )
+            }
+        )
+
+    monkeypatch.setattr(native_browser, "_call_managed_tool", fake_call)
+
+    result = json.loads(native_browser.browser_native("focus", window_id=7))
+
+    assert result["success"] is False
+    assert result["failure"]["code"] == "desktop_action_failed"
 
 
 def test_structured_browser_download_calls_agent_browser_download(monkeypatch, tmp_path):

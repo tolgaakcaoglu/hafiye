@@ -124,8 +124,14 @@ declare global {
         // primary renderer, which routes it to the target session and submits
         // through the normal prompt path) and hide.
         submit: (payload: QuickEntrySubmitPayload) => void
+        // Wake-word path: reveal/focus the compact Composer and start the
+        // primary renderer's real voice conversation without a keyboard chord.
+        showForVoice?: () => void
         // Quick window → main: hide without sending (Escape / blur).
         dismiss: () => void
+        // Primary renderer → main → compact Composer: show the final STT text
+        // before the normal agent submit begins.
+        publishTranscript?: (transcript: string) => Promise<{ ok: boolean }>
         // Primary renderer → main → quick window: gateway connection state +
         // the recent-session options. Main caches the latest push and replays
         // it to a quick window spawned later.
@@ -138,6 +144,7 @@ declare global {
         // its draft and re-focus the input on every open.
         onShown: (callback: () => void) => () => void
         onWelcome: (callback: () => void) => () => void
+        onTranscript?: (callback: (transcript: string) => void) => () => void
         onStartVoice: (callback: () => void) => () => void
         onStop: (callback: () => void) => () => void
         startVoice: () => void

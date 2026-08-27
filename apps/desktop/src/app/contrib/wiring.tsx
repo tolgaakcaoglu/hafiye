@@ -44,6 +44,7 @@ import { $desktopBoot } from '@/store/boot'
 import { requestVoiceConversationStart } from '@/store/composer'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronReviewRequest, setCronFocusJobId } from '@/store/cron'
+import { transitionJarvisFromGatewayEvent, transitionJarvisInteraction } from '@/store/jarvis-interaction'
 import { $pinnedSessionIds, pinSession, restoreWorktree, unpinSession } from '@/store/layout'
 import { notify } from '@/store/notifications'
 import { $previewTarget } from '@/store/preview'
@@ -165,6 +166,7 @@ const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
 const SettingsView = lazy(async () => ({ default: (await import('../settings')).SettingsView }))
 const StarmapView = lazy(async () => ({ default: (await import('../starmap')).StarmapView }))
+
 const HafiyeOnboardingWizard = lazy(async () => ({
   default: (await import('@/components/hafiye-onboarding')).HafiyeOnboardingWizard
 }))
@@ -690,7 +692,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     cancelRun,
     openSettings: () => navigate(SETTINGS_ROUTE),
     startFreshSessionDraft,
-    startVoice: requestVoiceConversationStart,
+    startVoice: () => requestVoiceConversationStart('wake'),
     submitText,
     toggleVoice: () => requestVoiceToggle()
   })
@@ -762,9 +764,28 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const handleGatewayEventWithPlugins = useCallback(
     (event: Parameters<typeof handleDesktopGatewayEvent>[0]) => {
       emitGatewayEvent(event)
+      transitionJarvisFromGatewayEvent(event, $activeSessionId.get())
 
       if (event.type === 'wake.detected') {
         const payload = event.payload as { profile?: null | string; start_new_session?: boolean } | undefined
+
+        transitionJarvisInteraction({
+          sessionId: event.session_id || $activeSessionId.get(),
+          type: 'wake_detected',
+          voiceTurnId:
+            typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+              ? crypto.randomUUID()
+              : String(Date.now())
+        })
+
+        // Wake is the product entry point: reveal the compact Composer and
+        // forward the start signal to the primary renderer. The full Desktop
+        // stays hidden; its mounted renderer still owns the real voice hook.
+        const showForVoice = window.hermesDesktop?.quickEntry?.showForVoice
+
+        if (showForVoice) {
+          showForVoice()
+        }
 
         // Free the Mac mic so voice conversation can open getUserMedia.
         // Server already pauses the detector lease; this stops client PCM feed.
@@ -792,7 +813,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
           startFreshSessionDraft()
         }
 
-        requestVoiceConversationStart()
+        if (!showForVoice) {
+          // Compatibility path for development/test shells without the new
+          // main-process bridge.
+          requestVoiceConversationStart('wake')
+        }
 
         return
       }

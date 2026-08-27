@@ -193,6 +193,21 @@ describe('armWakeWord (gateway-ready auto-arm)', () => {
     expect($wakeWord.get()).toMatchObject({ available: false, listening: false, notice: 'no mic' })
   })
 
+  it('respects an explicit persisted wake-word disable', async () => {
+    const calls: string[] = []
+
+    const request = requester(method => {
+      calls.push(method)
+
+      return { available: true, enabled: false, listening: false, phrase: 'Hafiye' }
+    })
+
+    await armWakeWord(request)
+
+    expect(calls).toEqual(['wake.status'])
+    expect($wakeWord.get()).toMatchObject({ enabled: false, listening: false })
+  })
+
   it('skips arming when this surface already listens (status sync only)', async () => {
     const calls: string[] = []
 

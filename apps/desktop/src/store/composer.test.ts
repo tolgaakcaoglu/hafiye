@@ -15,6 +15,7 @@ import {
   stashSessionDraft,
   takeSessionDraft,
   takeVoiceConversationStart,
+  takeVoiceConversationStartMode,
   updateComposerAttachment
 } from './composer'
 
@@ -28,6 +29,17 @@ describe('voice conversation start requests', () => {
 
     requestVoiceConversationStart()
     expect(takeVoiceConversationStart($voiceConversationStartRequest.get())).toBe(true)
+  })
+
+  it('preserves whether a voice request came from the wake listener', () => {
+    requestVoiceConversationStart('wake')
+    const wakeRequest = $voiceConversationStartRequest.get()
+
+    expect(takeVoiceConversationStartMode(wakeRequest)).toBe('wake')
+    expect(takeVoiceConversationStartMode(wakeRequest)).toBeNull()
+
+    requestVoiceConversationStart()
+    expect(takeVoiceConversationStartMode($voiceConversationStartRequest.get())).toBe('continuous')
   })
 })
 

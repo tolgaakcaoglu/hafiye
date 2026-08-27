@@ -17,18 +17,13 @@
 
 import { atom } from 'nanostores'
 
+import type { JarvisInteractionStateName, JarvisLocality } from './jarvis-interaction'
+
 export const QUICK_ENTRY_COMPOSER_MODES = ['HOTKEY_ONLY', 'SHOW_ON_LOGIN', 'PINNED'] as const
 export type QuickEntryComposerMode = (typeof QUICK_ENTRY_COMPOSER_MODES)[number]
 
-export type QuickEntryActivity =
-  | 'ERROR'
-  | 'IDLE'
-  | 'LISTENING'
-  | 'PAUSED'
-  | 'SPEAKING'
-  | 'THINKING'
-  | 'TRANSCRIBING'
-  | 'WORKING'
+/** The compact Composer renders the same canonical state as the main app. */
+export type QuickEntryActivity = JarvisInteractionStateName
 
 export interface QuickEntryState {
   enabled: boolean
@@ -113,17 +108,15 @@ export async function loadQuickEntrySettings(): Promise<void> {
  * rejected shortcut or an already-taken chord comes back as an error state
  * instead of a silently-lost setting.
  */
-export async function saveQuickEntrySettings(
-  patch: {
-    enabled?: boolean
-    launchMinimized?: boolean
-    mode?: QuickEntryComposerMode
-    showOnLogin?: boolean
-    shortcut?: string
-    startAtLogin?: boolean
-    startGatewayAtLogin?: boolean
-  }
-): Promise<void> {
+export async function saveQuickEntrySettings(patch: {
+  enabled?: boolean
+  launchMinimized?: boolean
+  mode?: QuickEntryComposerMode
+  showOnLogin?: boolean
+  shortcut?: string
+  startAtLogin?: boolean
+  startGatewayAtLogin?: boolean
+}): Promise<void> {
   if (!canUseQuickEntry()) {
     return
   }
@@ -164,8 +157,13 @@ export interface QuickEntryStatePush {
   connected: boolean
   currentTask?: string
   currentTool?: string
+  error?: string
+  locality?: JarvisLocality
   model?: string
   progress?: string
+  transcript?: string
+  voiceTurnId?: string
+  wakeArmed?: boolean
   sessions: QuickEntrySessionOption[]
 }
 
@@ -190,7 +188,9 @@ export interface QuickComposerState {
   connected: boolean
   currentTask?: string
   draft: string
+  error?: string
   currentTool?: string
+  locality?: JarvisLocality
   model?: string
   progress?: string
   /** Recent sessions the picker offers, pushed by the primary renderer. */
@@ -199,8 +199,11 @@ export interface QuickComposerState {
   submitting: boolean
   /** Where a submit lands: current / new / a stored session id. */
   target: string
+  transcript?: string
   /** Whether the window should be visible. False asks the shell to hide. */
   visible: boolean
+  voiceTurnId?: string
+  wakeArmed?: boolean
   welcome: boolean
 }
 
@@ -209,9 +212,25 @@ export type QuickComposerEvent =
   | { type: 'dismiss' }
   | { type: 'edit'; draft: string }
   | { type: 'shown' }
-  | { type: 'state'; activity?: QuickEntryActivity; connected: boolean; currentTask?: string; currentTool?: string; model?: string; progress?: string; sessions: QuickEntrySessionOption[] }
+  | {
+      type: 'state'
+      activity?: QuickEntryActivity
+      connected: boolean
+      currentTask?: string
+      currentTool?: string
+      error?: string
+      locality?: JarvisLocality
+      model?: string
+      progress?: string
+      sessions: QuickEntrySessionOption[]
+      transcript?: string
+      voiceTurnId?: string
+      wakeArmed?: boolean
+    }
   | { type: 'submit' }
   | { type: 'target'; target: string }
+  | { draft: string; type: 'transcript' }
+  | { type: 'voice_start' }
   | { type: 'welcome' }
 
 export interface QuickComposerTransition {
@@ -221,19 +240,24 @@ export interface QuickComposerTransition {
 }
 
 export const initialQuickComposerState: QuickComposerState = {
-  activity: 'IDLE',
+  activity: 'BOOTING',
   // Disconnected until the primary renderer's first push proves otherwise — a
   // capture window that accepts text it can never deliver is a lie.
   connected: false,
   currentTask: undefined,
   currentTool: undefined,
   draft: '',
+  error: undefined,
+  locality: undefined,
   model: undefined,
   progress: undefined,
   sessions: [],
   submitting: false,
   target: QUICK_TARGET_CURRENT,
+  transcript: undefined,
   visible: true,
+  voiceTurnId: undefined,
+  wakeArmed: false,
   welcome: false
 }
 
@@ -245,7 +269,14 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
       // hides — the send already left for the main process.
       return {
         send: null,
-        state: { ...state, activity: 'IDLE', draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: false }
+        state: {
+          ...state,
+          activity: state.wakeArmed ? 'IDLE_ARMED' : 'PAUSED',
+          draft: '',
+          submitting: false,
+          target: QUICK_TARGET_CURRENT,
+          visible: false
+        }
       }
     }
 
@@ -258,7 +289,17 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
       // a leftover target — but the pushed gateway truth carries over.
       return {
         send: null,
-        state: { ...state, activity: 'IDLE', draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: true, welcome: false }
+        state: {
+          ...state,
+          activity: state.wakeArmed ? 'IDLE_ARMED' : 'PAUSED',
+          draft: '',
+          error: undefined,
+          submitting: false,
+          target: QUICK_TARGET_CURRENT,
+          transcript: undefined,
+          visible: true,
+          welcome: false
+        }
       }
     }
 
@@ -275,20 +316,34 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
         send: null,
         state: {
           ...state,
-          activity: event.activity ?? state.activity,
+          activity:
+            event.activity ?? (event.connected ? (event.wakeArmed === true ? 'IDLE_ARMED' : 'PAUSED') : 'BOOTING'),
           connected: event.connected,
           currentTask: event.currentTask,
           currentTool: event.currentTool,
+          error: event.error,
+          locality: event.locality,
           model: event.model,
           progress: event.progress,
           sessions: event.sessions,
-          target: targetStillValid ? state.target : QUICK_TARGET_CURRENT
+          target: targetStillValid ? state.target : QUICK_TARGET_CURRENT,
+          ...(event.transcript === undefined ? {} : { draft: event.transcript, transcript: event.transcript }),
+          voiceTurnId: event.voiceTurnId,
+          wakeArmed: event.wakeArmed
         }
       }
     }
 
     case 'welcome': {
       return { send: null, state: { ...state, visible: true, welcome: true } }
+    }
+
+    case 'transcript': {
+      return { send: null, state: { ...state, draft: event.draft, transcript: event.draft } }
+    }
+
+    case 'voice_start': {
+      return { send: null, state: { ...state, activity: 'LISTENING' } }
     }
 
     case 'submit': {

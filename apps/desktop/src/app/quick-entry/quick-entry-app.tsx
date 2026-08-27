@@ -62,9 +62,14 @@ export function QuickEntryApp() {
         connected: payload?.connected === true,
         currentTask: payload?.currentTask,
         currentTool: payload?.currentTool,
+        error: payload?.error,
+        locality: payload?.locality,
         model: payload?.model,
         progress: payload?.progress,
         sessions: Array.isArray(payload?.sessions) ? payload.sessions : [],
+        transcript: payload?.transcript,
+        voiceTurnId: payload?.voiceTurnId,
+        wakeArmed: payload?.wakeArmed,
         type: 'state'
       })
     })
@@ -75,20 +80,46 @@ export function QuickEntryApp() {
       window.setTimeout(() => setWelcome(false), 1_800)
     })
 
+    const offStartVoice = api?.onStartVoice?.(() => {
+      dispatch({ type: 'voice_start' })
+    })
+
+    const offTranscript = api?.onTranscript?.(transcript => {
+      dispatch({ draft: transcript, type: 'transcript' })
+      requestAnimationFrame(() => inputRef.current?.focus())
+    })
+
     inputRef.current?.focus()
 
     return () => {
       offShown?.()
       offState?.()
       offWelcome?.()
+      offStartVoice?.()
+      offTranscript?.()
     }
   }, [])
 
-  const activityLabel =
-    state.activity === 'IDLE'
-      ? 'Ready'
-      : state.activity.charAt(0) + state.activity.slice(1).toLowerCase()
-  const working = state.activity !== 'IDLE' && state.activity !== 'ERROR' && state.activity !== 'PAUSED'
+  const activityLabels: Record<typeof state.activity, string> = {
+    ACKNOWLEDGING: 'Yanıtlıyor',
+    BOOTING: 'Başlatılıyor',
+    COMPLETED: 'Tamamlandı',
+    ERROR: 'Hata',
+    IDLE_ARMED: 'Hafiye hazır',
+    LISTENING: 'Dinliyor',
+    PAUSED: 'Duraklatıldı',
+    REARMING: 'Yeniden dinliyor',
+    SPEAKING: 'Konuşuyor',
+    THINKING: 'Düşünüyor',
+    TRANSCRIBING: 'Yazıya döküyor',
+    WAKE_DETECTED: 'Uyandırıldı',
+    WORKING: 'Çalışıyor'
+  }
+  const activityLabel = activityLabels[state.activity]
+  const voiceActive = ['LISTENING', 'TRANSCRIBING', 'ACKNOWLEDGING', 'THINKING', 'WORKING', 'SPEAKING'].includes(
+    state.activity
+  )
+  const working = voiceActive || state.activity === 'WAKE_DETECTED'
 
   return (
     <div
@@ -140,7 +171,7 @@ export function QuickEntryApp() {
             Hafiye Composer
           </span>
           <span
-            aria-label={`Composer state: ${activityLabel}`}
+            aria-label={`Composer durumu: ${activityLabel}`}
             data-composer-state={state.activity}
             role="status"
             style={{
@@ -153,7 +184,7 @@ export function QuickEntryApp() {
             {welcome ? 'Hafiye hazır' : activityLabel}
           </span>
           <button
-            aria-label={state.activity === 'LISTENING' ? 'Stop microphone' : 'Start microphone'}
+            aria-label={state.activity === 'LISTENING' ? 'Mikrofonu durdur' : 'Mikrofonu başlat'}
             disabled={!state.connected}
             onClick={() => {
               if (state.activity === 'LISTENING') {
@@ -186,11 +217,11 @@ export function QuickEntryApp() {
             }}
             type="button"
           >
-            {state.activity === 'LISTENING' ? 'Mic on' : 'Mic'}
+            {state.activity === 'LISTENING' ? 'Mikrofonu kapat' : 'Mikrofon'}
           </button>
           {working && (
             <button
-              aria-label="Stop Hafiye task"
+              aria-label="Hafiye görevini durdur"
               onClick={() => {
                 window.hermesDesktop?.quickEntry.stop()
                 dispatch({
@@ -211,7 +242,7 @@ export function QuickEntryApp() {
               }}
               type="button"
             >
-              Stop
+              Durdur
             </button>
           )}
         </div>
@@ -244,7 +275,9 @@ export function QuickEntryApp() {
                 dispatch({ type: 'dismiss' })
               }
             }}
-            placeholder={state.connected ? 'Ask Hafiye…' : 'Not connected — open Hafiye to reconnect'}
+            placeholder={
+              state.connected ? 'Hafiye’ye ne yapmasını istediğini söyle…' : 'Bağlı değil — Hafiye’yi yeniden açın'
+            }
             ref={inputRef}
             spellCheck={false}
             style={{
@@ -261,7 +294,7 @@ export function QuickEntryApp() {
             value={state.draft}
           />
           <button
-            aria-label="Send prompt"
+            aria-label="Komut gönder"
             disabled={!state.connected || !state.draft.trim() || state.submitting}
             onClick={() => dispatch({ type: 'submit' })}
             style={{
@@ -276,7 +309,7 @@ export function QuickEntryApp() {
             }}
             type="button"
           >
-            Send
+            Gönder
           </button>
         </div>
         <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
@@ -289,7 +322,7 @@ export function QuickEntryApp() {
               userSelect: 'none'
             }}
           >
-            Send to
+            Hedef
           </label>
           <select
             aria-label="Target session"
@@ -313,8 +346,8 @@ export function QuickEntryApp() {
             }}
             value={state.target}
           >
-            <option value={QUICK_TARGET_CURRENT}>Current chat</option>
-            <option value={QUICK_TARGET_NEW}>New session</option>
+            <option value={QUICK_TARGET_CURRENT}>Mevcut sohbet</option>
+            <option value={QUICK_TARGET_NEW}>Yeni sohbet</option>
             {state.sessions.map(session => (
               <option key={session.id} value={session.id}>
                 {session.title}
@@ -322,7 +355,7 @@ export function QuickEntryApp() {
             ))}
           </select>
         </div>
-        {(state.currentTask || state.currentTool || state.progress || state.model) && (
+        {(state.currentTask || state.currentTool || state.progress || state.model || state.error) && (
           <div
             style={{
               color: 'var(--muted-foreground, #8a8a8a)',
@@ -332,7 +365,9 @@ export function QuickEntryApp() {
               whiteSpace: 'nowrap'
             }}
           >
-            {[state.currentTask, state.currentTool, state.progress, state.model].filter(Boolean).join(' · ')}
+            {[state.currentTask, state.currentTool, state.progress, state.model, state.error]
+              .filter(Boolean)
+              .join(' · ')}
           </div>
         )}
       </div>

@@ -941,6 +941,25 @@ def find_custom_provider_identity_by_model(model: str) -> Optional[str]:
     target = str(model or "").strip().lower()
     if not target:
         return None
+
+    def _model_identifiers(value: Any) -> set[str]:
+        """Return ids for a model name or a registered GGUF path.
+
+        The Desktop model registry stores a managed GGUF as a friendly id,
+        while the legacy custom-provider catalog may retain the absolute
+        ``/…/model.gguf`` path.  Those are the same runtime model and must
+        recover the same named provider when a route only carries ``custom``.
+        """
+        raw = str(value or "").strip().lower()
+        if not raw:
+            return set()
+        leaf = raw.replace("\\", "/").rsplit("/", 1)[-1]
+        identifiers = {raw, leaf}
+        if leaf.endswith(".gguf"):
+            identifiers.add(leaf[:-5])
+        return identifiers
+
+    target_ids = _model_identifiers(target)
     try:
         config = load_config()
     except Exception:
@@ -949,20 +968,18 @@ def find_custom_provider_identity_by_model(model: str) -> Optional[str]:
     def _entry_serves_model(entry: Dict[str, Any]) -> bool:
         for key in ("model", "default_model"):
             value = entry.get(key)
-            if isinstance(value, str) and value.strip().lower() == target:
+            if _model_identifiers(value) & target_ids:
                 return True
         models = entry.get("models")
         if isinstance(models, dict):
-            return any(
-                str(mid).strip().lower() == target for mid in models.keys()
-            )
+            return any(_model_identifiers(mid) & target_ids for mid in models.keys())
         if isinstance(models, list):
             for item in models:
-                if isinstance(item, str) and item.strip().lower() == target:
+                if isinstance(item, str) and _model_identifiers(item) & target_ids:
                     return True
                 if isinstance(item, dict):
                     mid = item.get("id") or item.get("name")
-                    if isinstance(mid, str) and mid.strip().lower() == target:
+                    if isinstance(mid, str) and _model_identifiers(mid) & target_ids:
                         return True
         return False
 
@@ -1152,6 +1169,15 @@ def _resolve_named_custom_runtime(
         }
 
     custom_provider = _get_named_custom_provider(requested_provider)
+    # The Desktop model picker historically persisted the billing class
+    # ``custom`` while its selected model came from a named local provider.
+    # Recover that provider from the model catalog before falling through to
+    # the global OpenRouter/default path.  This is especially important for
+    # managed GGUF entries whose catalog key is an absolute .gguf path.
+    if not custom_provider and requested_norm == "custom" and target_model:
+        identity = find_custom_provider_identity_by_model(target_model)
+        if identity:
+            custom_provider = _get_named_custom_provider(identity)
     if not custom_provider:
         return None
 

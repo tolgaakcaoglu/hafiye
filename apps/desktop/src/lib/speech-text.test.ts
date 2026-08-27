@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { sanitizeTextForSpeech } from './speech-text'
+import { buildVoiceAcknowledgement, conciseSpeechText, sanitizeTextForSpeech } from './speech-text'
 
 describe('sanitizeTextForSpeech', () => {
   it('summarizes fenced code blocks instead of reading them literally', () => {
@@ -148,5 +148,24 @@ After the table.`
     Example A | 10`
 
     expect(sanitizeTextForSpeech(text)).toContain('Item | Value')
+  })
+})
+
+describe('concise voice presentation', () => {
+  it('keeps only the useful first two sentences and the word budget', () => {
+    expect(conciseSpeechText('İlk sonuç hazır. İkinci sonuç da doğrulandı. Üçüncü uzun ayrıntı burada.')).toBe(
+      'İlk sonuç hazır. İkinci sonuç da doğrulandı.'
+    )
+    expect(conciseSpeechText('bir '.repeat(40), 8).split(/\s+/)).toHaveLength(8)
+  })
+
+  it('builds a short request-specific acknowledgement without claiming success', () => {
+    expect(buildVoiceAcknowledgement('Randevu projesini açıp bug fix yapalım')).toContain('araştırıyorum')
+    expect(buildVoiceAcknowledgement("YouTube'dan son videoyu aç")).toContain('açıyorum')
+    expect(buildVoiceAcknowledgement('Terminali aç ve bellek kullanan işlemleri söyle')).toContain('kontrol ediyorum')
+    expect(buildVoiceAcknowledgement('Bana hava durumunu bul')).toContain('ilgileniyorum')
+    expect(buildVoiceAcknowledgement('Randevu projesini açıp bug fix yapalım').split(/\s+/).length).toBeLessThanOrEqual(
+      25
+    )
   })
 })

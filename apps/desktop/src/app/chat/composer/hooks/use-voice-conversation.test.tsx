@@ -75,7 +75,9 @@ interface HookProps {
   busy: boolean
 }
 
-function renderConversation(overrides: { onInterrupt?: () => void; transcript?: string } = {}) {
+function renderConversation(
+  overrides: { onInterrupt?: () => void; onTranscript?: (text: string) => void; transcript?: string } = {}
+) {
   const onInterrupt = overrides.onInterrupt ?? vi.fn()
 
   // Mirrors the real app: submitting a turn makes the agent busy.
@@ -86,6 +88,7 @@ function renderConversation(overrides: { onInterrupt?: () => void; transcript?: 
   })
 
   const onStopWord = vi.fn()
+  const onTranscript = overrides.onTranscript ?? vi.fn()
 
   // First transcription is the turn that starts the conversation; subsequent
   // ones are barge captures (the overridable transcript).
@@ -105,6 +108,7 @@ function renderConversation(overrides: { onInterrupt?: () => void; transcript?: 
         onStopWord,
         onSubmit,
         onTranscribeAudio,
+        onTranscript,
         pendingResponse: () => null
       }),
     { initialProps: { busy: false } }
@@ -112,7 +116,7 @@ function renderConversation(overrides: { onInterrupt?: () => void; transcript?: 
 
   onBusyChange.current = busy => hook.rerender({ busy })
 
-  return { hook, onInterrupt, onStopWord, onSubmit, onTranscribeAudio }
+  return { hook, onInterrupt, onStopWord, onSubmit, onTranscribeAudio, onTranscript }
 }
 
 /** Drive the hook into the generation phase (turn submitted, model working). */
@@ -155,6 +159,29 @@ describe('useVoiceConversation full-duplex barge-in', () => {
     await waitFor(() => expect(hook.result.current.status).toBe('thinking'))
     // busy=true + thinking → the full-duplex monitor must be live.
     await waitFor(() => expect(monitorCalls.length).toBeGreaterThan(0))
+  })
+
+  it('publishes a non-empty transcript before submitting the agent turn', async () => {
+    const order: string[] = []
+    const { hook } = renderConversation({ onTranscript: text => order.push(`transcript:${text}`) })
+
+    await act(async () => {
+      await hook.result.current.start()
+    })
+    await waitFor(() => expect(hook.result.current.status).toBe('listening'))
+
+    micHandle.stop.mockResolvedValueOnce({
+      audio: new Blob(['q'], { type: 'audio/webm' }),
+      durationMs: 900,
+      heardSpeech: true
+    })
+
+    await act(async () => {
+      hook.result.current.stopTurn()
+    })
+    await waitFor(() => expect(hook.result.current.status).toBe('thinking'))
+
+    expect(order).toEqual(['transcript:kick off the task'])
   })
 
   it('interrupts the in-flight turn when speech trips mid-generation', async () => {

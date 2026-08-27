@@ -46,8 +46,9 @@ MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 GGUF_SUFFIX = ".gguf"
 
 # Qualification is model-registry state, not a UI/model-name special case.
-# Keep this table limited to the two Hafiye local qualification identities;
-# unknown GGUFs remain unqualified until they have their own evidence.
+# Keep this table limited to Hafiye's evidence-backed local qualification
+# identities; unknown GGUFs remain unqualified until they have their own
+# evidence.
 _MODEL_CAPABILITY_PROFILES: tuple[tuple[re.Pattern[str], dict[str, Any]], ...] = (
     (
         re.compile(r"^qwen2\.5-0\.5b(?:[._-].*)?$", re.IGNORECASE),
@@ -56,6 +57,17 @@ _MODEL_CAPABILITY_PROFILES: tuple[tuple[re.Pattern[str], dict[str, Any]], ...] =
             "agent": False,
             "tool_calling": False,
             "resource_warning": None,
+        },
+    ),
+    (
+        re.compile(r"^qwen3-4b(?:[._-].*)?$", re.IGNORECASE),
+        {
+            "validation": False,
+            "agent": True,
+            "tool_calling": True,
+            # This host already showed measurable swap pressure while the
+            # model was loaded; keep the existing warning category visible.
+            "resource_warning": "KI-046",
         },
     ),
     (

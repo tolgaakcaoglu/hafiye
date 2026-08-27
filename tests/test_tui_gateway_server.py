@@ -10624,6 +10624,34 @@ def test_session_info_includes_mcp_servers(monkeypatch):
     assert info["mcp_servers"] == fake_status
 
 
+def test_session_info_reports_effective_hafiye_locality():
+    local_agent = types.SimpleNamespace(
+        tools=[],
+        model="qwen3-4b-q4_k_m",
+        provider="custom",
+        base_url="http://127.0.0.1:11435/v1",
+        hafiye_privacy_mode="NORMAL",
+    )
+    remote_agent = types.SimpleNamespace(
+        tools=[],
+        model="remote-model",
+        provider="custom",
+        base_url="https://inference.example/v1",
+        hafiye_privacy_mode="NORMAL",
+    )
+    cloud_agent = types.SimpleNamespace(
+        tools=[],
+        model="gemini-3.1-pro-preview",
+        provider="gemini",
+        base_url="https://generativelanguage.googleapis.com/v1beta",
+        hafiye_privacy_mode="NORMAL",
+    )
+
+    assert server._session_info(local_agent)["locality"] == "LOCAL"
+    assert server._session_info(remote_agent)["locality"] == "REMOTE"
+    assert server._session_info(cloud_agent)["locality"] == "CLOUD"
+
+
 def test_session_info_includes_session_title(monkeypatch):
     class _FakeDB:
         def get_session_title(self, key):

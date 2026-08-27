@@ -2,6 +2,7 @@ import { atom } from 'nanostores'
 
 import { type ClientWakeCaptureHandle, startClientWakeCapture } from '@/lib/wake-client-capture'
 import { $gateway } from '@/store/gateway'
+import { resetJarvisInteraction, transitionJarvisInteraction } from '@/store/jarvis-interaction'
 
 // "Hafiye" wake-word listener state for the composer toggle. The gateway is
 // the single source of truth (the listener lives in the backend and is shared
@@ -189,6 +190,11 @@ export function applyWakeStatus(status: WakeStatusResponse | null | undefined): 
     notice: listening && !silent ? '' : noticeFrom(status),
     phrase: status?.phrase?.trim() || current.phrase
   })
+  transitionJarvisInteraction({
+    armed: listening,
+    owner: status?.owner_surface ?? null,
+    type: 'wake_status'
+  })
 }
 
 /** Sync the atom from a `wake.start` response. A `{started:false, reason}`
@@ -206,6 +212,7 @@ export function applyWakeStartResult(result: WakeStartResponse | null | undefine
       pending: false,
       phrase: result.phrase?.trim() || current.phrase
     })
+    transitionJarvisInteraction({ armed: true, owner: result.owner_surface ?? 'gui', type: 'wake_status' })
     void maybeStartClientCapture(result)
 
     return
@@ -224,6 +231,7 @@ export function applyWakeStartResult(result: WakeStartResponse | null | undefine
     notice: noticeFrom(result),
     pending: false
   })
+  transitionJarvisInteraction({ armed: false, owner: result?.owner_surface ?? null, type: 'wake_status' })
 }
 
 /** Sync the atom from a `wake.stop` response. `{stopped:false, reason:'not_owner'}`
@@ -239,6 +247,7 @@ export function applyWakeStopResult(result: WakeStopResponse | null | undefined)
     notice: result?.stopped ? '' : noticeFrom(result),
     pending: false
   })
+  transitionJarvisInteraction({ armed: false, owner: null, type: 'wake_status' })
 }
 
 /**
@@ -257,7 +266,10 @@ export async function armWakeWord(request: WakeRequester = gatewayRequester): Pr
 
     applyWakeStatus(status)
 
-    if (!status?.available || status.listening) {
+    // `enabled` is persisted user intent. A passive gateway-ready arm must
+    // never turn the listener back on after the user explicitly disabled it;
+    // only the explicit toggle path sends `persist: true`.
+    if (status?.enabled === false || !status?.available || status.listening) {
       // Armed already (e.g. another surface/restart) — reattach feeder if client.
       if (status?.listening) {
         const mode = (status.capture || '').toLowerCase()
@@ -340,10 +352,13 @@ const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, m
  * this is a passive path and must not flip config.
  */
 export async function resumeWakeAfterVoice(request: WakeRequester = gatewayRequester): Promise<void> {
+  transitionJarvisInteraction({ type: 'rearming' })
+
   try {
     await request('wake.resume', {})
   } catch {
     // Older backend without wake.* — nothing to reconcile.
+    transitionJarvisInteraction({ reason: 'Wake-word backendi kullanılamıyor.', type: 'paused' })
     return
   }
 
@@ -399,10 +414,16 @@ export async function resumeWakeAfterVoice(request: WakeRequester = gatewayReque
 
     await sleep(1500)
   }
+
+  // Do not leave the canonical state in REARMING forever when every
+  // reconciliation attempt loses the microphone race or the gateway refuses
+  // the listener. The next explicit wake action can recover from PAUSED.
+  transitionJarvisInteraction({ reason: 'Wake-word yeniden başlatılamadı.', type: 'paused' })
 }
 
 /** Test-only reset. */
 export function resetWakeWordState(): void {
   stopClientCapture()
   $wakeWord.set(INITIAL_WAKE_WORD_STATE)
+  resetJarvisInteraction()
 }

@@ -74,6 +74,7 @@ from agent.model_metadata import (
     parse_available_output_tokens_from_error,
     save_context_length,
 )
+from agent.local_model_compat import apply_local_qwen3_no_think, is_local_qwen3_route
 from agent.process_bootstrap import _install_safe_stdio
 from agent.prompt_caching import (
     build_prompt_cache_plan,
@@ -2234,6 +2235,20 @@ def run_conversation(
                     )
                     if _composed is not None:
                         api_msg["content"] = _composed
+
+                # Qwen3's reasoning mode is useful for deliberate analysis,
+                # but its default thinking path can spend the whole local
+                # turn reasoning instead of issuing the requested tool call.
+                # Add the model-native control token to the API copy only;
+                # the clean transcript, sidecar and prompt-cache history stay
+                # unchanged. Explicit /think or /no_think in the user's
+                # message remains authoritative.
+                if is_local_qwen3_route(
+                    provider=getattr(agent, "provider", None),
+                    base_url=getattr(agent, "base_url", None),
+                    model=getattr(agent, "model", None),
+                ):
+                    api_msg["content"] = apply_local_qwen3_no_think(api_msg.get("content"))
             elif (
                 isinstance(_api_content, str)
                 and _api_content

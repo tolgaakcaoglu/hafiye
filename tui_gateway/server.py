@@ -5732,6 +5732,42 @@ def _project_info_for_cwd(cwd: str) -> dict | None:
         return None
 
 
+def _session_locality(agent, provider: Any, session: dict | None = None) -> str:
+    """Return the effective locality exposed to Desktop session surfaces.
+
+    The route policy already decides which endpoint is legal; this helper only
+    projects that decision into the session-info contract so Composer can show
+    whether the active model is local, remote, or cloud.  It intentionally
+    does not inspect secrets or make a network probe.
+    """
+    route = getattr(agent, "_hafiye_route", None)
+    route = route if isinstance(route, dict) else {}
+    privacy_mode = str(
+        getattr(agent, "hafiye_privacy_mode", "") or route.get("privacy_mode") or ""
+    ).strip().upper()
+    base_url = str(
+        getattr(agent, "base_url", "") or route.get("base_url") or ""
+    ).strip()
+    provider_name = str(provider or "").strip().casefold()
+
+    if privacy_mode in {"LOCAL_ONLY", "OFFLINE"}:
+        return "LOCAL"
+
+    try:
+        from hafiye_policy import is_local_runtime
+
+        if is_local_runtime(provider, base_url):
+            return "LOCAL"
+    except Exception:
+        logger.debug("failed to classify session locality", exc_info=True)
+
+    if provider_name in {"gemini", "openai", "anthropic", "openrouter", "xai"}:
+        return "CLOUD"
+    if base_url or provider_name in {"custom", "remote"}:
+        return "REMOTE"
+    return "UNKNOWN"
+
+
 def _session_info(agent, session: dict | None = None) -> dict:
     if session is None:
         for candidate in _sessions.values():
@@ -5793,10 +5829,12 @@ def _session_info(agent, session: dict | None = None) -> dict:
         else None
     )
 
+    effective_model = pending_model or mirror.get("model", getattr(agent, "model", ""))
+    effective_provider = pending_provider or mirror.get("provider", getattr(agent, "provider", ""))
     info: dict = {
-        "model": pending_model or mirror.get("model", getattr(agent, "model", "")),
-        "provider": pending_provider
-        or mirror.get("provider", getattr(agent, "provider", "")),
+        "model": effective_model,
+        "provider": effective_provider,
+        "locality": _session_locality(agent, effective_provider, session),
         "reasoning_effort": reasoning_effort,
         "service_tier": service_tier,
         "fast": service_tier == "priority",

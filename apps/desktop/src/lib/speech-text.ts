@@ -165,3 +165,48 @@ export function sanitizeTextForSpeech(text: string): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
+
+/**
+ * The voice channel is an assistant channel, not a second transcript reader.
+ * Keep completion speech to the first two useful sentences and a hard word
+ * ceiling; the full answer remains visible in the Desktop transcript.
+ */
+export function conciseSpeechText(text: string, maxWords = 30): string {
+  const clean = sanitizeTextForSpeech(text)
+
+  if (!clean) {
+    return ''
+  }
+
+  const sentences = clean
+    .match(/[^.!?]+[.!?]+|[^.!?]+$/g)
+    ?.map(sentence => sentence.trim())
+    .filter(Boolean) ?? [clean]
+  const selected = sentences.slice(0, 2).join(' ')
+  const words = selected.split(/\s+/).filter(Boolean)
+
+  if (words.length <= maxWords) {
+    return selected
+  }
+
+  return `${words.slice(0, maxWords).join(' ')}…`
+}
+
+/** A short, truthful acknowledgement played before the agent starts working. */
+export function buildVoiceAcknowledgement(request: string): string {
+  const clean = sanitizeTextForSpeech(request).toLocaleLowerCase('tr-TR')
+
+  if (/bug|kod|proje|fix|düzelt|hata|randevu/.test(clean)) {
+    return 'Tamam, projeyi inceleyip olası sorunu kanıtlarıyla araştırıyorum.'
+  }
+
+  if (/terminal|işlem|dosya|klasör|çalıştır|komut/.test(clean)) {
+    return 'Tamam, bilgisayarda gerekli işlemi başlatıp sonucu kontrol ediyorum.'
+  }
+
+  if (/youtube|video|tarayıcı|site|web/.test(clean)) {
+    return 'Tamam, tarayıcıda arayıp istediğin içeriği açıyorum.'
+  }
+
+  return 'Tamam, hemen ilgileniyorum ve sonucu kontrol edeceğim.'
+}

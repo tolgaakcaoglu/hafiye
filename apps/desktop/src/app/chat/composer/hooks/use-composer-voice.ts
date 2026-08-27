@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '@/i18n'
 import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
 import { triggerHaptic } from '@/lib/haptics'
+import { buildVoiceAcknowledgement } from '@/lib/speech-text'
 import { markAssistantIdSpoken, resolveSpokenReply } from '@/lib/spoken-reply'
+import { playSpeechText, stopVoicePlayback } from '@/lib/voice-playback'
 import { clearWakeIndicator, syncWakeIndicatorWithVoice } from '@/lib/wake-indicator'
-import { stopVoicePlayback } from '@/lib/voice-playback'
-import { $voiceConversationStartRequest, takeVoiceConversationStart } from '@/store/composer'
+import { $voiceConversationStartRequest, takeVoiceConversationStartMode } from '@/store/composer'
 import { resetBrowseState } from '@/store/composer-input-history'
 import { $gateway } from '@/store/gateway'
+import { $jarvisInteraction, transitionJarvisInteraction } from '@/store/jarvis-interaction'
 import { notify, notifyError } from '@/store/notifications'
 import { $autoSpeakReplies, $voiceStopPhrase, setAutoSpeakReplies } from '@/store/voice-prefs'
 import { resumeWakeAfterVoice } from '@/store/wake-word'
@@ -20,7 +22,7 @@ import { useComposerScope } from '../scope'
 import type { ChatBarProps } from '../types'
 
 import { useAutoSpeakReplies } from './use-auto-speak-replies'
-import { useVoiceConversation } from './use-voice-conversation'
+import { type ConversationStatus, useVoiceConversation } from './use-voice-conversation'
 import { useVoiceRecorder } from './use-voice-recorder'
 
 interface UseComposerVoiceArgs {
@@ -65,6 +67,8 @@ export function useComposerVoice({
   const { $messages } = useComposerScope()
   const [voiceConversationActive, setVoiceConversationActive] = useState(false)
   const ownsWakeIndicatorRef = useRef(false)
+  const wakeTurnRef = useRef(false)
+  const endConversationRef = useRef<() => void>(() => {})
   const voiceStartRequest = useStore($voiceConversationStartRequest)
 
   const { dictate, voiceActivityState, voiceStatus } = useVoiceRecorder({
@@ -117,6 +121,24 @@ export function useComposerVoice({
     }
   }
 
+  const publishQuickEntryTranscript = useCallback(async (text: string) => {
+    const transcript = text.trim()
+
+    if (!transcript) {
+      return
+    }
+
+    transitionJarvisInteraction({ text: transcript, type: 'transcript' })
+
+    // The compact Composer is a secondary renderer. A missing/old shell must
+    // never prevent the actual voice request from reaching the agent.
+    try {
+      await window.hermesDesktop?.quickEntry?.publishTranscript?.(transcript)
+    } catch {
+      // The primary Composer remains the source of truth for submission.
+    }
+  }, [])
+
   const submitVoiceTurn = async (text: string) => {
     if (busy) {
       return
@@ -125,8 +147,51 @@ export function useComposerVoice({
     triggerHaptic('submit')
     resetBrowseState(sessionId)
     clearDraft()
-    await onSubmit(text)
+
+    transitionJarvisInteraction({ type: 'acknowledging' })
+
+    // Start the real agent turn immediately. Piper's short acknowledgement is
+    // presentation, not a gate in front of tool execution; running both in
+    // parallel keeps Jarvis responsive while the backend begins work.
+    const submission = Promise.resolve().then(() => onSubmit(text))
+
+    // Speak a short assistant-style acknowledgement before the real agent
+    // turn. The detailed result remains visual; this prevents voice mode from
+    // reading an entire coding/tool transcript aloud.
+    try {
+      await playSpeechText(buildVoiceAcknowledgement(text), { source: 'voice-ack' })
+    } catch (error) {
+      notifyError(error, 'Sesli onay oynatılamadı')
+    }
+
+    try {
+      await submission
+      // The gateway normally supplies message.complete. If a provider returns
+      // before the event is observed, settle only an still-active local state;
+      // never overwrite a completed/error transition received from the real
+      // stream.
+      const current = $jarvisInteraction.get()
+
+      if (current.state === 'ACKNOWLEDGING' || current.state === 'THINKING' || current.state === 'WORKING') {
+        transitionJarvisInteraction({ type: 'completed' })
+      }
+    } catch (error) {
+      transitionJarvisInteraction({ message: error instanceof Error ? error.message : String(error), type: 'error' })
+      throw error
+    }
   }
+
+  const handleVoiceStatusChange = useCallback((status: ConversationStatus) => {
+    transitionJarvisInteraction({ status, type: 'voice_status' })
+
+    // A wake-triggered request is one assistant turn, not an always-on voice
+    // conversation. End it after the spoken result/turn settles so the compact
+    // Composer can collapse and the wake listener can own the microphone again.
+    if (status === 'idle' && wakeTurnRef.current) {
+      wakeTurnRef.current = false
+      endConversationRef.current()
+    }
+  }, [])
 
   const wakePausedRef = useRef(false)
   // Resolves once the in-flight wake.pause round-trip completes (mic released by
@@ -138,6 +203,7 @@ export function useComposerVoice({
 
   const emergencyStop = useCallback(() => {
     stopVoicePlayback()
+    transitionJarvisInteraction({ active: true, type: 'emergency' })
     const gateway = $gateway.get()
 
     if (!gateway) {
@@ -158,6 +224,7 @@ export function useComposerVoice({
     // the same seam as the Stop button — so the interjection becomes the next
     // turn instead of waiting behind a reply the user already rejected.
     onInterrupt,
+    onStatusChange: handleVoiceStatusChange,
     // A spoken stop command ("stop", "never mind", "goodbye", …) ends the
     // hands-free conversation. Flipping the flag is the authoritative off
     // switch — the enabled=false prop + effect below drive conversation.end()
@@ -167,12 +234,21 @@ export function useComposerVoice({
       void emergencyStop()
     },
     onSubmit: submitVoiceTurn,
+    onTranscript: publishQuickEntryTranscript,
     onTranscribeAudio,
     pendingResponse: pendingTurnResponse,
     // Before the conversation opens the mic, wait for any in-flight wake.pause
     // to finish releasing the capture device (see wakePauseBarrierRef).
     beforeMicOpen: () => wakePauseBarrierRef.current ?? undefined
   })
+
+  // The ref is assigned during render, before useVoiceConversation's status
+  // effects run, so the one-shot wake callback can safely tear down the same
+  // conversation instance that owns the recorder.
+  endConversationRef.current = () => {
+    setVoiceConversationActive(false)
+    void conversation.end()
+  }
 
   // eslint-disable-next-line no-restricted-syntax -- ownership token used only by unmount cleanup
   useEffect(() => {
@@ -203,9 +279,11 @@ export function useComposerVoice({
     }
 
     if (voiceConversationActive) {
+      wakeTurnRef.current = false
       setVoiceConversationActive(false)
       void conversation.end()
     } else {
+      wakeTurnRef.current = false
       setVoiceConversationActive(true)
     }
   }, [conversation, disabled, voiceConversationActive])
@@ -216,8 +294,13 @@ export function useComposerVoice({
   )
 
   useEffect(() => {
-    if (target === 'main' && !disabled && takeVoiceConversationStart(voiceStartRequest) && !voiceConversationActive) {
-      setVoiceConversationActive(true)
+    if (target === 'main' && !disabled && !voiceConversationActive) {
+      const mode = takeVoiceConversationStartMode(voiceStartRequest)
+
+      if (mode) {
+        wakeTurnRef.current = mode === 'wake'
+        setVoiceConversationActive(true)
+      }
     }
   }, [disabled, target, voiceConversationActive, voiceStartRequest])
 
@@ -284,9 +367,13 @@ export function useComposerVoice({
 
   // Explicit start/end for the on-screen conversation controls (the hotkey uses
   // the gated toggle above).
-  const startConversation = useCallback(() => setVoiceConversationActive(true), [])
+  const startConversation = useCallback(() => {
+    wakeTurnRef.current = false
+    setVoiceConversationActive(true)
+  }, [])
 
   const endConversation = useCallback(() => {
+    wakeTurnRef.current = false
     setVoiceConversationActive(false)
     void conversation.end()
   }, [conversation])

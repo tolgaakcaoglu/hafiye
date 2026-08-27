@@ -592,6 +592,24 @@ def _compute_tool_definitions(
         ]
         available_tool_names.discard("browser_exec")
 
+    # Hafiye's managed Linux browser route is the product path for an
+    # already-running desktop browser.  When its readiness probe succeeds,
+    # prefer that exact native route over browser_exec even if a stale or
+    # default ``browser.backend: browser-use`` setting also makes the latter
+    # available.  browser_exec executes arbitrary Python in a separate
+    # browser-use harness and cannot reuse the user's Firefox session on this
+    # host; advertising both routes lets a model choose the wrong one (and
+    # fail with "no supported browser is running") for an otherwise ready
+    # computer-use task.  The condition is session/tool-surface based: on a
+    # host without browser_native, browser_exec keeps its existing behavior.
+    if "browser_exec" in available_tool_names and "browser_native" in available_tool_names:
+        filtered_tools = [
+            td
+            for td in filtered_tools
+            if td.get("function", {}).get("name") != "browser_exec"
+        ]
+        available_tool_names.discard("browser_exec")
+
     if not quiet_mode:
         if filtered_tools:
             tool_names = [t["function"]["name"] for t in filtered_tools]

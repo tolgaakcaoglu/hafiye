@@ -40,6 +40,7 @@ from agent.prompt_builder import (
     MEMORY_GUIDANCE,
     USER_PROFILE_GUIDANCE,
     OPENAI_MODEL_EXECUTION_GUIDANCE,
+    NATIVE_BROWSER_GUIDANCE,
     PARALLEL_TOOL_CALL_GUIDANCE,
     PLATFORM_HINTS,
     SESSION_SEARCH_GUIDANCE,
@@ -460,6 +461,9 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
     if "computer_use" in agent.valid_tool_names:
         from agent.prompt_builder import computer_use_guidance
         stable_parts.append(computer_use_guidance())
+
+    if "browser_native" in agent.valid_tool_names:
+        stable_parts.append(NATIVE_BROWSER_GUIDANCE)
 
     nous_subscription_prompt = _r.build_nous_subscription_prompt(agent.valid_tool_names)
     if nous_subscription_prompt:

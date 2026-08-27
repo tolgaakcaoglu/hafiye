@@ -37,9 +37,16 @@ export const $composerTerminalSelections = atom<Record<string, string>>({})
 export const $voiceConversationStartRequest = atom(0)
 let nextVoiceStartRequest = 0
 let handledVoiceStartRequest = 0
+const voiceStartModes = new Map<number, VoiceConversationStartMode>()
 export const createComposerAttachmentOccurrenceId = (): string => crypto.randomUUID()
 
-export const requestVoiceConversationStart = (): void => $voiceConversationStartRequest.set(++nextVoiceStartRequest)
+export type VoiceConversationStartMode = 'continuous' | 'wake'
+
+export const requestVoiceConversationStart = (mode: VoiceConversationStartMode = 'continuous'): void => {
+  const requestId = ++nextVoiceStartRequest
+  voiceStartModes.set(requestId, mode)
+  $voiceConversationStartRequest.set(requestId)
+}
 
 export const takeVoiceConversationStart = (current: number): boolean => {
   if (current <= handledVoiceStartRequest) {
@@ -47,8 +54,22 @@ export const takeVoiceConversationStart = (current: number): boolean => {
   }
 
   handledVoiceStartRequest = current
+  voiceStartModes.delete(current)
 
   return true
+}
+
+/** Consume a latched start request and preserve whether it came from wake. */
+export const takeVoiceConversationStartMode = (current: number): VoiceConversationStartMode | null => {
+  if (current <= handledVoiceStartRequest) {
+    return null
+  }
+
+  handledVoiceStartRequest = current
+  const mode = voiceStartModes.get(current) ?? 'continuous'
+  voiceStartModes.delete(current)
+
+  return mode
 }
 
 // ---------------------------------------------------------------------------
