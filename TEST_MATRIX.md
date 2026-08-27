@@ -782,3 +782,16 @@ Gemini generation remains blocked by KI-059.
 The temporary local 14B catalog entry was removed after the replay. The
 managed local server is Qwen3-4B with `AUTO → CUDA`, the product route is
 Gemini/NORMAL, and no P24 acceptance status was changed.
+
+## P24 wake configuration and backend readiness recheck — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-WAKE-CONFIG-01 | Persisted Jarvis wake/TTS configuration | `/usr/bin/hafiye config set wake_word.enabled true`; `/usr/bin/hafiye config set voice.auto_tts true`; `config get` | Live config reports wake enabled, phrase `Hafiye`, `openwakeword`, `auto_tts=true`, and barge-in enabled | PASS / CONFIGURATION SUPPORT; PHYSICAL ACCEPTANCE STILL OPEN |
+| P24-WAKE-RPC-01 | Real gateway wake listener boundary | Authenticated JSON-RPC `wake.start` and `wake.status` on `ws://127.0.0.1:9120/api/ws` with GUI/client capture | `started=true`; subsequent status `listening=true`, `owned_by_caller=true`, `available=true`, `enabled=true`, phrase `Hafiye`, `capture=client`; transport teardown released the listener | PASS / BACKEND SUPPORT; NOT PHYSICAL ACCEPTANCE |
+| P24-GATEWAY-HEALTH-07 | Persistent service after configuration change | `systemctl --user is-enabled/is-active hafiye-gateway.service`; `curl http://127.0.0.1:9120/api/health` | `enabled`, `active`, HTTP 200 with `ok=true` | PASS |
+
+The Gemini key identity is proven by Secret Service hydration and HTTP-200 model
+discovery; generation is still NOT ACCEPTED because the provider returns HTTP
+429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` (KI-059). These
+support checks do not promote any deferred physical P24 row.

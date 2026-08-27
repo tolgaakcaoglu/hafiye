@@ -1146,3 +1146,10 @@ silently treated as passing.
   strengthens installed local-agent evidence without resolving the practical
   final-response/browser/coding acceptance. KI-046 remains the resource
   warning and P24 remains open.
+- The live installed configuration now has `wake_word.enabled=true` and
+  `voice.auto_tts=true` as requested for the always-ready Jarvis workflow. A
+  real gateway JSON-RPC wake start/status probe confirms the client-capture
+  listener can arm and report ready, but the required physical wake,
+  transcript, short spoken acknowledgement, re-arm, and barge-in replays are
+  still not accepted. This is an acceptance gap, not evidence of a source
+  defect.

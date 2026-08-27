@@ -2661,3 +2661,26 @@ offline replay remain unaccepted. No P25 or release tag was created.
 - No source changed in this checkpoint. The current Hafiye source remains
   `bc8151b42f0e35d4e9b908b5696adeb51a92d86b`; pinned upstream and baseline
   merge identities remain unchanged. P24 is still open.
+
+### P24 wake configuration and backend readiness recheck — 2026-08-27
+
+- To align the installed Jarvis behavior with the requested always-ready
+  workflow, the supported config command set `wake_word.enabled=true` and
+  `voice.auto_tts=true`. The live values are now enabled; the configured wake
+  phrase is `Hafiye`, the provider is `openwakeword`, STT remains local, and
+  voice barge-in remains enabled. This is configuration evidence only and does
+  not replace the required physical microphone acceptance.
+- An authenticated local JSON-RPC probe against the real gateway called
+  `wake.start` with the GUI/client-capture path and then `wake.status`. It
+  returned `started=true`, followed by `listening=true`, `owned_by_caller=true`,
+  `available=true`, `enabled=true`, phrase `Hafiye`, and `capture=client`.
+  The probe transport was closed afterward, so no synthetic event is counted
+  as P24 physical wake acceptance.
+- `hafiye-gateway.service` remains enabled/active and `/api/health` returns
+  HTTP 200. The helper command `hafiye gateway restart` declined because user
+  linger is disabled; no linger or sudoers change was made. The systemd user
+  service was not considered unhealthy and was left running.
+- The active Gemini Secret Service credential still passes model discovery,
+  but fresh generation calls return provider HTTP 429
+  `RESOURCE_EXHAUSTED` / `prepayment credits are depleted`; this is KI-059,
+  not a key-identity mismatch. P24 remains open.

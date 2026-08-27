@@ -903,6 +903,20 @@ coding/browser, and physical acceptance evidence is still incomplete.
   server is restored to Qwen3-4B with `AUTO → CUDA`, and the product route is
   Gemini/NORMAL. No source commit or phase status changed.
 
+### P24 wake configuration and backend readiness recheck — 2026-08-27
+
+The installed live configuration now has `wake_word.enabled=true` and
+`voice.auto_tts=true`, with phrase `Hafiye`, local STT, and barge-in enabled.
+An authenticated real-gateway JSON-RPC probe started the GUI/client-capture
+wake listener and confirmed `started=true`, `listening=true`,
+`available=true`, and `enabled=true`. This supports the auto-arm path but is
+not the required physical wake/transcript/voice acceptance.
+`hafiye-gateway.service` is still enabled/active and the health endpoint is
+HTTP 200. The Gemini credential is correctly hydrated and model discovery
+works, but generation remains blocked by provider HTTP 429
+`RESOURCE_EXHAUSTED` / `prepayment credits are depleted` (KI-059). P24
+remains unchecked; no source or phase status changed.
+
 The final post-source automated rerun after `4bfe7add` recorded targeted
 backend `153 passed`, P24 UI `93 passed`, Desktop typecheck exit 0, packaging
 tests `15 passed`, and the canonical five-node comparison `3 passed, 2 failed`.
