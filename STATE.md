@@ -13,10 +13,10 @@ Last updated: 2026-08-27
   (Functional stateful Desktop system-tray controls and regression coverage.)
   Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `1edc72dbfcfe3961342c0ffe901dbc5eec02823e` (substantive documentation
+  `c6ae3d5444e7242b422ed770d5ba8b0e09b95e82` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
-  `8a8546e454bd1f2b48bd9ed5e09e704329f46972`; documentation commits do not
+  `1edc72dbfcfe3961342c0ffe901dbc5eec02823e`; documentation commits do not
   change the Hafiye source checkpoint or installed package source.
 
 The three SHA values above are intentionally separate: the first is the
