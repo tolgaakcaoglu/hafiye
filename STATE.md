@@ -14,10 +14,10 @@ Last updated: 2026-08-27
   after successful page loading.)
   Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `c6ae3d5444e7242b422ed770d5ba8b0e09b95e82` (substantive documentation
+  `e460e672d542ab866a2be258092529515cdd8ed4` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
-  `1edc72dbfcfe3961342c0ffe901dbc5eec02823e`; documentation commits do not
+  `c6ae3d5444e7242b422ed770d5ba8b0e09b95e82`; documentation commits do not
   change the Hafiye source checkpoint or installed package source.
 
 The three SHA values above are intentionally separate: the first is the
