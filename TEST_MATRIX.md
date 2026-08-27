@@ -738,3 +738,5 @@ credential is stored in this matrix.
 
 This confirms a provider project/credit-ledger blocker across the tested
 current model families; it is not a Qwen fallback or model-picker mismatch.
+
+| P24-GEMINI-TRANSPORT-CHECK-01 | Native versus documented Gemini transport | Same Secret Service-backed key/model via `v1beta/models/{model}:generateContent` and Google's `/v1beta/openai/chat/completions` endpoint | Both transports return HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted`; no Hafiye transport defect is established | NOT ACCEPTED / KI-059 |

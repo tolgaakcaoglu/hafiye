@@ -2569,4 +2569,6 @@ offline replay remain unaccepted. No P25 or release tag was created.
 - This rules out a single-model retirement/selection problem as the current
   Gemini blocker. The configured credential authenticates and discovers the
   catalog, but the provider currently refuses generation across the tested
-  current model families. No source change or route change was made.
+  current model families. The same key/model through Google's documented
+  OpenAI-compatible endpoint also returned HTTP 429, so this is not a native
+  Gemini transport defect. No source change or route change was made.

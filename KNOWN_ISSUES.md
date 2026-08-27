@@ -1075,6 +1075,10 @@ silently treated as passing.
   installed Hafiye CLI retry for `gemini-3.1-flash-lite` does too. The issue
   therefore spans the tested model families rather than being a single retired
   model ID or Desktop picker mismatch.
+- The same key/model tested through Google's documented OpenAI-compatible
+  `/v1beta/openai/chat/completions` endpoint also returned HTTP 429. This
+  excludes the native Gemini adapter as the cause of the current quota error;
+  no transport fallback was introduced.
 - P24 browser acceptance remains NOT ACCEPTED until a real clean Composer
   turn can reach `browser_native`, verify the target video, and terminate
   cleanly. Restore or reconfigure usable Gemini API quota through the normal
