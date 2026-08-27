@@ -139,6 +139,14 @@ describe('ModelSettings profile scope', () => {
 })
 
 describe('ModelSettings', () => {
+  it('keeps the local GGUF runtime visible after the model page finishes loading', async () => {
+    await renderModelSettings()
+
+    expect(await screen.findByText('Local GGUF Runtime')).toBeTruthy()
+    expect(getLocalRuntime).toHaveBeenCalled()
+    expect(getLocalRuntimeModels).toHaveBeenCalled()
+  })
+
   it('loads the current main model and lists configured providers only', async () => {
     await renderModelSettings()
 

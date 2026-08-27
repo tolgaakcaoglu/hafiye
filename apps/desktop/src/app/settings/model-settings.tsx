@@ -916,6 +916,8 @@ export function ModelSettings({ onMainModelChanged, scopeProfile }: ModelSetting
         )}
       </section>
 
+      <LocalRuntimeSettings />
+
       <section>
         <div className="mb-2.5 flex items-center justify-between">
           <SectionHeading icon={Cpu} title={m.auxiliaryTitle} />
