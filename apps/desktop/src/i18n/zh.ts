@@ -1,5 +1,6 @@
 import { defineFieldCopy } from '@/app/settings/field-copy'
 
+import { EN_LOCAL_RUNTIME_COPY } from './local-runtime-copy'
 import type { Translations } from './types'
 
 export const zh: Translations = {
@@ -374,6 +375,8 @@ export const zh: Translations = {
     exportFailed: '导出失败',
     resetFailed: '重置失败',
     nav: {
+      controlCenter: 'Hafiye Control Center',
+      computer: 'Computer',
       providers: '提供方',
       providerAccounts: '账号',
       providerApiKeys: 'API 密钥',
@@ -1273,6 +1276,7 @@ export const zh: Translations = {
         curator: { label: '维护器', hint: '技能使用审查' }
       }
     },
+    localRuntime: EN_LOCAL_RUNTIME_COPY,
     providers: {
       connectAccount: '连接账号',
       haveApiKey: '改用 API 密钥？',

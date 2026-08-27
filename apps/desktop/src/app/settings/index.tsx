@@ -177,7 +177,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         active: false,
         icon: LayoutDashboard,
         id: 'control-center',
-        label: 'Hafiye Control Center',
+        label: t.settings.nav.controlCenter,
         onSelect: () => navigate(CONTROL_CENTER_ROUTE)
       },
       ...SECTIONS.map(s => {
@@ -241,7 +241,7 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
         gapBefore: true,
         icon: Monitor,
         id: 'computer',
-        label: 'Computer',
+        label: t.settings.nav.computer,
         onSelect: () => setActiveView('computer')
       },
       {

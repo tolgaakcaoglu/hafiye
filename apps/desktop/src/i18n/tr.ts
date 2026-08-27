@@ -1,4 +1,5 @@
 import { defineLocale } from './define-locale'
+import { TR_LOCAL_RUNTIME_COPY } from './local-runtime-copy'
 
 // Turkish intentionally uses the shared English fallback for advanced surfaces
 // that have not been translated yet. Core navigation, chat, settings, model,
@@ -221,6 +222,8 @@ export const tr = defineLocale({
     exportFailed: 'Dışa aktarılamadı',
     resetFailed: 'Sıfırlanamadı',
     nav: {
+      controlCenter: 'Hafiye Kontrol Merkezi',
+      computer: 'Bilgisayar',
       providers: 'Sağlayıcılar',
       providerAccounts: 'Hesaplar',
       providerApiKeys: 'API anahtarları',
@@ -371,6 +374,7 @@ export const tr = defineLocale({
         curator: { label: 'Küratör', hint: 'Yetenek kullanım incelemesi' }
       }
     },
+    localRuntime: TR_LOCAL_RUNTIME_COPY,
     providers: {
       connectAccount: 'Hesap bağla',
       haveApiKey: 'API anahtarınız mı var?',

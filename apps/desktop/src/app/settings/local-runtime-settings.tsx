@@ -17,6 +17,7 @@ import {
   startLocalRuntimeServer,
   stopLocalRuntimeServer
 } from '@/hermes'
+import { useI18n } from '@/i18n'
 import { Cpu, Loader2 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
@@ -25,9 +26,9 @@ import { SectionHeading } from './primitives'
 
 const BACKENDS: readonly LocalRuntimeBackend[] = ['AUTO', 'CUDA', 'VULKAN', 'CPU']
 
-function formatSize(size?: number): string {
+function formatSize(size: number | undefined, unknownSize: string): string {
   if (!size || size <= 0) {
-    return 'unknown size'
+    return unknownSize
   }
   const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
   let value = size
@@ -40,6 +41,8 @@ function formatSize(size?: number): string {
 }
 
 export function LocalRuntimeSettings() {
+  const { t } = useI18n()
+  const copy = t.settings.localRuntime
   const [doctor, setDoctor] = useState<LocalRuntimeDoctor | null>(null)
   const [models, setModels] = useState<LocalRuntimeModel[]>([])
   const [catalog, setCatalog] = useState<LocalRuntimeCatalogModel[]>([])
@@ -156,14 +159,12 @@ export function LocalRuntimeSettings() {
 
   return (
     <section data-slot="local-runtime-settings">
-      <SectionHeading icon={Cpu} title="Local GGUF Runtime" />
-      <p className="mb-3 text-xs text-muted-foreground">
-        Managed llama.cpp server, local GGUF models, and the selected compute backend.
-      </p>
+      <SectionHeading icon={Cpu} title={copy.title} />
+      <p className="mb-3 text-xs text-muted-foreground">{copy.description}</p>
 
       <div className="grid gap-2 rounded-lg border border-border/70 p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Backend</span>
+          <span className="text-xs text-muted-foreground">{copy.backend}</span>
           <Select onValueChange={value => setBackend(value as LocalRuntimeBackend)} value={backend}>
             <SelectTrigger className={cn('w-28', CONTROL_TEXT)}>
               <SelectValue />
@@ -178,21 +179,23 @@ export function LocalRuntimeSettings() {
           </Select>
           <Button disabled={!!busy} onClick={install} size="sm" variant="textStrong">
             {busy === 'install' && <Loader2 className="size-3.5 animate-spin" />}
-            Install / rebuild runtime
+            {copy.installRuntime}
           </Button>
           <Button disabled={!!busy} onClick={() => void refresh()} size="sm" variant="ghost">
-            Refresh
+            {copy.refresh}
           </Button>
         </div>
 
         <div className="text-xs text-muted-foreground">
           {doctor?.runtime.installed
-            ? `llama-server ${doctor.runtime.version || 'installed'}`
-            : 'llama-server is not installed'}
+            ? copy.runtimeInstalled(doctor.runtime.version || copy.installed)
+            : copy.runtimeNotInstalled}
           {doctor?.environment?.nvidia_present
-            ? ` · NVIDIA ${String(doctor.environment.nvidia_name || 'present')}`
+            ? ` · ${copy.nvidiaPresent(String(doctor.environment.nvidia_name || 'GPU'))}`
             : ''}
-          {doctor?.server?.ready ? ` · serving ${doctor.server.model_id || 'model'}` : ''}
+          {doctor?.server?.ready
+            ? ` · ${copy.servingModel(doctor.server.model_id || selectedModel || copy.modelFallback)}`
+            : ''}
         </div>
 
         {doctor?.warnings?.map(warning => (
@@ -215,27 +218,27 @@ export function LocalRuntimeSettings() {
                     <span className="text-xs font-semibold">{catalogModel.name}</span>
                     {catalogModel.featured ? (
                       <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[0.65rem] font-medium text-primary">
-                        Hafiye catalog default
+                        {copy.catalogDefault}
                       </span>
                     ) : null}
                   </div>
                   <span className="text-[0.7rem] text-muted-foreground">
-                    {formatSize(catalogModel.size)} · {catalogModel.license} ·{' '}
+                    {formatSize(catalogModel.size, copy.unknownSize)} · {catalogModel.license} ·{' '}
                     {catalogModel.source_type === 'ollama' ? 'Ollama' : 'Hugging Face'} · {catalogModel.repo_id}
                   </span>
-                  <span className="text-[0.7rem] text-muted-foreground">{catalogModel.intended_use}</span>
+                  <span className="text-[0.7rem] text-muted-foreground">
+                    {copy.catalog[catalogModel.id]?.intendedUse || catalogModel.intended_use}
+                  </span>
                   {catalogModel.requires_auth ? (
-                    <span className="text-[0.7rem] text-amber-300">
-                      Requires approved Hugging Face access and an HF_TOKEN credential in Providers.
-                    </span>
+                    <span className="text-[0.7rem] text-amber-300">{copy.requiresHuggingFaceAuth}</span>
                   ) : null}
                   {catalogModel.resource_warning ? (
-                    <span className="text-[0.7rem] text-amber-300">{catalogModel.resource_warning}</span>
+                    <span className="text-[0.7rem] text-amber-300">
+                      {copy.catalog[catalogModel.id]?.resourceWarning || catalogModel.resource_warning}
+                    </span>
                   ) : null}
                   {catalogModel.install_status === 'conflict' ? (
-                    <span className="text-[0.7rem] text-destructive">
-                      This model ID already exists with different contents. Remove or rename it before downloading.
-                    </span>
+                    <span className="text-[0.7rem] text-destructive">{copy.catalogConflict}</span>
                   ) : null}
                 </div>
                 <Button
@@ -245,17 +248,14 @@ export function LocalRuntimeSettings() {
                   type="button"
                 >
                   {busy === `catalog:${catalogModel.id}` && <Loader2 className="size-3.5 animate-spin" />}
-                  {catalogModel.install_status === 'installed' ? 'Installed' : 'Download verified GGUF'}
+                  {catalogModel.install_status === 'installed' ? copy.installed : copy.downloadVerified}
                 </Button>
               </div>
             </div>
           ))}
           <div className="grid gap-1">
-            <span className="text-xs font-medium">Download a GGUF model</span>
-            <span className="text-[0.7rem] text-muted-foreground">
-              Downloads one GGUF from Hugging Face, verifies an optional checksum, and registers it for llama.cpp.
-              Hafiye does not use an Ollama model directory as its local runtime.
-            </span>
+            <span className="text-xs font-medium">{copy.downloadTitle}</span>
+            <span className="text-[0.7rem] text-muted-foreground">{copy.downloadDescription}</span>
           </div>
           <form
             className="grid gap-2"
@@ -266,15 +266,15 @@ export function LocalRuntimeSettings() {
           >
             <div className="flex flex-wrap items-center gap-2">
               <Input
-                aria-label="Hugging Face repository"
+                aria-label={copy.huggingFaceRepository}
                 className="min-w-52 flex-1"
                 disabled={!!busy}
                 onChange={event => setDownloadRepo(event.target.value)}
-                placeholder="owner/repository"
+                placeholder={copy.repositoryPlaceholder}
                 value={downloadRepo}
               />
               <Input
-                aria-label="GGUF filename"
+                aria-label={copy.ggufFilename}
                 className="min-w-60 flex-1"
                 disabled={!!busy}
                 onChange={event => setDownloadFilename(event.target.value)}
@@ -282,33 +282,33 @@ export function LocalRuntimeSettings() {
                 value={downloadFilename}
               />
               <Input
-                aria-label="Downloaded model ID"
+                aria-label={copy.downloadedModelId}
                 className="w-36"
                 disabled={!!busy}
                 onChange={event => setDownloadModelId(event.target.value)}
-                placeholder="model id (optional)"
+                placeholder={copy.modelIdOptional}
                 value={downloadModelId}
               />
               <Button disabled={!downloadRepo.trim() || !downloadFilename.trim() || !!busy} size="sm" type="submit">
                 {busy === 'download' && <Loader2 className="size-3.5 animate-spin" />}
-                Download GGUF
+                {copy.downloadGguf}
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Input
-                aria-label="Hugging Face revision"
+                aria-label={copy.huggingFaceRevision}
                 className="min-w-52 flex-1"
                 disabled={!!busy}
                 onChange={event => setDownloadRevision(event.target.value)}
-                placeholder="revision (optional; branch or commit)"
+                placeholder={copy.revisionOptional}
                 value={downloadRevision}
               />
               <Input
-                aria-label="GGUF SHA-256 checksum"
+                aria-label={copy.ggufChecksum}
                 className="min-w-60 flex-1 font-mono"
                 disabled={!!busy}
                 onChange={event => setDownloadSha256(event.target.value)}
-                placeholder="SHA-256 (optional)"
+                placeholder={copy.checksumOptional}
                 value={downloadSha256}
               />
             </div>
@@ -317,29 +317,29 @@ export function LocalRuntimeSettings() {
             <Input
               className="min-w-60 flex-1"
               onChange={event => setModelPath(event.target.value)}
-              placeholder="/path/to/model.gguf"
+              placeholder={copy.modelPathPlaceholder}
               value={modelPath}
             />
             <Input
               className="w-36"
               onChange={event => setModelId(event.target.value)}
-              placeholder="model id (optional)"
+              placeholder={copy.modelIdOptional}
               value={modelId}
             />
             <Button disabled={!modelPath.trim() || !!busy} onClick={() => void importModel()} size="sm">
               {busy === 'import' && <Loader2 className="size-3.5 animate-spin" />}
-              Import GGUF
+              {copy.importGguf}
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Select onValueChange={setSelectedModel} value={selectedModel}>
               <SelectTrigger className={cn('min-w-56', CONTROL_TEXT)}>
-                <SelectValue placeholder="Select a local model" />
+                <SelectValue placeholder={copy.selectLocalModel} />
               </SelectTrigger>
               <SelectContent>
                 {models.map(model => (
                   <SelectItem key={model.id} value={model.id}>
-                    {model.id} · {formatSize(model.size)}
+                    {model.id} · {formatSize(model.size, copy.unknownSize)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -347,18 +347,18 @@ export function LocalRuntimeSettings() {
             <Input
               className="w-24"
               onChange={event => setContextSize(event.target.value)}
-              placeholder="context"
+              placeholder={copy.contextPlaceholder}
               value={contextSize}
             />
             <Input
               className="w-24"
               onChange={event => setGpuLayers(event.target.value)}
-              placeholder="GPU layers"
+              placeholder={copy.gpuLayersPlaceholder}
               value={gpuLayers}
             />
             <Button disabled={!selectedModel || !!busy} onClick={() => void start()} size="sm">
               {busy === 'start' && <Loader2 className="size-3.5 animate-spin" />}
-              Load / start
+              {copy.loadStart}
             </Button>
             <Button
               disabled={!active || !!busy}
@@ -367,7 +367,7 @@ export function LocalRuntimeSettings() {
               variant="text"
             >
               {busy === 'stop' && <Loader2 className="size-3.5 animate-spin" />}
-              Unload / stop
+              {copy.unloadStop}
             </Button>
           </div>
           {selected && <div className="font-mono text-[0.68rem] text-muted-foreground">{selected.path}</div>}

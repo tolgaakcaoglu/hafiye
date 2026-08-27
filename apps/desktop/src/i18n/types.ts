@@ -329,6 +329,8 @@ export interface Translations {
     exportFailed: string
     resetFailed: string
     nav: {
+      controlCenter: string
+      computer: string
       providers: string
       providerAccounts: string
       providerApiKeys: string
@@ -928,6 +930,44 @@ export interface Translations {
       fallbackEmpty: string
       notInCatalog: string
       tasks: Record<string, AuxTaskCopy>
+    }
+    localRuntime: {
+      title: string
+      description: string
+      unknownSize: string
+      backend: string
+      installRuntime: string
+      refresh: string
+      runtimeInstalled: (version: string) => string
+      runtimeNotInstalled: string
+      nvidiaPresent: (name: string) => string
+      servingModel: (model: string) => string
+      modelFallback: string
+      catalogDefault: string
+      requiresHuggingFaceAuth: string
+      catalogConflict: string
+      installed: string
+      downloadVerified: string
+      downloadTitle: string
+      downloadDescription: string
+      huggingFaceRepository: string
+      ggufFilename: string
+      downloadedModelId: string
+      huggingFaceRevision: string
+      ggufChecksum: string
+      repositoryPlaceholder: string
+      modelIdOptional: string
+      revisionOptional: string
+      checksumOptional: string
+      downloadGguf: string
+      modelPathPlaceholder: string
+      importGguf: string
+      selectLocalModel: string
+      contextPlaceholder: string
+      gpuLayersPlaceholder: string
+      loadStart: string
+      unloadStop: string
+      catalog: Record<string, { intendedUse: string; resourceWarning: string }>
     }
     providers: {
       connectAccount: string

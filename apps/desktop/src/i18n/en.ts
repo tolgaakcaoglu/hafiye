@@ -1,5 +1,6 @@
 import { FIELD_DESCRIPTIONS, FIELD_LABELS } from '@/app/settings/constants'
 
+import { EN_LOCAL_RUNTIME_COPY } from './local-runtime-copy'
 import type { Translations } from './types'
 
 export const en: Translations = {
@@ -387,6 +388,8 @@ export const en: Translations = {
     exportFailed: 'Export failed',
     resetFailed: 'Reset failed',
     nav: {
+      controlCenter: 'Hafiye Control Center',
+      computer: 'Computer',
       providers: 'Providers',
       providerAccounts: 'Accounts',
       providerApiKeys: 'API keys',
@@ -1078,6 +1081,7 @@ export const en: Translations = {
         curator: { label: 'Curator', hint: 'Skill-usage review' }
       }
     },
+    localRuntime: EN_LOCAL_RUNTIME_COPY,
     providers: {
       connectAccount: 'Connect an account',
       haveApiKey: 'Have an API key instead?',

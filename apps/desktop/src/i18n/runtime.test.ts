@@ -78,6 +78,9 @@ describe('desktop i18n runtime translator', () => {
 
     setRuntimeI18nLocale('tr')
     expect(translateNow('language.label')).toBe('Dil')
+    expect(translateNow('settings.nav.controlCenter')).toBe('Hafiye Kontrol Merkezi')
+    expect(translateNow('settings.nav.computer')).toBe('Bilgisayar')
+    expect(translateNow('settings.localRuntime.title')).toBe('Yerel GGUF Çalışma Zamanı')
     expect(translateNow('settings.nav.providers')).toBe('Sağlayıcılar')
     expect(translateNow('settings.appearance.title')).toBe('Görünüm')
     expect(translateNow('settings.model.provider')).toBe('Sağlayıcı')

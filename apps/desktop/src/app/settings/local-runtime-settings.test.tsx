@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { I18nProvider } from '@/i18n'
+
 const mocks = vi.hoisted(() => ({
   downloadLocalRuntimeCatalogModel: vi.fn(),
   downloadLocalRuntimeModel: vi.fn(),
@@ -179,5 +181,53 @@ describe('LocalRuntimeSettings', () => {
     await waitFor(() => {
       expect(mocks.downloadLocalRuntimeCatalogModel).toHaveBeenCalledWith('qwen3.8-flash-next-uncensored-iq2_m')
     })
+  })
+
+  it('renders the runtime controls and trusted catalog copy in Turkish', async () => {
+    mocks.getLocalRuntime.mockResolvedValue({
+      blockers: [],
+      environment: { nvidia_name: 'GeForce RTX 3080', nvidia_present: true },
+      paths: {},
+      runtime: { installed: true, version: '0.2.0-dev' },
+      server: { model_id: 'qwen3.8-27b-ud-iq1_s', ready: true, running: true },
+      warnings: []
+    })
+    mocks.getLocalRuntimeModels.mockResolvedValue({
+      catalog: [
+        catalogModel({
+          featured: true,
+          id: 'qwen3.8-27b-ud-iq1_s',
+          intended_use: 'General local-agent qualification candidate',
+          name: 'Qwen3.8 27B UD-IQ1_S'
+        }),
+        catalogModel({
+          id: 'qwen3.8-flash-next-uncensored-iq2_m',
+          intended_use: 'Security researchers, red teams, and blue teams',
+          name: 'Qwen3.8 Flash Next Uncensored IQ2_M',
+          requires_auth: true
+        })
+      ],
+      models: []
+    })
+
+    const { LocalRuntimeSettings } = await import('./local-runtime-settings')
+    render(
+      <I18nProvider configClient={null} initialLocale="tr">
+        <LocalRuntimeSettings />
+      </I18nProvider>
+    )
+
+    expect(await screen.findByText('Yerel GGUF Çalışma Zamanı')).toBeTruthy()
+    expect(screen.getByText('İşlem backend’i')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Çalışma zamanını kur / yeniden derle' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Yenile' })).toBeTruthy()
+    expect(screen.getByText('Hafiye katalog varsayılanı')).toBeTruthy()
+    expect(screen.getByText('Genel yerel-agent yeterlilik adayı')).toBeTruthy()
+    expect(screen.getByText('Güvenlik araştırmacıları, kırmızı takımlar ve mavi takımlar')).toBeTruthy()
+    expect(screen.getByText(/Onaylı Hugging Face erişimi/)).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: 'Doğrulanmış GGUF’u indir' })).toHaveLength(2)
+    expect(screen.getByText('GGUF modeli indir')).toBeTruthy()
+    expect(screen.queryByText('Download verified GGUF')).toBeNull()
+    expect(screen.queryByText('General local-agent qualification candidate')).toBeNull()
   })
 })
