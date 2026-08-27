@@ -598,10 +598,10 @@ current observed comparison subset is 2, 3, and 5.
 ## P24 Hafiye Jarvis experience convergence — source implementation and final acceptance
 
 P24 was defined on 2026-08-27 by binding user direction. The current source
-implementation checkpoint is `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`; the
-installed package was rebuilt/reinstalled from packaging closure
-`2c749c93d643d22c0e16ca2318aab4473094a4ef`, whose manifest contains that
-source checkpoint. Implementation and automated evidence below do not promote
+implementation checkpoint is `ee380ba75a21b8559ccb523b77b8cd511359a9ff`; the
+installed package was rebuilt/reinstalled from that source checkpoint, whose
+manifest contains the pinned upstream and baseline merge identities below.
+Implementation and automated evidence below do not promote
 the installed physical P24.14 acceptance to PASS.
 
 | ID | Boundary | Required command / observation | Current evidence | Status |
@@ -771,6 +771,21 @@ but Qwen3-4B still produced a repeated tool/log loop and the real native
 browser accessibility tree remains non-actionable. It does not promote P24.9,
 P24.10, P24.11, or P24.14 to PASS. The product route remains Gemini/NORMAL;
 Gemini generation remains blocked by KI-059.
+
+## P24 installed legacy GNOME emergency-binding repair — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-EMERGENCY-BINDING-01 | Owned legacy GNOME binding upgrade repair | `cd apps/desktop && npm exec vitest run electron/gnome-emergency-stop.test.ts electron/emergency-stop-shortcut.test.ts --project electron --reporter=dot`; `npm run typecheck`; real installed Desktop launch; `gsettings get .../hafiye-emergency-stop/ command` | Electron project: `111` files passed, `1,559` tests passed, `3` skipped; typecheck exit 0; real launch repaired the stale legacy target to `'/usr/bin/hafiye' emergency-stop --reason=global-hotkey`; unrelated-binding fail-closed test remains green | PASS / SOURCE + INSTALLED SUPPORT; PHYSICAL ACCEPTANCE OPEN |
+| P24-PACKAGE-05 | Production artifact after emergency-binding source fix | `npm run pack`; `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; `hafiye root exec env DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a apt-get --reinstall install -y ...`; package doctor; gateway health | Installed manifest source `ee380ba75a21b8559ccb523b77b8cd511359a9ff`; pinned upstream and baseline merge unchanged; packaging tests `15 passed in 63.38s`; package doctor OK with optional `cargo: not found`; gateway HTTP 200 | PASS / INSTALLED |
+| P24-UPSTREAM-RECOVERY-03 | Exact historical five-ID comparison after emergency-binding fix | Five exact historical upstream node IDs from `UPSTREAM.md` | `3 passed, 2 failed`; only accepted whitelist IDs 2 and 3 failed; IDs 1, 4, and 5 passed; no new/different failure | ACCEPTED BASELINE / NO NEW REGRESSION |
+
+The emergency-binding repair does not claim P24.14 or P23.15: a physical
+`Ctrl+Super+Escape` during an actually active managed desktop action still has
+to be observed. The current Gemini credential is correctly Secret-Service
+backed and model discovery succeeds, but generation remains blocked by provider
+HTTP 429 quota exhaustion (KI-059). The user's explicitly deferred offline
+acceptance remains unaccepted.
 
 ## P24 current credential and installed Qwen3-14B Composer smoke — 2026-08-27
 

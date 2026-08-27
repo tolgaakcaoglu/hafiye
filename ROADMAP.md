@@ -789,7 +789,7 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`bc8151b42f0e35d4e9b908b5696adeb51a92d86b`; these implementation marks do not
+`ee380ba75a21b8559ccb523b77b8cd511359a9ff`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
 rebuilt/reinstalled from the package containing the source checkpoint above;
 physical acceptance remains open.
@@ -855,6 +855,12 @@ physical acceptance remains open.
       Composer lifecycle and verified wake re-arm.
 - [x] P24.13 Add automated state, Desktop, gateway, voice, policy, tool,
       package and regression tests specified by the master roadmap.
+- [x] Repair the installed-upgrade path for the reserved GNOME emergency
+      binding when an older Hafiye installation still targets the legacy Hermes
+      launcher. Source/test commit `ee380ba75`; focused Electron tests,
+      `npm run typecheck`, production packaging, root-broker reinstall, and a
+      real installed Desktop launch verified the repaired `/usr/bin/hafiye`
+      command. This does not replace the required physical shortcut acceptance.
 - [ ] P24.14 Run the installed real-machine acceptance: reboot/login, physical
       wake, visible transcript, short acknowledgement, coding flow, YouTube
       flow, truthful blocker, three repeated turns, barge-in, local/offline,
@@ -869,12 +875,13 @@ route endpoint correction is in `10bd0b8f` and has real source and installed
 CLI `LOCAL_ONLY` Qwen3-4B route replays. These source checks have a real
 GNOME/AT-SPI tool-boundary replay, but they do not themselves satisfy P24.10.
 P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
-evidence exists. The latest source hardening is `bc8151b42`: explicit native
+evidence exists. The latest source hardening is `ee380ba75`: explicit native
 browser failure envelopes are classified correctly, final success is gated
 on a fresh browser state, omitted native-browser state is bounded to 200
 nodes/depth 20, and large-context Qwen3 runtime instances are limited to one
-server slot on this host. The user's explicitly deferred offline replay is not
-marked PASS.
+server slot on this host; the installed legacy GNOME emergency binding is
+repaired only for the reserved Hafiye ownership marker. The user's explicitly
+deferred offline replay is not marked PASS.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,
@@ -923,6 +930,27 @@ tests `15 passed`, and the canonical five-node comparison `3 passed, 2 failed`.
 The two failures are accepted historical whitelist IDs 2 and 3; no
 new/different regression was found. These automated results do not replace the
 still-open installed physical acceptance.
+
+### P24 installed emergency-binding repair — 2026-08-27
+
+- The source-level repair in `ee380ba75a21b8559ccb523b77b8cd511359a9ff`
+  handles an upgrade residue where the reserved Hafiye GNOME binding retained
+  the old `/home/tolga/.local/bin/hermes` command. It rewrites the command only
+  when the reserved name and `Control+Super+Escape` accelerator still identify
+  the Hafiye-owned binding; unrelated existing keybindings remain fail-closed.
+- Focused Electron regression coverage returned `111` files passed, `1,559`
+  tests passed, and `3` skipped. `npm run typecheck` exited 0. The production
+  package was rebuilt and installed through `hafiye-rootd`; packaging tests
+  returned `15 passed in 63.38s`, package doctor returned OK with the optional
+  Cargo warning, and gateway health returned HTTP 200.
+- A real installed Desktop launch changed the live GNOME command to
+  `'/usr/bin/hafiye' emergency-stop --reason=global-hotkey`; the installed
+  Desktop is visible and connected. This is source/installed support evidence,
+  not a physical active-task emergency-stop PASS. P24.14 and P23 remain open.
+- The Gemini credential continues to authenticate/model-discover correctly,
+  while generation is blocked by provider HTTP 429 quota exhaustion (KI-059).
+  The historical comparison remains `3 passed, 2 failed`, only accepted IDs 2
+  and 3 failing.
 
 ### P24 credential/model-picker recheck — 2026-08-27
 

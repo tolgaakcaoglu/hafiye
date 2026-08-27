@@ -11,11 +11,11 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P24 native-browser focus-recovery checkpoint;
+- Current Hafiye source HEAD (P24 Desktop emergency-binding repair checkpoint;
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  10bd0b8f32b99b9a7ad91317dfb2f88b5204b927
+  ee380ba75a21b8559ccb523b77b8cd511359a9ff
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -107,6 +107,8 @@ The Hafiye source history contains these separable logical groups:
   concise Piper acknowledgement/completion speech, task/tool/model/progress
   locality state, local-Qwen compatibility, native-browser preference, and
   installed-package regression coverage.
+- desktop-emergency-binding-repair: repair an owned legacy GNOME emergency
+  binding during Desktop startup without overwriting unrelated user shortcuts.
 
 Future changes should remain separable under the roadmap groups:
 
@@ -623,7 +625,7 @@ P0 computer-use acceptance requires:
   startup-gate fix and regression test), followed by
   `197e4ca8fe864faaf48dd695cc25d7c89e2c6e33` (explicit Desktop model-route
   precedence and Settings-derived New Chat state).
-- The current source/test commit is
+- The P23 packaging checkpoint is
   `a1271a93277e6ac0747c1c5c31b586c2e883e55a`. It fixes Hafiye's Debian
   packaging boundary exposed by P23.1: the Linux Electron `chrome-sandbox`
   helper is staged with setuid mode `4755`, so
@@ -683,6 +685,20 @@ P0 computer-use acceptance requires:
   real source and installed `LOCAL_ONLY` Qwen3-4B terminal replays passed. This
   is a Hafiye routing integration change; the pinned Hermes source, baseline
   merge, and upstream history remain unchanged.
+
+## P24 Desktop emergency-binding repair patch group
+
+- Hafiye source/test commit:
+  `ee380ba75a21b8559ccb523b77b8cd511359a9ff`.
+- The Electron GNOME fallback now repairs the command for an existing reserved
+  Hafiye binding when its ownership marker (name plus accelerator) matches, even
+  if an older install still points at the legacy Hermes launcher. It continues
+  to reject a binding whose name or accelerator differs, so the upgrade path
+  does not overwrite unrelated user shortcuts.
+- The patch is covered by the focused Electron regression test and was verified
+  in the installed package: a real launch changed the live gsettings command
+  to `/usr/bin/hafiye emergency-stop --reason=global-hotkey`. The pinned Hermes
+  commit, baseline merge, and upstream history were not changed.
 
 ## P17 Control Center patch group
 

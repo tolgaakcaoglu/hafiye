@@ -1153,3 +1153,26 @@ silently treated as passing.
   transcript, short spoken acknowledgement, re-arm, and barge-in replays are
   still not accepted. This is an acceptance gap, not evidence of a source
   defect.
+
+## KI-061 — Legacy GNOME emergency binding required upgrade repair
+
+- Status: RESOLVED at source level in commit
+  `ee380ba75a21b8559ccb523b77b8cd511359a9ff`; the separate physical
+  active-task emergency-stop acceptance remains open under P24.14/P23.15.
+- The live reserved Hafiye GNOME binding had the correct Hafiye name and
+  `Control+Super+Escape` accelerator but still invoked the old
+  `/home/tolga/.local/bin/hermes` launcher. The previous fallback treated the
+  stale command as a conflict, so startup reported the emergency shortcut as
+  unavailable even though the binding was Hafiye-owned.
+- The fallback now uses the reserved name plus accelerator as the ownership
+  marker, repairs that command in place, and still refuses to overwrite an
+  existing binding whose name or accelerator differs. The regression test
+  covers the legacy command and the fail-closed unrelated-binding path.
+- Focused Electron verification returned `111` files passed, `1,559` tests
+  passed, and `3` skipped; `npm run typecheck` exited 0. The production package
+  was rebuilt/reinstalled through `hafiye-rootd`, and a real installed launch
+  changed the live command to `'/usr/bin/hafiye' emergency-stop
+  --reason=global-hotkey`.
+- This repair is not a physical emergency-stop PASS: the required shortcut must
+  still be pressed while a real managed computer-use action is active, with
+  cancellation/root-RPC/TTS gating observed. No P24 phase status changed.

@@ -9,11 +9,10 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: bc8151b42f0e35d4e9b908b5696adeb51a92d86b
-  (P24 runtime hardening after the native-browser fix: large-context Qwen3
-  servers use one llama.cpp slot to avoid multiplying the KV-cache footprint
-  on this resource-constrained host.) Earlier source identities remain
-  recorded below.
+- Current Hafiye source HEAD: ee380ba75a21b8559ccb523b77b8cd511359a9ff
+  (P24 Desktop hardening after the runtime/browser fixes: legacy GNOME
+  emergency bindings are repaired in place only when their reserved Hafiye
+  ownership marker matches.) Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
   `ce69dc1e977b4e382d01327655b810ea60ddf00c` (substantive documentation closure; this metadata pointer is
   kept separate from the source HEAD).
@@ -112,7 +111,7 @@ qualification subtask is complete with a measured host resource warning.
 Unaccepted P23 rows remain open and must not be represented as passed.
 
 P24 — Hafiye Jarvis experience convergence: source implementation and
-automated verification are complete at `bc8151b42`, but the phase remains open
+automated verification are complete at `ee380ba75`, but the phase remains open
 for installed real-machine acceptance. The user explicitly added this binding
 phase on 2026-08-27 to make the installed product operate as one assistant
 loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
@@ -131,10 +130,11 @@ stable final assistant response, so no P24 acceptance row is promoted.
 
 The installed package is `hafiye 0.20.5-1` and its
 `/usr/lib/hafiye/package-manifest.json` now carries source
-`bc8151b42f0e35d4e9b908b5696adeb51a92d86b`, the pinned upstream commit, and
+`ee380ba75a21b8559ccb523b77b8cd511359a9ff`, the pinned upstream commit, and
 the baseline merge commit. The package was rebuilt and reinstalled through the
-existing `hafiye-rootd` boundary; the selected-route endpoint fix is now in
-the installed backend. The live Desktop process remains under
+existing `hafiye-rootd` boundary; the selected-route endpoint and emergency
+binding fixes are now in the installed package. The live Desktop process remains
+under
 `/usr/lib/hafiye/desktop`, the user autostart entry targets that installed
 binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
 returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
@@ -912,7 +912,8 @@ bugs are not being fixed by Hafiye.
    long-running managed-desktop emergency stop. Keep the explicitly deferred
    offline replay unaccepted.
 2. Re-run the real Randevu and YouTube Composer scenarios with the installed
-   `8b7c29aa` package. Do not promote a partial tool trace to P24 acceptance.
+   `ee380ba75` package once the Gemini quota is usable. Do not promote a
+   partial tool trace to P24 acceptance.
 3. Run the final P24/P23 regression matrices and close P24 only if every
    installed real-machine acceptance item is genuinely green; do not create
    P25 or a release tag.
@@ -2684,3 +2685,40 @@ offline replay remain unaccepted. No P25 or release tag was created.
   but fresh generation calls return provider HTTP 429
   `RESOURCE_EXHAUSTED` / `prepayment credits are depleted`; this is KI-059,
   not a key-identity mismatch. P24 remains open.
+
+### P24 legacy GNOME emergency binding repair and credential confirmation — 2026-08-27
+
+- Source commit `ee380ba75a21b8559ccb523b77b8cd511359a9ff` repairs the
+  reserved GNOME `Control+Super+Escape` binding when an earlier Hafiye
+  installation still points at the legacy Hermes launcher. The fallback now
+  treats the reserved name plus accelerator as the ownership marker, rewrites
+  only that stale command, and continues to reject unrelated user keybindings.
+- The focused Electron command
+  `npm exec vitest run electron/gnome-emergency-stop.test.ts
+  electron/emergency-stop-shortcut.test.ts --project electron --reporter=dot`
+  passed with the configured Electron project (`111` files passed; `1,559`
+  tests passed, `3` skipped). `npm run typecheck` exited 0. The added test
+  covers repair of the legacy Hermes target and preservation of the emergency
+  argument.
+- The production Desktop was repacked, `dist/hafiye_0.20.5_amd64.deb` was
+  rebuilt, and it was reinstalled through the existing `hafiye-rootd` path
+  with `apt-get --reinstall`. The installed manifest now reports source
+  `ee380ba75a21b8559ccb523b77b8cd511359a9ff`, pinned upstream
+  `f293e7206b4ddd66042329442c6afebc19a8808d`, and baseline merge
+  `2ac06b131a237916432503ac67bbcada6dbea39e`. Packaging tests returned
+  `15 passed in 63.38s`; package doctor is OK with only the existing optional
+  `cargo: not found` warning, and the gateway health endpoint is HTTP 200.
+- A real launch of the installed binary updated the live GNOME value to
+  `'/usr/bin/hafiye' emergency-stop --reason=global-hotkey`. The Desktop is
+  running as the normal user, visible in the GNOME window list, and connected
+  to the active `hafiye-gateway.service`. This is binding-repair evidence; a
+  physical emergency shortcut during an active managed desktop action is still
+  required before P24.14/P23.15 can be accepted.
+- The user-supplied Gemini credential is correctly resolved through Linux
+  Secret Service and model discovery remains HTTP 200. Current Gemini
+  generation attempts still return HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment
+  credits are depleted`; this remains KI-059 and is not a wrong-key diagnosis.
+- The exact five historical upstream nodes returned `3 passed, 2 failed`:
+  only accepted whitelist IDs 2 and 3 failed; IDs 1, 4, and 5 passed. No new
+  or different upstream regression was found. P24 remains open; no P25 or
+  release tag was created.
