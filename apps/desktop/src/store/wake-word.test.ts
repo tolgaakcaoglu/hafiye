@@ -8,6 +8,7 @@ import {
   armWakeWord,
   resetWakeWordState,
   resumeWakeAfterVoice,
+  setWakeWordEnabled,
   toggleWakeWord,
   type WakeRequester
 } from './wake-word'
@@ -155,6 +156,38 @@ describe('toggleWakeWord', () => {
     await first
 
     expect($wakeWord.get().listening).toBe(true)
+  })
+})
+
+describe('setWakeWordEnabled', () => {
+  it('persists an exact disable even when enabled but temporarily not listening', async () => {
+    applyWakeStatus({ available: true, enabled: true, listening: false, phrase: 'Hafiye' })
+
+    const request = requester(method => {
+      expect(method).toBe('wake.stop')
+
+      return { disabled_persisted: true, stopped: true }
+    })
+
+    await setWakeWordEnabled(false, request)
+
+    expect(request).toHaveBeenCalledWith('wake.stop', { persist: true })
+    expect($wakeWord.get()).toMatchObject({ enabled: false, listening: false, pending: false })
+  })
+
+  it('persists an exact enable', async () => {
+    applyWakeStatus({ available: true, enabled: false, listening: false, phrase: 'Hafiye' })
+
+    const request = requester(method => {
+      expect(method).toBe('wake.start')
+
+      return { enabled_persisted: true, phrase: 'Hafiye', started: true }
+    })
+
+    await setWakeWordEnabled(true, request)
+
+    expect(request).toHaveBeenCalledWith('wake.start', { client_capture: true, persist: true, surface: 'gui' })
+    expect($wakeWord.get()).toMatchObject({ enabled: true, listening: true, pending: false })
   })
 })
 

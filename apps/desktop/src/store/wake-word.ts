@@ -297,8 +297,8 @@ export async function armWakeWord(request: WakeRequester = gatewayRequester): Pr
   }
 }
 
-/** The composer button's click handler: stop when listening, start otherwise. */
-export async function toggleWakeWord(request: WakeRequester = gatewayRequester): Promise<void> {
+/** Set persisted microphone/wake intent to an exact value (tray/settings seam). */
+export async function setWakeWordEnabled(enabled: boolean, request: WakeRequester = gatewayRequester): Promise<void> {
   const state = $wakeWord.get()
 
   if (state.pending) {
@@ -314,9 +314,7 @@ export async function toggleWakeWord(request: WakeRequester = gatewayRequester):
   })
 
   try {
-    if (state.listening) {
-      applyWakeStopResult(await request<WakeStopResponse>('wake.stop', { persist: true }))
-    } else {
+    if (enabled) {
       // persist: true — a deliberate click is consent, so the backend flips
       // wake_word.enabled in config.yaml (on/off) and the choice sticks for
       // future sessions. Auto-arm (armWakeWord) never passes it.
@@ -327,6 +325,8 @@ export async function toggleWakeWord(request: WakeRequester = gatewayRequester):
           client_capture: true
         })
       )
+    } else {
+      applyWakeStopResult(await request<WakeStopResponse>('wake.stop', { persist: true }))
     }
   } catch (error) {
     const current = $wakeWord.get()
@@ -337,6 +337,11 @@ export async function toggleWakeWord(request: WakeRequester = gatewayRequester):
       pending: false
     })
   }
+}
+
+/** The composer button's click handler: stop when listening, start otherwise. */
+export async function toggleWakeWord(request: WakeRequester = gatewayRequester): Promise<void> {
+  return setWakeWordEnabled(!$wakeWord.get().listening, request)
 }
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -359,6 +364,7 @@ export async function resumeWakeAfterVoice(request: WakeRequester = gatewayReque
   } catch {
     // Older backend without wake.* — nothing to reconcile.
     transitionJarvisInteraction({ reason: 'Wake-word backendi kullanılamıyor.', type: 'paused' })
+
     return
   }
 

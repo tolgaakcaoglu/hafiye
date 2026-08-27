@@ -44,6 +44,19 @@ export function useEmergencyStopBridge({ requestGateway }: EmergencyStopBridgePa
     const offShortcut = window.hermesDesktop?.onEmergencyStop?.(() => trigger('global-hotkey'))
     const offTray = window.hermesDesktop?.tray?.onEmergencyStop?.(() => trigger('tray'))
 
+    const offComputerControl = window.hermesDesktop?.tray?.onToggleComputerControl?.(paused => {
+      if (paused) {
+        trigger('tray-computer-control')
+
+        return
+      }
+
+      void requestGatewayRef
+        .current('emergency.resume', { reason: 'tray-computer-control' }, 10_000)
+        .then(() => transitionJarvisInteraction({ active: false, type: 'emergency' }))
+        .catch(error => notifyError(error, 'Computer control could not be resumed'))
+    })
+
     const offGateway = onGatewayEvent('emergency.stop', () => {
       // A GNOME Wayland keybinding invokes the CLI directly, so the renderer
       // learns about that same cancellation through the gateway event rather
@@ -59,6 +72,7 @@ export function useEmergencyStopBridge({ requestGateway }: EmergencyStopBridgePa
     return () => {
       offShortcut?.()
       offTray?.()
+      offComputerControl?.()
       offGateway()
       offGatewayResume()
     }

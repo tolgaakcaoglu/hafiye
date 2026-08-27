@@ -87,7 +87,7 @@ import { isAuxiliaryWindow, isHudWindow } from '@/store/windows'
 import { useSkinCommand } from '@/themes/use-skin-command'
 
 import { closeWorkspaceTab } from '../chat/close-tab'
-import { requestComposerInsert, requestVoiceToggle } from '../chat/composer/focus'
+import { requestComposerInsert } from '../chat/composer/focus'
 import { useComposerActions } from '../chat/hooks/use-composer-actions'
 import { CommandPalette } from '../command-palette'
 import { triggerAndRefreshCronJobs } from '../cron/cron-actions'
@@ -147,6 +147,7 @@ import {
 } from './hooks/use-background-sync'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
 import { useEmergencyStopBridge } from './hooks/use-emergency-stop-bridge'
+import { useHafiyeTrayBridge } from './hooks/use-hafiye-tray-bridge'
 import { usePetBridge } from './hooks/use-pet-bridge'
 import { useQuickEntryBridge } from './hooks/use-quick-entry-bridge'
 import { useSessionTileDelegate } from './hooks/use-session-tile-delegate'
@@ -690,11 +691,15 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // session / new session), and it hears gateway truth from this window.
   useQuickEntryBridge({
     cancelRun,
-    openSettings: () => navigate(SETTINGS_ROUTE),
     startFreshSessionDraft,
     startVoice: () => requestVoiceConversationStart('wake'),
-    submitText,
-    toggleVoice: () => requestVoiceToggle()
+    submitText
+  })
+
+  useHafiyeTrayBridge({
+    openSession: sessionId => openSession(sessionId, navigate),
+    openSettings: () => navigate(SETTINGS_ROUTE),
+    startFreshSessionDraft
   })
 
   useEmergencyStopBridge({ requestGateway })

@@ -151,10 +151,20 @@ declare global {
         stop: () => void
       }
       tray?: {
+        updateState: (state: {
+          computerControlPaused: boolean
+          gatewayRunning: boolean
+          microphoneEnabled: boolean
+          privacyMode: 'LOCAL_ONLY' | 'NORMAL' | 'OFFLINE'
+          voiceEnabled: boolean
+        }) => void
         onNewTask: (callback: () => void) => () => void
         onOpenSession: (callback: (sessionId: string) => void) => () => void
         onOpenSettings: (callback: () => void) => () => void
-        onToggleVoice: (callback: () => void) => () => void
+        onSetPrivacyMode: (callback: (mode: 'LOCAL_ONLY' | 'NORMAL' | 'OFFLINE') => void) => () => void
+        onToggleComputerControl: (callback: (paused: boolean) => void) => () => void
+        onToggleMicrophone: (callback: (enabled: boolean) => void) => () => void
+        onToggleVoice: (callback: (enabled: boolean) => void) => () => void
         onEmergencyStop: (callback: () => void) => () => void
       }
       getBootProgress: () => Promise<DesktopBootProgress>

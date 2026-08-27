@@ -169,6 +169,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     }
   },
   tray: {
+    updateState: state => ipcRenderer.send('hermes:tray:update-state', state),
     onNewTask: callback => {
       const listener = () => callback()
       ipcRenderer.on('hermes:tray:new-task', listener)
@@ -188,10 +189,28 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return () => ipcRenderer.removeListener('hermes:tray:open-session', listener)
     },
     onToggleVoice: callback => {
-      const listener = () => callback()
+      const listener = (_event, enabled) => callback(enabled === true)
       ipcRenderer.on('hermes:tray:toggle-voice', listener)
 
       return () => ipcRenderer.removeListener('hermes:tray:toggle-voice', listener)
+    },
+    onToggleMicrophone: callback => {
+      const listener = (_event, enabled) => callback(enabled === true)
+      ipcRenderer.on('hermes:tray:toggle-microphone', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:toggle-microphone', listener)
+    },
+    onToggleComputerControl: callback => {
+      const listener = (_event, paused) => callback(paused === true)
+      ipcRenderer.on('hermes:tray:toggle-computer-control', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:toggle-computer-control', listener)
+    },
+    onSetPrivacyMode: callback => {
+      const listener = (_event, mode) => callback(mode)
+      ipcRenderer.on('hermes:tray:set-privacy', listener)
+
+      return () => ipcRenderer.removeListener('hermes:tray:set-privacy', listener)
     },
     onEmergencyStop: callback => {
       const listener = () => callback()

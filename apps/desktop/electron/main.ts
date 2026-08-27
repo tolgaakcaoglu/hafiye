@@ -64,6 +64,12 @@ import { decideBootstrapRepair } from './bootstrap-repair-guard'
 import { runBootstrap } from './bootstrap-runner'
 import { detectBundleSkew } from './bundle-skew'
 import {
+  buildHafiyeTrayTemplate,
+  DEFAULT_HAFIYE_TRAY_CONTROL_STATE,
+  normalizeHafiyeTrayControlState,
+  type HafiyeTrayControlState
+} from './hafiye-tray-menu'
+import {
   buildAutostartDesktopEntry,
   type ComposerSettings,
   composerStaysVisible,
@@ -12421,10 +12427,17 @@ function closeQuickEntryWindow() {
 // The tray is the Desktop's resident surface: closing the main window hides it
 // here, while Quit Desktop is the only menu action that requests process exit.
 let hafiyeTray: Tray | null = null
+let hafiyeTrayControlState: HafiyeTrayControlState = { ...DEFAULT_HAFIYE_TRAY_CONTROL_STATE }
 
-function sendTrayCommand(channel: string, payload?: unknown): void {
+function sendTrayCommand(channel: string, payload?: unknown, options: { reveal?: boolean } = {}): void {
   if (!mainWindow || mainWindow.isDestroyed()) {
+    rememberLog(`[tray] dropped ${channel}: primary window is unavailable`)
+
     return
+  }
+
+  if (options.reveal) {
+    focusWindow(mainWindow)
   }
 
   mainWindow.webContents.send(channel, payload)
@@ -12444,17 +12457,10 @@ function systemdGatewayAction(action: 'restart' | 'start' | 'stop'): void {
   })
 }
 
-function trayRecentTaskItems() {
+function trayRecentTasks() {
   const sessions = Array.isArray(quickEntryLastState?.sessions) ? quickEntryLastState.sessions : []
 
-  if (sessions.length === 0) {
-    return [{ enabled: false, label: 'No recent tasks' }]
-  }
-
-  return sessions.map(session => ({
-    click: () => sendTrayCommand('hermes:tray:open-session', session.id),
-    label: session.title || session.id
-  }))
+  return sessions.map(session => ({ id: session.id, title: session.title || session.id }))
 }
 
 function refreshHafiyeTrayMenu(): void {
@@ -12463,46 +12469,43 @@ function refreshHafiyeTrayMenu(): void {
   }
 
   hafiyeTray.setContextMenu(
-    Menu.buildFromTemplate([
-      { enabled: false, label: APP_NAME },
-      { enabled: false, label: '● Running' },
-      { type: 'separator' },
-      { click: () => showQuickEntryWindow(), label: 'Open Composer' },
-      { click: () => focusWindow(mainWindow), label: `Open ${APP_NAME}` },
-      { click: () => sendTrayCommand('hermes:tray:new-task'), label: 'New Task' },
-      { type: 'separator' },
-      { enabled: false, label: 'Mute Microphone (Voice phase)' },
-      { click: () => sendTrayCommand('hermes:tray:toggle-voice'), label: 'Pause Voice' },
-      { click: () => sendTrayCommand('hermes:tray:emergency-stop'), label: 'Emergency Stop' },
-      { enabled: false, label: 'Pause Computer Control (Host tools phase)' },
-      {
-        label: 'Privacy Mode',
-        submenu: [
-          { enabled: false, label: 'NORMAL (Routing phase)' },
-          { enabled: false, label: 'LOCAL_ONLY (Routing phase)' },
-          { enabled: false, label: 'OFFLINE (Routing phase)' }
-        ]
-      },
-      {
-        label: 'Recent Tasks',
-        submenu: trayRecentTaskItems()
-      },
-      { type: 'separator' },
-      { click: () => sendTrayCommand('hermes:tray:open-settings'), label: 'Settings' },
-      { click: () => void shell.openPath(path.join(HAFIYE_STATE_HOME, 'logs')), label: 'Logs' },
-      { type: 'separator' },
-      { click: () => systemdGatewayAction('restart'), label: 'Restart Hafiye' },
-      {
-        click: () => {
-          desktopQuitRequested = true
-          app.quit()
+    Menu.buildFromTemplate(
+      buildHafiyeTrayTemplate({
+        actions: {
+          emergencyStop: () => sendTrayCommand('hermes:tray:emergency-stop'),
+          newTask: () => sendTrayCommand('hermes:tray:new-task', undefined, { reveal: true }),
+          openComposer: () => showQuickEntryWindow(),
+          openDesktop: () => focusWindow(mainWindow),
+          openLogs: () => void shell.openPath(path.join(HAFIYE_STATE_HOME, 'logs')),
+          openRecentTask: sessionId => sendTrayCommand('hermes:tray:open-session', sessionId, { reveal: true }),
+          openSettings: () => sendTrayCommand('hermes:tray:open-settings', undefined, { reveal: true }),
+          quitDesktop: () => {
+            desktopQuitRequested = true
+            app.quit()
+          },
+          restartCore: () => systemdGatewayAction('restart'),
+          setPrivacyMode: mode => sendTrayCommand('hermes:tray:set-privacy', mode),
+          stopCore: () => systemdGatewayAction('stop'),
+          toggleComputerControl: paused => sendTrayCommand('hermes:tray:toggle-computer-control', paused),
+          toggleMicrophone: enabled => sendTrayCommand('hermes:tray:toggle-microphone', enabled),
+          toggleVoice: enabled => sendTrayCommand('hermes:tray:toggle-voice', enabled)
         },
-        label: 'Quit Desktop'
-      },
-      { click: () => systemdGatewayAction('stop'), label: 'Stop Hafiye Core' }
-    ])
+        appName: APP_NAME,
+        recentTasks: trayRecentTasks(),
+        state: hafiyeTrayControlState
+      })
+    )
   )
 }
+
+ipcMain.on('hermes:tray:update-state', (event, state) => {
+  if (!mainWindow || mainWindow.isDestroyed() || event.sender !== mainWindow.webContents) {
+    return
+  }
+
+  hafiyeTrayControlState = normalizeHafiyeTrayControlState(state)
+  refreshHafiyeTrayMenu()
+})
 
 function createHafiyeTray(): void {
   if (hafiyeTray) {

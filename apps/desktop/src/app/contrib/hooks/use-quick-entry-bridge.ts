@@ -15,11 +15,9 @@ import { isAuxiliaryWindow } from '@/store/windows'
 
 interface QuickEntryBridgeParams {
   cancelRun: () => Promise<void> | void
-  openSettings: () => void
   startFreshSessionDraft: () => void
   startVoice: () => void
   submitText: (text: string) => Promise<unknown> | unknown
-  toggleVoice: () => void
 }
 
 // The picker is a capture aid, not a session browser — a handful of recent
@@ -82,25 +80,18 @@ function sessionOptions(): QuickEntrySessionOption[] {
  */
 export function useQuickEntryBridge({
   cancelRun,
-  openSettings,
   startFreshSessionDraft,
   startVoice,
-  submitText,
-  toggleVoice
+  submitText
 }: QuickEntryBridgeParams): void {
-  const previousInteractionRef = useRef($jarvisInteraction.get())
   const submitTextRef = useRef(submitText)
   submitTextRef.current = submitText
   const startFreshRef = useRef(startFreshSessionDraft)
   startFreshRef.current = startFreshSessionDraft
   const cancelRunRef = useRef(cancelRun)
   cancelRunRef.current = cancelRun
-  const openSettingsRef = useRef(openSettings)
-  openSettingsRef.current = openSettings
   const startVoiceRef = useRef(startVoice)
   startVoiceRef.current = startVoice
-  const toggleVoiceRef = useRef(toggleVoice)
-  toggleVoiceRef.current = toggleVoice
 
   useEffect(() => {
     if (isAuxiliaryWindow()) {
@@ -138,19 +129,6 @@ export function useQuickEntryBridge({
 
     const dispose = initQuickEntryBridge()
 
-    const tray = window.hermesDesktop?.tray
-    const offNewTask = tray?.onNewTask(() => startFreshRef.current())
-    const offOpenSettings = tray?.onOpenSettings(() => openSettingsRef.current())
-
-    const offOpenSession = tray?.onOpenSession(sessionId => {
-      const delegate = sessionTileDelegate()
-
-      if (delegate) {
-        void delegate.resumeTile(sessionId).catch(() => undefined)
-      }
-    })
-
-    const offToggleVoice = tray?.onToggleVoice(() => toggleVoiceRef.current())
     const quickEntry = window.hermesDesktop?.quickEntry
     const offStartVoice = quickEntry?.onStartVoice?.(() => startVoiceRef.current())
     const offStop = quickEntry?.onStop?.(() => void cancelRunRef.current())
@@ -158,10 +136,6 @@ export function useQuickEntryBridge({
     return () => {
       setQuickEntrySubmitHandler(null)
       dispose()
-      offNewTask?.()
-      offOpenSettings?.()
-      offOpenSession?.()
-      offToggleVoice?.()
       offStartVoice?.()
       offStop?.()
     }
@@ -180,15 +154,16 @@ export function useQuickEntryBridge({
       return
     }
 
+    let previousInteraction = $jarvisInteraction.get()
+
     const push = () => {
       const activeRuntimeId = $activeSessionId.get()
       const activeState = activeRuntimeId ? $sessionStates.get()[activeRuntimeId] : undefined
       const interaction = $jarvisInteraction.get()
       const activity = interaction.state
-      const previousInteraction = previousInteractionRef.current
       const voiceTurnSettled = shouldCollapseQuickEntryAfterVoice(previousInteraction, interaction)
 
-      previousInteractionRef.current = interaction
+      previousInteraction = interaction
 
       api.pushState({
         activity,

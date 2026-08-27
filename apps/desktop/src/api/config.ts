@@ -90,13 +90,21 @@ export function getHermesConfigSchema(profile?: null | string): Promise<ConfigSc
   })
 }
 
-export function saveHermesConfig(config: HermesConfigRecord, profile?: null | string): Promise<{ ok: boolean }> {
-  return hermesApi<{ ok: boolean }>({
+export const HERMES_CONFIG_SAVED_EVENT = 'hermes:config-saved'
+
+export async function saveHermesConfig(config: HermesConfigRecord, profile?: null | string): Promise<{ ok: boolean }> {
+  const result = await hermesApi<{ ok: boolean }>({
     ...profileScoped(profile),
     path: '/api/config',
     method: 'PUT',
     body: { config }
   })
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(HERMES_CONFIG_SAVED_EVENT, { detail: { config, profile: profile ?? null } }))
+  }
+
+  return result
 }
 
 export function getEnvVars(profile?: null | string): Promise<Record<string, EnvVarInfo>> {
