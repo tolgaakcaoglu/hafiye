@@ -14,7 +14,7 @@ Last updated: 2026-08-27
   when Composer owns focus, with regression coverage.) Earlier source
   identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `db4c9595310bbf78d4e415ffdaaaaa63e9fe768e`.
+  `aa304739645a1db1f0360ac676d30f13c8e691b4`.
 - Earlier documentation closure HEAD:
   `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
   change the Hafiye source checkpoint or installed package source.
