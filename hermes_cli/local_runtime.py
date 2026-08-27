@@ -27,11 +27,13 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+import fcntl
 import psutil
 
 from hermes_constants import get_hafiye_data_home, get_hafiye_state_home
@@ -539,6 +541,30 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+@contextmanager
+def _exclusive_download_lock(lock_path: Path, model_id: str):
+    """Prevent concurrent Desktop/process downloads from sharing one .part file."""
+    _ensure_private_dir(lock_path.parent)
+    lock_file = lock_path.open("a+", encoding="utf-8")
+    try:
+        try:
+            lock_path.chmod(0o600)
+        except OSError:
+            pass
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise LocalRuntimeError(
+                f"A download for model {model_id!r} is already in progress"
+            ) from exc
+        yield
+    finally:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        finally:
+            lock_file.close()
+
+
 def _safe_model_id(value: str) -> str:
     model_id = value.strip()
     if not MODEL_ID_RE.fullmatch(model_id):
@@ -769,42 +795,57 @@ class LocalRuntimeManager:
 
         model_dir = self.paths.models / selected_id
         _ensure_private_dir(model_dir)
-        files = list(catalog["download_files"])
-        for file_entry in files:
-            filename = Path(str(file_entry["filename"])).name
-            if not filename.lower().endswith(GGUF_SUFFIX):
-                raise LocalRuntimeError("Catalog entries may contain only .gguf files")
-            self._download_catalog_file(file_entry, model_dir / filename, headers=headers)
+        lock_path = self.paths.runtime_state / "download-locks" / f"{selected_id}.lock"
+        with _exclusive_download_lock(lock_path, selected_id):
+            # Another caller may have completed immediately before this lock was
+            # acquired. Re-read state before touching the shared partial file.
+            refreshed = next(
+                (item for item in self.model_catalog() if item.get("id") == selected_id),
+                None,
+            )
+            if refreshed and refreshed["install_status"] == "installed":
+                return self.model(selected_id)
+            if refreshed and refreshed["install_status"] == "conflict":
+                raise LocalRuntimeError(
+                    f"Model id {selected_id!r} already exists; delete it before downloading"
+                )
 
-        primary = model_dir / Path(str(files[0]["filename"])).name
-        registered_files = [
-            {
-                "filename": Path(str(entry["filename"])).name,
-                "sha256": str(entry["sha256"]).lower(),
-                "size": int(entry["size"]),
+            files = list(catalog["download_files"])
+            for file_entry in files:
+                filename = Path(str(file_entry["filename"])).name
+                if not filename.lower().endswith(GGUF_SUFFIX):
+                    raise LocalRuntimeError("Catalog entries may contain only .gguf files")
+                self._download_catalog_file(file_entry, model_dir / filename, headers=headers)
+
+            primary = model_dir / Path(str(files[0]["filename"])).name
+            registered_files = [
+                {
+                    "filename": Path(str(entry["filename"])).name,
+                    "sha256": str(entry["sha256"]).lower(),
+                    "size": int(entry["size"]),
+                }
+                for entry in files
+            ]
+            item = {
+                "id": selected_id,
+                "name": catalog["name"],
+                "path": str(primary),
+                "size": int(catalog["size"]),
+                "sha256": registered_files[0]["sha256"],
+                "source": f"catalog:{catalog['source_type']}",
+                "source_url": catalog["source_url"],
+                "catalog_revision": catalog["revision"],
+                "catalog_files": registered_files,
+                "updated_at": _now(),
             }
-            for entry in files
-        ]
-        item = {
-            "id": selected_id,
-            "name": catalog["name"],
-            "path": str(primary),
-            "size": int(catalog["size"]),
-            "sha256": registered_files[0]["sha256"],
-            "source": f"catalog:{catalog['source_type']}",
-            "source_url": catalog["source_url"],
-            "catalog_revision": catalog["revision"],
-            "catalog_files": registered_files,
-            "updated_at": _now(),
-        }
-        _apply_model_capabilities(item)
-        payload = self._registry()
-        payload["models"] = [
-            entry for entry in payload["models"] if entry.get("id") != selected_id
-        ]
-        payload["models"].append(item)
-        self._save_registry(payload)
-        return item
+            _apply_model_capabilities(item)
+            payload = self._registry()
+            payload["models"] = [
+                entry for entry in payload["models"] if entry.get("id") != selected_id
+            ]
+            payload["models"].append(item)
+            self._save_registry(payload)
+            return item
 
     def model(self, model_id: str) -> dict[str, Any]:
         model_id = _safe_model_id(model_id)

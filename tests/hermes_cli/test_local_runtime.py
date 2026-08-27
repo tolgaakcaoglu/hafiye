@@ -226,6 +226,27 @@ def test_catalog_file_download_verifies_digest_and_removes_corrupt_partial(
     assert not corrupt_destination.with_name("corrupt.gguf.part").exists()
 
 
+def test_catalog_download_rejects_concurrent_writer_before_touching_partial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    model_id = "qwen3.8-27b-uncensored-q4_k_m"
+    model_dir = manager.paths.models / model_id
+    lock_path = manager.paths.runtime_state / "download-locks" / f"{model_id}.lock"
+    partial = model_dir / "Qwen3.8-27B-Uncensored-Q4_K_M.gguf.part"
+    monkeypatch.setattr(
+        manager,
+        "_download_catalog_file",
+        lambda *_args, **_kwargs: pytest.fail("a competing writer must not start"),
+    )
+
+    with local_runtime._exclusive_download_lock(lock_path, model_id):
+        with pytest.raises(LocalRuntimeError, match="already in progress"):
+            manager.download_catalog_model(model_id)
+
+    assert not partial.exists()
+
+
 def test_qwen3_large_context_uses_one_server_slot():
     model_path = Path("Qwen3-14B-Q4_K_M.gguf")
     assert local_runtime._parallel_compatibility_args(
