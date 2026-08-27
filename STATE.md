@@ -2793,3 +2793,22 @@ offline replay remain unaccepted. No P25 or release tag was created.
   active during the restart, and it does not replace the required physical
   wake, voice, barge-in, emergency-stop, coding, browser, or repeated-cycle
   acceptance. The route was not changed: Gemini/NORMAL remains configured.
+
+### P24 post-restart local route verification — 2026-08-27
+
+- The corrected installed command
+  `/usr/bin/hafiye --reasoning none ask --provider custom --model
+  /home/tolga/.local/share/hafiye/models/qwen3-4b-q4_k_m.gguf --toolsets
+  terminal ...` exited `0` after the gateway restart. The real agent used the
+  local Qwen3-4B route to create and read a fresh `/tmp` marker; independent
+  host inspection matched `P24_RESTART_LOCAL_CUDA_TOOL_OK` exactly.
+- The installed manifest still reports source
+  `ee380ba75a21b8559ccb523b77b8cd511359a9ff`, pinned upstream
+  `f293e7206b4ddd66042329442c6afebc19a8808d`, and baseline merge
+  `2ac06b131a237916432503ac67bbcada6dbea39e`. Computer-use readiness through
+  `/home/tolga/.local/bin/computer-use-linux doctor` remains true for all four
+  required capabilities with `blockers=[]`.
+- This is local route and recovery support evidence only. Qwen3 practical
+  browser/coding qualification, physical voice acceptance, and active-turn
+  restart recovery remain open; the persistent product route remains
+  Gemini/NORMAL.

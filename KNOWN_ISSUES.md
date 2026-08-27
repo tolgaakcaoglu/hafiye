@@ -1202,3 +1202,6 @@ silently treated as passing.
   and final installed acceptance. The offline replay remains explicitly
   deferred by the user. Gemini generation remains separately blocked by KI-059;
   local browser/coding limitations remain separately recorded by KI-060.
+- Post-restart local Qwen3-4B terminal/file execution and independent marker
+  verification pass, but that evidence does not establish practical browser or
+  coding-agent qualification and does not replace an active-turn restart test.

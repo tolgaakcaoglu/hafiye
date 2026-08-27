@@ -1045,3 +1045,16 @@ is claimed.
   recoverable-turn P24.12 PASS. P24.14 remains open for physical voice,
   repeated re-arm, coding/browser completion, barge-in, emergency-stop, and
   the explicitly deferred offline replay.
+
+### P24 post-restart local route verification — 2026-08-27
+
+- The installed `/usr/bin/hafiye ask` path, explicitly routed to the managed
+  Qwen3-4B GGUF and `terminal`, exited 0 after the gateway restart. The real
+  local agent created/read a fresh marker and independent host inspection
+  matched its exact content.
+- The installed manifest, source/upstream/baseline identities, and
+  `/home/tolga/.local/bin/computer-use-linux doctor` remain consistent; all
+  four required computer-use readiness fields are true and `blockers=[]`.
+- This does not promote P24.9/P24.10/P24.11/P24.12 or P24.14: browser/coding
+  practical qualification, active-turn restart recovery, and physical
+  acceptance are still outstanding. Gemini/NORMAL remains the product route.

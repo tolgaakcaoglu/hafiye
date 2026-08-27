@@ -847,3 +847,14 @@ acceptance. The offline replay remains user-deferred.
 This does not satisfy the active-recoverable-turn requirement in P24.12 or the
 full P24.14 restart acceptance. No route change was left behind; Gemini/NORMAL
 remains the configured product route.
+
+## P24 post-restart local route verification — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-LOCAL-RESTART-01 | Installed local agent after gateway restart | `/usr/bin/hafiye --reasoning none ask --provider custom --model /home/tolga/.local/share/hafiye/models/qwen3-4b-q4_k_m.gguf --toolsets terminal ...`; independent host read-back | Exit `0`; real local agent created/read a fresh marker; independent content matched `P24_RESTART_LOCAL_CUDA_TOOL_OK` exactly | PASS / SUPPORT |
+| P24-CUA-DOCTOR-02 | Installed computer-use readiness after restart | `/home/tolga/.local/bin/computer-use-linux doctor` | `can_register_mcp_tools=true`, `can_build_accessibility_tree=true`, `can_send_development_input=true`, `can_query_windows=true`, `blockers=[]` | PASS / SUPPORT |
+
+The local marker pass does not qualify Qwen3 for the required browser/coding
+flows or satisfy active-turn restart recovery. The persistent route remains
+Gemini/NORMAL and P24 remains open.
