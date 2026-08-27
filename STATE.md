@@ -9,15 +9,14 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 0d98610a2558a09ceba34436f1f4362082ed3e83
-  (This is the P24 Jarvis-loop source checkpoint: canonical interaction
-  state, wake-to-Composer routing, visible Turkish transcript, concise voice
-  presentation, task/tool/progress locality, local-model compatibility,
-  browser-native preference, and installed Desktop packaging.) Earlier source
+- Current Hafiye source HEAD: 8b7c29aa8197595a479e35bb85ef081cec2b7a11
+  (P24 native-browser target recovery: safely discovers one visible browser
+  when Composer owns focus, with regression coverage.) Earlier source
   identities remain recorded below.
 - Previous documentation closure HEAD:
-  `b75f95d09a432914dc8fb1dc6738540b3ed1c36f`; the current P24 documentation
-  update follows source HEAD `0d98610a2558a09ceba34436f1f4362082ed3e83`.
+  `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; this state update records the
+  source checkpoint `8b7c29aa8197595a479e35bb85ef081cec2b7a11` and the new
+  package artifact built from it.
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -103,14 +102,14 @@ replay are accepted.
 
 P22 — CLI: complete. The product command vocabulary, shared backend adapters,
 real service/model/computer checks, explicit Gemini one-shot, and accepted
-upstream-baseline comparison are recorded below. P23 — Final E2E Suite — is
-now the first incomplete phase. The isolated Qwen3-14B local-agent
+upstream-baseline comparison are recorded below. P23 — Final E2E Suite —
+remains open, with P23.4 explicitly user-deferred. The user explicitly
+authorized P24 while P23 remains open; the isolated Qwen3-14B local-agent
 qualification subtask is complete with a measured host resource warning.
-P23.4 remains explicitly user-deferred; the other unaccepted final-machine
-rows remain open and must not be represented as passed.
+Unaccepted P23 rows remain open and must not be represented as passed.
 
 P24 — Hafiye Jarvis experience convergence: source implementation and
-automated verification are complete at `0d98610a`, but the phase remains open
+automated verification are complete at `8b7c29aa`, but the phase remains open
 for installed real-machine acceptance. The user explicitly added this binding
 phase on 2026-08-27 to make the installed product operate as one assistant
 loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
@@ -118,14 +117,16 @@ transcript, short spoken acknowledgement, real tool execution and
 verification, concise completion, then clean wake re-arm. P24 reuses the
 fixed architecture and does not create a second agent/runtime.
 
-The P24 source checkpoint is installed as Debian package `hafiye 0.20.5-1`.
-Its manifest and Electron install stamp both carry source
-`0d98610a2558a09ceba34436f1f4362082ed3e83`; the live Desktop process is under
-`/usr/lib/hafiye/desktop`, the user autostart entry targets that installed
-binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
-returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
-not yet accepted because physical wake/microphone/barge-in/emergency actions,
-the real coding and YouTube scenarios, and the user's deferred offline replay
+The installed package is still `hafiye 0.20.5-1` from source
+`0d98610a2558a09ceba34436f1f4362082ed3e83`; the replacement package built in
+this session carries source `8b7c29aa8197595a479e35bb85ef081cec2b7a11` but
+has not been installed because installation requires the user's visible sudo
+step. The live Desktop process remains under `/usr/lib/hafiye/desktop`, the
+user autostart entry targets that installed binary,
+`hafiye-gateway.service` is enabled/active, and the health endpoint returns
+`ok=true`. P24 implementation and automated checks pass; P24.14 is not yet
+accepted because physical wake/microphone/barge-in/emergency actions, the
+real coding and YouTube scenarios, and the user's deferred offline replay
 still require final real-machine evidence.
 
 The KI-043 source-level privileged-command boundary is now resolved: normal
@@ -133,9 +134,12 @@ terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
 confirmation policies remain enforced, and the normal route is not changed.
 The clean Gemini Composer file-task replay still passes P23.6. The exact
 `Firefox'u aç.` replay remains unaccepted because Gemini performed unrelated
-privileged package remediation; the local Qwen3 browser replay timed out
-without a tool call. The Randevu read-only local-agent replay also timed out,
-so neither P24 coding nor P24 YouTube acceptance is claimed.
+privileged package remediation. The pre-patch installed Qwen3 browser replay
+ended without a verified video result; the source wrapper now has a tested
+focus-recovery path, but the replacement package has not yet been installed.
+The Qwen3-14B Randevu replay resolved the project and ran real read-only
+inspection, but timed out before an evidence-backed diagnosis/OpenHands
+verification. Neither P24 coding nor P24 YouTube acceptance is claimed.
 
 ## Verified working
 
@@ -803,7 +807,8 @@ directory:
 - Native browser path: `browser_native` is an explicit route through the
   already-managed `hafiye-computer-use-linux` MCP tools. It enumerates and
   binds an exact existing Firefox window, performs focus/state/navigation/key
-  operations, and does not create a profile or read cookies.
+  operations, safely recovers one unique visible browser when Composer owns
+  focus, and does not create a profile or read cookies.
 - Real structured probe: an isolated `HERMES_HOME` with
   `browser.backend: off` served a local page; navigation, extraction marker,
   and `browser_download` all passed. The downloaded content was
@@ -845,13 +850,19 @@ bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Keep the pinned Hermes commit, baseline merge commit, and current Hafiye
-   source/test commit `a87eaaba7373a2c23fa73b7ef498b64d67c989f5` separate in
-   all state documents.
-2. Keep the historical five-ID `ACCEPTED_UPSTREAM_BASELINE` whitelist and the
-   current three-ID comparison baseline; investigate any new/different ID.
-3. Begin P22 — CLI — against the accepted P21 backend/Desktop boundary while
-   preserving the shared gateway and Desktop business-logic boundary.
+1. Install the rebuilt package from source
+   `8b7c29aa8197595a479e35bb85ef081cec2b7a11` through the user's visible sudo
+   path, then restart the user gateway and repeat the installed acceptance.
+2. Perform the remaining physical P24 acceptance: consent-enabled wake,
+   Turkish transcript/short speech, three clean cycles, barge-in, and
+   long-running managed-desktop emergency stop. Keep the explicitly deferred
+   offline replay unaccepted.
+3. Re-run the real Randevu and YouTube Composer scenarios with the newly
+   installed package. Do not promote the source-level browser recovery or a
+   tool-only probe to P24 acceptance.
+4. Run the final P24/P23 regression matrices and close P24 only if every
+   installed real-machine acceptance item is genuinely green; do not create
+   P25 or a release tag.
 
 ## Environment changes
 
@@ -2198,8 +2209,9 @@ tests exist. The master roadmap requires the final real-machine sequence.
    by the user's instruction and P23.5 blocked until a real remote endpoint is
    configured.
 3. Do not mark P23 complete or create a P23 completion commit until every
-   required acceptance row has fresh evidence. P24 is now defined but remains
-   planned and unimplemented.
+   required acceptance row has fresh evidence. P24 was defined at this
+   historical checkpoint; its later implementation and open acceptance ledger
+   are recorded below.
 
 ### Post-roadmap implementation audit closure — 2026-08-26
 
@@ -2264,24 +2276,26 @@ by this session.
 
 ### P24 implementation and installed-package verification — 2026-08-27
 
-- Source checkpoint: `0d98610a2558a09ceba34436f1f4362082ed3e83`
-  (`feat: converge Jarvis voice interaction loop`). It adds the canonical
-  `BOOTING` through `REARMING` interaction reducer, shared wake/Composer
-  lifecycle, pre-submit Turkish transcript publication, concise acknowledgement
-  and completion speech, task/tool/model/progress/locality state, local-Qwen
-  compatibility, native-browser preference, and related regression coverage.
+- Source checkpoint: `8b7c29aa8197595a479e35bb85ef081cec2b7a11`
+  (`fix(browser): recover native target when Composer owns focus`). It adds a
+  conservative `list_windows` recovery to the native browser wrapper when
+  Composer owns focus, plus nested-envelope parsing and ambiguous-target
+  fail-closed behavior. The earlier `0d98610a` Jarvis-loop source remains the
+  installed baseline.
 - The clean Electron package was built with `cd apps/desktop && npm run pack`;
-  `npm run test:desktop:all` passed with the clean install stamp
-  `0d98610a2558` on `main`. The real combined package was built with
-  `python scripts/build_deb.py --json`; its manifest records the same source
-  commit, pinned upstream commit, and baseline merge commit.
-- The package was installed through the normal interactive Ptyxis/sudo path.
-  `dpkg-query` reports `hafiye 0.20.5-1`; `/usr/lib/hafiye/package-manifest.json`
-  and `/usr/lib/hafiye/desktop/resources/install-stamp.json` both carry the
-  source checkpoint. The live installed Desktop process is
-  `/usr/lib/hafiye/desktop/hafiye-desktop` and the user autostart entry targets
-  the installed binary.
-- Installed package doctor returned `ok=true` with `blockers=[]`. The user
+  the build wrote clean install stamp `8b7c29aa8197` on `main`. The real
+  combined package was built with
+  `python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb
+  --desktop-dir apps/desktop/release/linux-unpacked --json`; its manifest
+  records source `8b7c29aa`, the pinned upstream commit, and the baseline
+  merge commit.
+- The replacement package has not been installed yet: `dpkg-query` and the
+  live `/usr/lib/hafiye` package still report the prior installed source
+  `0d98610a`. Installing the replacement requires the user's visible
+  interactive sudo step. The live installed Desktop process remains
+  `/usr/lib/hafiye/desktop/hafiye-desktop` and the user autostart entry still
+  targets that installed binary.
+- The prior installed package doctor returned `ok=true` with `blockers=[]`. The user
   gateway is enabled/active and
   `curl http://127.0.0.1:9120/api/health` returned
   `{"ok":true,"version":"0.20.5","auth_required":false}`. Voice doctor
@@ -2301,12 +2315,25 @@ by this session.
   `2 failed, 3 passed`. Only whitelist IDs 2 and 3 failed; IDs 1, 4, and 5
   passed. This is an improvement within `ACCEPTED_UPSTREAM_BASELINE`, not a
   new/different regression.
-- Real local Qwen3-4B terminal/file agent workflows pass. The local browser
-  natural-language replay timed out without a tool call, and the Randevu
-  read-only coding-agent replay timed out after 180 seconds. Neither is
+- Real source-level native browser integration was replayed against the live
+  GNOME/AT-SPI environment with another desktop window owning focus. The
+  wrapper selected the unique Firefox target, executed the four-step
+  navigation sequence, and `computer-use-linux windows` verified the real
+  title `YouTube — Mozilla Firefox`. This is a tool-boundary integration
+  pass, not the required natural-language latest-video acceptance.
+- The pre-patch installed Qwen3-14B browser Composer replay used installed
+  source `0d98610a`; it made native calls but ended without a verified channel,
+  latest-video, or playback result and was terminated. The Qwen3-14B Randevu
+  replay resolved the project and ran real read-only inspection, but timed out
+  before evidence-backed diagnosis/OpenHands verification. Neither is
   promoted to P24 acceptance. Qwen3-14B remains qualified/selectable but
   non-default with `KI-046` resource warning; Qwen2.5-0.5B remains
   validation-only.
+- After the source browser patch, focused native-browser tests returned
+  `16 passed`; the broader relevant P24 backend subset returned `212 passed`;
+  packaging tests returned `15 passed`; Ruff and `git diff --check` passed.
+  These source/package checks do not replace installation or physical voice
+  evidence.
 - P24 remains open. Live configuration still has
   `wake_word.enabled=false` and `voice.auto_tts=false`; auto-arm therefore
   remains correctly consent/setting gated. No physical “Hafiye” wake,
@@ -2317,14 +2344,14 @@ by this session.
 
 ### Exact next actions
 
-1. In the installed Hafiye UI, explicitly enable wake listening after granting
+1. Install the rebuilt package from source `8b7c29aa` through the user's
+   visible sudo path; then restart the user gateway and confirm the installed
+   manifest/stamp before replaying acceptance.
+2. In the installed Hafiye UI, explicitly enable wake listening after granting
    microphone consent; do not infer consent from source or doctor output.
-2. Replay P24.14's physical wake/transcript/short-speech, coding, YouTube,
+3. Replay P24.14's physical wake/transcript/short-speech, coding, YouTube,
    repeated re-arm, barge-in, emergency-stop, reconnect, and affected P23
    checks. Keep the offline item deferred as instructed by the user.
-3. Investigate the local Qwen3 browser and Randevu timeouts with evidence; do
-   not make Qwen3 the default while its host/resource and practical workflow
-   evidence remain incomplete.
 4. Run the final regression matrix after those replays. Mark P24 complete only
    when every required installed real-machine item is green; do not create
    P25 or a release tag.

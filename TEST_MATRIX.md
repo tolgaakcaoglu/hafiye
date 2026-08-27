@@ -597,10 +597,11 @@ current observed comparison subset is 2, 3, and 5.
 
 ## P24 Hafiye Jarvis experience convergence — source implementation and final acceptance
 
-P24 was defined on 2026-08-27 by binding user direction. The source
-implementation checkpoint is `0d98610a2558a09ceba34436f1f4362082ed3e83` and is
-installed in `/usr/lib/hafiye`; implementation and automated evidence below do
-not promote the installed physical P24.14 acceptance to PASS.
+P24 was defined on 2026-08-27 by binding user direction. The current source
+implementation checkpoint is `8b7c29aa8197595a479e35bb85ef081cec2b7a11`.
+The installed package remains the earlier `0d98610a` checkpoint; implementation
+and automated evidence below do not promote the installed physical P24.14
+acceptance to PASS.
 
 | ID | Boundary | Required command / observation | Current evidence | Status |
 |---|---|---|---|---|
@@ -608,8 +609,8 @@ not promote the installed physical P24.14 acceptance to PASS.
 | P24-STATE-01 | Canonical assistant state machine | Targeted Desktop state/bridge/quick-entry/wake/speech tests for BOOTING through REARMING, cancellation, errors, and reconnect | `npx vitest run --project ui` on the P24 state/voice files: 7 files, 93 tests passed; Electron tests: 116 files, 1,615 passed, 3 skipped; `npm run typecheck` passed | PASS / SOURCE + AUTOMATED |
 | P24-AUTO-01 | Login autostart and local wake auto-arm | Real reboot/login with no terminal; verify gateway, Desktop/tray, local wake listener, privacy policy, and explicit-disable behavior | Installed autostart and service are configured and live; source preserves explicit persisted disable. A new physical reboot/login and enabled-microphone auto-arm observation are not recorded in this checkpoint; current persisted wake setting is false | IMPLEMENTED / REAL ACCEPTANCE OPEN |
 | P24-VOICE-01 | Physical wake to visible transcript and concise speech | Say “Hafiye”; observe Composer; speak Turkish; verify whisper.cpp final text, short acknowledgement, real agent/tool execution, concise Piper completion, and wake re-arm | Source/UI tests cover transcript-before-submit and concise speech; voice doctor reports managed Piper/whisper readiness. No physical wake/microphone replay was performed | NOT ACCEPTED / PHYSICAL EVIDENCE REQUIRED |
-| P24-CODE-01 | Jarvis coding workflow | Installed-product prompt “Randevu projesini açıp bug fix yapalım”; verify project/IDE/diagnosis/OpenHands/tests/result/concise speech | Project `randevu` resolves in the registry; OpenHands doctor and project/coding boundary tests passed 11/11. A read-only Qwen3-4B agent replay timed out after 180 seconds without evidence-backed result; the dirty user repository was not modified | NOT ACCEPTED / MODEL-TIMEOUT |
-| P24-YOUTUBE-01 | Jarvis browser/media workflow | Installed-product prompt “YouTube'dan Mertcan Bahar'ın son videosunu aç”; verify channel/latest video/local browser/playback | Browser integration tests passed, but the natural-language local Qwen3-4B replay timed out without a tool call; no incorrect video result is claimed | NOT ACCEPTED / MODEL-TIMEOUT |
+| P24-CODE-01 | Jarvis coding workflow | Installed-product prompt “Randevu projesini açıp bug fix yapalım”; verify project/IDE/diagnosis/OpenHands/tests/result/concise speech | Project `randevu` resolves in the registry; OpenHands doctor and project/coding boundary tests passed 11/11. Qwen3-14B completed project switch and real read-only inspection in the installed path, but the extended replay timed out before evidence-backed diagnosis/OpenHands verification; the dirty user repository was not modified | NOT ACCEPTED / MODEL-TIMEOUT |
+| P24-YOUTUBE-01 | Jarvis browser/media workflow | Installed-product prompt “YouTube'dan Mertcan Bahar'ın son videosunu aç”; verify channel/latest video/local browser/playback | The pre-patch installed Qwen3 replay made native calls but ended without verified channel/latest-video/playback state. Source `8b7c29aa` now has a real GNOME/AT-SPI unique-browser focus-recovery pass; the rebuilt package is not installed and the natural-language scenario remains open | NOT ACCEPTED / INSTALLED REPLAY OPEN |
 | P24-LOCAL-01 | Practical local-first agent route | Capability metadata, installed local GGUF task evidence, LOCAL_ONLY/OFFLINE fail-closed behavior, and Qwen2 validation-only boundary | Registry state is correct: Qwen2.5-0.5B `validation=true, agent=false`; Qwen3-14B/4B `agent=true, tool_calling=true, validation=false, resource_warning=KI-046`. Real Qwen3-4B terminal/file workflows pass; browser/coding practical evidence is incomplete; default remains Gemini and Qwen3 remains selectable/non-default | PARTIAL / ACCEPTANCE OPEN |
 | P24-REPEAT-01 | Completion, barge-in, recovery, and re-arm | Three physical wake/task/completion cycles, “Hafiye dur.” interruption, no-speech/provider/tool recovery, restart/reconnect, and emergency-stop/resume | Reducer, cancellation, emergency, voice, and restart-related automated coverage passes; no three-cycle physical replay, audible barge-in, or real managed-desktop emergency action was performed | NOT ACCEPTED / PHYSICAL EVIDENCE REQUIRED |
 | P24-REGRESSION-01 | Final regression and affected P23 replay | P24 backend/Desktop/package matrix, installed acceptance, affected P23 rows, exact historical comparison, diff check, and clean tree | P24 target backend/local/browser/policy/OpenHands/project matrix: 793 passed, 3 unrelated gateway fixture tests excluded; P23 target backend: 261 passed, 2 skipped; package doctor/health/voice/computer/OpenHands green; exact five-ID comparison: 2 failed, 3 passed, only whitelist IDs 2 and 3; `git diff --check` clean. Affected P23 physical/remote rows remain open | AUTOMATED PASS / FINAL OPEN |
@@ -657,6 +658,17 @@ failures (the full `tests/test_tui_gateway_server.py` run remains `782 passed,
 P23 target backend matrix passed `261 passed, 2 skipped`. The exact historical
 five-ID command returned `2 failed, 3 passed`; failures were only IDs 2 and 3
 from `ACCEPTED_UPSTREAM_BASELINE`, so no new/different regression exists.
+
+## P24 native-browser focus recovery — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-BROWSER-RECOVERY-UNIT | Native browser target recovery and fail-closed ambiguity | `.venv/bin/pytest -q tests/tools/test_hafiye_browser.py`; `.venv/bin/ruff check tools/hafiye_browser.py tests/tools/test_hafiye_browser.py`; `git diff --check` | `16 passed`; Ruff clean; diff check clean. Covers Composer/non-browser focus, unique visible browser recovery, exact target propagation, and ambiguous-browser refusal | PASS / SOURCE |
+| P24-BROWSER-RECOVERY-LIVE | Real GNOME/AT-SPI native route | Source `browser_native("navigate", url="https://www.youtube.com")` after activating a non-browser desktop window; then `computer-use-linux windows --json` | Wrapper used `focused_window` failure recovery → `list_windows`, selected the sole visible Firefox (`window_id=3900583449`), executed `activate_window`, `Ctrl+L`, type, Enter; real Firefox title became `YouTube — Mozilla Firefox` | PASS / TOOL BOUNDARY; NOT FULL E2E |
+| P24-BROWSER-RECOVERY-E2E | Installed natural-language YouTube scenario | Installed `/usr/lib/hafiye` Composer with Qwen3-14B, exact Turkish prompt plus native-window instructions | Installed pre-patch source `0d98610a` still returned repeated no-focused-window errors and was terminated before channel/latest-video/playback verification; replacement package was not installed | NOT ACCEPTED |
+| P24-SOURCE-MATRIX-01 | Source regression subset after browser patch | `.venv/bin/pytest -q` over local-model, runtime-provider, native-browser, policy, coding, OpenHands, project, task, and routing tests | `212 passed`; no new/different failure | PASS / SOURCE |
+| P24-PACKAGE-01 | Clean package artifact after browser patch | `cd apps/desktop && npm run pack`; `.venv/bin/python scripts/build_deb.py --output dist/hafiye_0.20.5_amd64.deb --desktop-dir apps/desktop/release/linux-unpacked --json`; `.venv/bin/pytest -q tests/packaging/test_hafiye_deb.py tests/test_packaging_metadata.py` | Clean Electron stamp `8b7c29aa8197`; Debian manifest source `8b7c29aa`; `15 passed`; package contents include updated `tools/hafiye_browser.py`; live install not performed | PASS / ARTIFACT; INSTALL OPEN |
+| P24-UPSTREAM-RECOVERY-01 | Exact historical five-ID comparison after source patch | Canonical P23 five-node command | `2 failed, 3 passed`; only accepted historical IDs 2 and 3 fail; IDs 1, 4, and 5 pass | ACCEPTED BASELINE / NO NEW REGRESSION |
 
 P24 is not complete until P24.14's installed real-machine items are genuinely
 green. The offline item is explicitly user-deferred and is not marked PASS.

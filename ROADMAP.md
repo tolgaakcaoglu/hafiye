@@ -788,9 +788,10 @@ must be replayed from the installed post-P24 package.
 ## P24 execution plan — Hafiye Jarvis experience convergence
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
-Added by binding user direction on 2026-08-27. The source checkpoint is
-`0d98610a2558a09ceba34436f1f4362082ed3e83`; these implementation marks do not
-promote the physical P24.14 acceptance to PASS.
+Added by binding user direction on 2026-08-27. The current source checkpoint is
+`8b7c29aa8197595a479e35bb85ef081cec2b7a11`; these implementation marks do not
+promote the physical P24.14 acceptance to PASS. The newly rebuilt package is
+not yet installed; the live installed package remains source `0d98610a`.
 
 - [x] P24.1 Capture the installed-product baseline: package/source identity,
       login/autostart state, current wake/voice settings, Composer behavior,
@@ -819,7 +820,9 @@ promote the physical P24.14 acceptance to PASS.
       diagnosis, OpenHands when editing is required, tests and concise speech.
 - [ ] P24.10 Implement and verify the browser/media flow for “YouTube'dan
       Mertcan Bahar'ın son videosunu aç”: correct channel, latest video,
-      open/playback verification and concise speech.
+      open/playback verification and concise speech. A source-level native
+      browser focus-recovery patch is now tested, but the installed
+      natural-language scenario remains unaccepted.
 - [ ] P24.11 Qualify and select a practical agent-capable local-first default
       through registry capability metadata. Keep Qwen2 validation-only and
       retain Qwen3 KI-046/non-default status unless host evidence changes.
@@ -836,9 +839,12 @@ promote the physical P24.14 acceptance to PASS.
       create separate source and documentation closure identities.
 
 P24.1–P24.8 and P24.13 are source-level implementation checkpoints backed by
-targeted tests and the installed package smoke check. P24.9–P24.12 and P24.14
-remain open until their real task/voice/recovery evidence exists. The user's
-explicitly deferred offline replay is not marked PASS.
+targeted tests and the installed package smoke check. The native browser
+focus-recovery correction is in source checkpoint `8b7c29aa` and has a real
+GNOME/AT-SPI tool-boundary replay, but it does not itself satisfy P24.10.
+P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
+evidence exists. The user's explicitly deferred offline replay is not marked
+PASS.
 
 P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,

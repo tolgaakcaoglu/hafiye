@@ -780,6 +780,14 @@ silently treated as passing.
   invalidate Qwen3 qualification. KI-046 remains the separate measured
   resource warning. P23.2 stays NOT ACCEPTED until a fresh agent-qualified
   Composer replay produces the real computer-use call and Firefox verification.
+- P24 exposed a related but distinct focus-recovery defect in the Hafiye native
+  browser wrapper: while Composer owned focus, a targetless navigation could
+  stop after a focused-window lookup even when the live window list contained
+  one usable Firefox. Source/test commit `8b7c29aa` now recovers that unique
+  visible browser and refuses ambiguous selection. A source-level GNOME/AT-SPI
+  replay passed; the installed package still predates this fix, so the
+  natural-language browser acceptance remains open until reinstall and
+  verification.
 
 ## KI-048 — P23.5 self-hosted remote endpoint is not configured
 
@@ -933,29 +941,36 @@ silently treated as passing.
 ## KI-056 — Hafiye Jarvis assistant loop is not product-converged
 
 - Status: OPEN / P24 PRODUCT BLOCKER.
-- The P24 source convergence checkpoint is implemented and tested in
-  `0d98610a2558a09ceba34436f1f4362082ed3e83`. It now has one canonical
+- The P24 source convergence checkpoint plus the native-browser recovery fix
+  are implemented and tested through
+  `8b7c29aa8197595a479e35bb85ef081cec2b7a11`. It now has one canonical
   `BOOTING`→`IDLE_ARMED`→`WAKE_DETECTED`→voice/task/tool→`REARMING` state
   reducer, wake-to-Composer routing, transcript publication before submit,
   concise acknowledgement/completion speech, and task/tool/model/progress
-  state in the compact Composer. The source implementation is not itself the
-  installed real-machine acceptance.
-- The new source checkpoint is installed as `hafiye 0.20.5-1`; package doctor,
-  gateway health, voice doctor, OpenHands doctor, and the four required
-  computer-use readiness flags are green. P24 targeted UI/backend/package
-  tests are green and the exact upstream comparison is `2 failed, 3 passed`
-  with only historical whitelist IDs 2 and 3 failing.
+  state in the compact Composer. The native browser wrapper now safely
+  recovers one unique visible browser when Composer owns focus and fails
+  closed when target selection is ambiguous. The source implementation is not
+  itself the installed real-machine acceptance.
+- The installed package is still `hafiye 0.20.5-1` from source `0d98610a`;
+  the replacement artifact from `8b7c29aa` is built but awaits the user's
+  visible sudo installation step. The prior package doctor, gateway health,
+  voice doctor, OpenHands doctor, and four required computer-use readiness
+  flags are green. Source/browser/package targeted tests are green and the
+  exact upstream comparison is `2 failed, 3 passed` with only historical
+  whitelist IDs 2 and 3 failing.
 - The live configuration deliberately still records
   `wake_word.enabled=false` and `voice.auto_tts=false`. Auto-arm must remain
   consent/setting gated; no source or doctor result is physical microphone
   consent. The actual wake→Composer→microphone→whisper.cpp→Piper sequence,
   audible barge-in, and emergency-stop during a real managed desktop action
   have not been replayed in this acceptance.
-- The local Qwen3-4B terminal/file agent workflows pass, but its natural-
-  language browser replay timed out without a tool call. The read-only
-  Randevu coding-agent replay also timed out after 180 seconds. Qwen3-14B
-  remains agent-qualified/selectable but non-default with the KI-046 resource
-  warning; Qwen2.5-0.5B remains validation-only.
+- The local Qwen3 terminal/file agent workflows pass, but the pre-patch
+  installed Qwen3-14B browser replay ended without verified channel/latest-
+  video/playback state. The Qwen3-14B Randevu replay resolved the project and
+  performed read-only inspection but timed out before evidence-backed
+  diagnosis/OpenHands verification. Qwen3-14B remains
+  agent-qualified/selectable but non-default with the KI-046 resource warning;
+  Qwen2.5-0.5B remains validation-only.
 - P24.9/P24.10/P24.11/P24.12 and P24.14 remain open until the real coding,
   YouTube, local-first selection, recovery/re-arm, repeated-turn and physical
   acceptance evidence exists. P23 remains open; its user-deferred offline

@@ -11,11 +11,11 @@ upstream https://github.com/NousResearch/hermes-agent.git
   f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit:
   2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD (P24 Jarvis interaction-loop source checkpoint;
-  earlier implementation-audit, model identity, Debian bootstrap, Desktop
-  local-GGUF download, Electron packaging, computer-use MCP startup-gate, and
-  KI-043 source/test commits remain below):
-  0d98610a2558a09ceba34436f1f4362082ed3e83
+- Current Hafiye source HEAD (P24 native-browser focus-recovery checkpoint;
+  earlier Jarvis interaction-loop, implementation-audit, model identity,
+  Debian bootstrap, Desktop local-GGUF download, Electron packaging,
+  computer-use MCP startup-gate, and KI-043 source/test commits remain below):
+  8b7c29aa8197595a479e35bb85ef081cec2b7a11
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -87,7 +87,9 @@ The Hafiye source history contains these separable logical groups:
   logs, and the owner-only canonical redacted audit stream for shell, route,
   privacy, cancellation, and root-RPC events.
 - browser-routing: structured Hermes browser reuse and explicit native browser
-  routing through the managed computer-use-linux MCP provider.
+  routing through the managed computer-use-linux MCP provider; the P24
+  follow-up also recovers one unique visible browser when Composer owns focus
+  and refuses ambiguous target selection.
 - structured-browser-download: current official agent-browser download
   command, absolute destination validation, and user-cache Chromium discovery.
 - voice-local-stack: managed whisper.cpp source/build/model runtime with
@@ -135,11 +137,12 @@ exact five test IDs were:
 4. tests/tools/test_termux_api_detection.py::TestDetectAudioEnvironmentTermuxFallback::test_inconclusive_probes_with_binary_does_not_emit_app_warning
 5. tests/hermes_cli/test_doctor.py::test_doctor_reports_vercel_backend_diagnostics
 
-After the P24 source checkpoint, the latest exact-node comparison on source
-`0d98610a` measured `2 failed, 3 passed`. Only historical items 2 and 3
-reproduced; items 1, 4, and 5 passed. No new or different Hafiye regression was
-found. The earlier local browser reconnect diagnostic is tracked as KI-019,
-and the current observed comparison subset is therefore items 2 and 3.
+After the P24 native-browser source checkpoint
+`8b7c29aa8197595a479e35bb85ef081cec2b7a11`, the latest exact-node comparison
+measured `2 failed, 3 passed`. Only historical items 2 and 3 reproduced; items
+1, 4, and 5 passed. No new or different Hafiye regression was found. The
+earlier local browser reconnect diagnostic is tracked as KI-019, and the
+current observed comparison subset is therefore items 2 and 3.
 The exact five remain the historical accepted whitelist; fewer failures update
 the current baseline, while any new/different ID is investigated as a
 regression. The upstream baseline bugs are not fixed by Hafiye.
