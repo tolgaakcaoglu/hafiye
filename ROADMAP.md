@@ -818,11 +818,18 @@ carries this same source checkpoint.
 - [ ] P24.9 Implement and verify the coding-assistant flow for “Randevu
       projesini açıp bug fix yapalım”: project/memory resolution, real IDE,
       diagnosis, OpenHands when editing is required, tests and concise speech.
+      The latest installed Gemini replay resolved the registered project and
+      verified `tests/run.php` (`165 passed, 0 failed`) plus TODO/bug searches
+      without changing the user's dirty worktree, but no concrete bug or
+      OpenHands edit was evidenced; acceptance remains open.
 - [ ] P24.10 Implement and verify the browser/media flow for “YouTube'dan
       Mertcan Bahar'ın son videosunu aç”: correct channel, latest video,
       open/playback verification and concise speech. The installed package's
       Gemini replay reached the correct video/playback state, but did not
-      terminate as a clean Composer task; final acceptance remains open.
+      terminate as a clean Composer task. A later clean-session Gemini 3.5
+      replay spent 131.8 seconds in its first provider call, ran web search,
+      and was stopped before native browser work; final acceptance remains
+      open.
 - [ ] P24.11 Qualify and select a practical agent-capable local-first default
       through registry capability metadata. Keep Qwen2 validation-only and
       retain Qwen3 KI-046/non-default status unless host evidence changes.

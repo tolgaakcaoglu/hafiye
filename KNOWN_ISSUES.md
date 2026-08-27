@@ -971,6 +971,12 @@ silently treated as passing.
   diagnosis/OpenHands verification. Qwen3-14B remains
   agent-qualified/selectable but non-default with the KI-046 resource warning;
   Qwen2.5-0.5B remains validation-only.
+- A new installed Gemini Composer replay of the exact Randevu request first
+  asked for clarification. Its follow-up ran the real project test suite
+  (`tests/run.php`: `165 passed, 0 failed`) and TODO/bug searches, without
+  modifying the user's dirty worktree; no concrete bug was found and no
+  OpenHands edit was evidenced. This is supporting evidence, not P24.9
+  acceptance.
 - P24.9/P24.10/P24.11/P24.12 and P24.14 remain open until the real coding,
   YouTube, local-first selection, recovery/re-arm, repeated-turn and physical
   acceptance evidence exists. P23 remains open; its user-deferred offline
@@ -995,3 +1001,8 @@ silently treated as passing.
 - The active route was restored to `gemini-3.1-flash-lite` after testing. The
   user-supplied credential is stored only in Linux Secret Service and is not
   recorded here.
+- A separate clean-session exact YouTube replay with `gemini-3.5-flash` created
+  the real Gemini client and completed a `web_search`, but the first provider
+  call took 131.8 seconds and the turn was interrupted before any native
+  browser navigation. This is an additional clean-turn failure, not evidence
+  of an invalid API key; P24.10 remains NOT ACCEPTED.

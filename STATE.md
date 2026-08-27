@@ -13,10 +13,11 @@ Last updated: 2026-08-27
   (P24 native-browser target recovery: safely discovers one visible browser
   when Composer owns focus, with regression coverage.) Earlier source
   identities remain recorded below.
-- Previous documentation closure HEAD:
-  `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; this state update records the
-  source checkpoint `8b7c29aa8197595a479e35bb85ef081cec2b7a11` and the new
-  package artifact built from it.
+- Current repository/documentation closure HEAD:
+  `db4c9595310bbf78d4e415ffdaaaaa63e9fe768e`.
+- Earlier documentation closure HEAD:
+  `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
+  change the Hafiye source checkpoint or installed package source.
 
 The three SHA values above are intentionally separate: the first is the
 upstream source pin, the second is the history-preserving baseline merge, and
@@ -126,7 +127,14 @@ binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
 returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
 not yet accepted because physical wake/microphone/barge-in/emergency actions,
 the real coding scenario, clean browser-task completion, and the user's
-deferred offline replay still require final real-machine evidence.
+deferred offline replay still require final real-machine evidence. A new
+installed Gemini coding replay resolved `randevu`, ran its real `tests/run.php`
+suite (`165 passed, 0 failed`) and searched for TODO/bug markers without
+changing the user's dirty worktree; it found no concrete defect to delegate to
+OpenHands, so P24.9 remains open. A new clean-session Gemini 3.5 browser replay
+created the real provider client and ran `web_search`, but its first provider
+call took 131.8 seconds and the turn was stopped before native browser work;
+P24.10 remains open.
 
 The KI-043 source-level privileged-command boundary is now resolved: normal
 terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
@@ -138,9 +146,10 @@ ended without a verified video result. The replacement package is now
 installed and its native browser focus-recovery path has been exercised. A
 Gemini 3.5 replay reached the correct latest-video state, but the model then
 continued into unnecessary file/search tooling and did not close as a clean
-Composer task; P24 browser acceptance therefore remains open. The Qwen3-14B Randevu replay resolved the project and ran real read-only
-inspection, but timed out before an evidence-backed diagnosis/OpenHands
-verification. Neither P24 coding nor P24 YouTube acceptance is claimed.
+Composer task; P24 browser acceptance therefore remains open. The Qwen3-14B
+Randevu replay resolved the project and ran real read-only inspection, but
+timed out before an evidence-backed diagnosis/OpenHands verification. Neither
+P24 coding nor P24 YouTube acceptance is claimed.
 
 ## Verified working
 
@@ -201,6 +210,12 @@ verification. Neither P24 coding nor P24 YouTube acceptance is claimed.
   executed native browser calls; the credential is not the current P24
   blocker. The route was restored to `gemini-3.1-flash-lite` after the
   comparison.
+- A second credential recheck used the same profile-scoped Secret Service
+  references: both aliases resolved to the same non-empty value, the direct
+  `gemini-3.1-flash-lite` `generateContent` probe returned HTTP 200 with the
+  expected marker, and the real Hafiye CLI returned
+  `HAFIYE_ACTIVE_GEMINI_KEY_OK`. No credential value was printed or persisted
+  in the repository.
 - A real `hafiye restart` left `hafiye-gateway.service` active and enabled; a
   real model unload/load cycle restored the Qwen GGUF server with
   `selected_backend=CUDA` and `ready=true`.
