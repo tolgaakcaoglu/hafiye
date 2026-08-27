@@ -5871,6 +5871,8 @@ def run_job(
             }
             if job.get("base_url"):
                 runtime_kwargs["explicit_base_url"] = job.get("base_url")
+            elif hafiye_route.get("base_url"):
+                runtime_kwargs["explicit_base_url"] = hafiye_route["base_url"]
             runtime = resolve_runtime_provider(**runtime_kwargs)
             primary_provider_for_drift = (
                 str(runtime.get("provider") or "").strip().lower()

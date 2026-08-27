@@ -137,6 +137,7 @@ class HafiyeRoute:
     task_override: str | None = None
     fallback_providers: tuple[dict[str, Any], ...] = ()
     locality_policy: str = "NORMAL"
+    base_url: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         """Return a JSON-safe route description for diagnostics/UI state."""
@@ -149,6 +150,7 @@ class HafiyeRoute:
             "task_override": self.task_override,
             "fallback_providers": [dict(entry) for entry in self.fallback_providers],
             "locality_policy": self.locality_policy,
+            "base_url": self.base_url,
         }
 
 
@@ -223,6 +225,136 @@ def _route_entry(config: Mapping[str, Any] | None, slot: str) -> Mapping[str, An
     return raw if isinstance(raw, Mapping) else {}
 
 
+def _entry_base_url(entry: Mapping[str, Any] | None) -> str:
+    """Return the endpoint declared directly on a route/provider entry."""
+    if not isinstance(entry, Mapping):
+        return ""
+    return _clean(entry.get("base_url") or entry.get("url") or entry.get("api"))
+
+
+def _model_identity_set(value: Any) -> set[str]:
+    """Normalize a model id or GGUF path for route-provider matching."""
+    raw = _clean(value).casefold().replace("\\", "/")
+    if not raw:
+        return set()
+    leaf = raw.rsplit("/", 1)[-1]
+    identifiers = {raw, leaf}
+    if raw.endswith(".gguf"):
+        identifiers.add(raw[:-5])
+    if leaf.endswith(".gguf"):
+        identifiers.add(leaf[:-5])
+    return identifiers
+
+
+def _custom_entry_models(entry: Mapping[str, Any]) -> set[str]:
+    """Collect all model spellings declared by one custom provider entry."""
+    identifiers: set[str] = set()
+    for key in ("model", "default_model"):
+        identifiers.update(_model_identity_set(entry.get(key)))
+    models = entry.get("models")
+    if isinstance(models, Mapping):
+        for model_id in models:
+            identifiers.update(_model_identity_set(model_id))
+    elif isinstance(models, list):
+        for item in models:
+            if isinstance(item, Mapping):
+                identifiers.update(
+                    _model_identity_set(item.get("id") or item.get("name"))
+                )
+            else:
+                identifiers.update(_model_identity_set(item))
+    return identifiers
+
+
+def _provider_family(value: Any) -> str:
+    """Return the runtime provider family without making policy imports eager."""
+    normalized = _clean(value).casefold()
+    if not normalized:
+        return ""
+    try:
+        from hermes_cli.auth import resolve_provider
+
+        return _clean(resolve_provider(normalized)).casefold() or normalized
+    except Exception:
+        return normalized
+
+
+def _route_provider_endpoint(
+    config: Mapping[str, Any] | None,
+    provider: Any,
+    model: Any,
+    entry: Mapping[str, Any],
+) -> str:
+    """Resolve the endpoint belonging to the selected Hafiye route.
+
+    Hafiye route slots historically carried only provider/model.  In that
+    shape, a route switch could retain a stale ``model.base_url`` from another
+    provider (notably a global Gemini URL while the default slot selected a
+    local custom GGUF).  Resolve the endpoint from the same normalized custom
+    provider catalog used by Hermes, including model ids stored as absolute
+    GGUF paths.  A direct route-level endpoint always wins.
+    """
+    direct = _entry_base_url(entry)
+    if direct:
+        return direct
+
+    selected_provider = _clean(provider).casefold()
+    target_models = _model_identity_set(model)
+    is_custom_family = _provider_family(selected_provider) == "custom"
+    if not is_custom_family:
+        return ""
+
+    try:
+        from hermes_cli.config import get_compatible_custom_providers
+
+        custom_entries = get_compatible_custom_providers(
+            dict(config) if isinstance(config, Mapping) else None
+        )
+    except Exception:
+        return ""
+
+    first_endpoint = ""
+    for candidate in custom_entries or []:
+        if not isinstance(candidate, Mapping):
+            continue
+        endpoint = _entry_base_url(candidate)
+        if not endpoint:
+            continue
+        if not first_endpoint:
+            first_endpoint = endpoint
+
+        display_name = _clean(candidate.get("name"))
+        provider_key = _clean(candidate.get("provider_key"))
+        try:
+            from hermes_cli.providers import custom_provider_aliases
+
+            provider_matches = selected_provider in {
+                alias.casefold()
+                for alias in custom_provider_aliases(display_name, provider_key)
+            }
+        except Exception:
+            provider_matches = False
+        model_matches = bool(target_models & _custom_entry_models(candidate))
+
+        # Bare ``custom`` is a billing/runtime family, not a unique endpoint.
+        # Select the entry by model when possible; this is the same durable
+        # identity recovery used by Hermes' custom runtime resolver.
+        if model_matches and (provider_matches or selected_provider == "custom"):
+            return endpoint
+        if provider_matches and selected_provider != "custom" and not target_models:
+            return endpoint
+
+    if selected_provider == "custom" and not target_models:
+        return first_endpoint
+    return ""
+
+
+def _same_provider_family(left: Any, right: Any) -> bool:
+    left_norm = _clean(left).casefold()
+    right_norm = _clean(right).casefold()
+    return bool(left_norm and right_norm and _provider_family(left_norm) == _provider_family(right_norm))
+
+
 def _task_entry(config: Mapping[str, Any] | None, kind: str) -> Mapping[str, Any]:
     section = _section(config)
     overrides = section.get("task_overrides")
@@ -291,7 +423,7 @@ def resolve_hafiye_route(
         source = "config" if entry.get("provider") or entry.get("model") else "runtime"
     slot_locality_policy = normalize_privacy_mode(entry.get("locality_policy", "NORMAL"))
     task_kind = override.kind
-    policy_base_url = effective_base_url
+    policy_base_url = ""
 
     if task_kind in {"gemini", "remote"}:
         task_entry = _task_entry(config, task_kind)
@@ -326,6 +458,32 @@ def resolve_hafiye_route(
         selected_provider = override.provider
         source = "task:provider"
 
+    if task_kind not in {"gemini", "remote"}:
+        if _clean(base_url) and explicit_overrides:
+            # A caller-supplied direct alias endpoint is authoritative over
+            # the persisted route, just like its explicit provider/model.
+            policy_base_url = _clean(base_url)
+        else:
+            route_base_url = _route_provider_endpoint(
+                config,
+                selected_provider,
+                selected_model,
+                entry,
+            )
+            if route_base_url:
+                policy_base_url = route_base_url
+            elif effective_base_url and (
+                not selected_provider
+                or _same_provider_family(
+                    selected_provider,
+                    _clean(configured_model.get("provider"))
+                    if isinstance(configured_model, Mapping)
+                    else "",
+                )
+                or _same_provider_family(selected_provider, provider)
+            ):
+                policy_base_url = effective_base_url
+
     if selected_mode in {"LOCAL_ONLY", "OFFLINE"}:
         # An empty provider/base URL means the existing Hermes resolver still
         # has to choose the runtime. Let the agent boundary validate it after
@@ -351,6 +509,7 @@ def resolve_hafiye_route(
         task_override=task_kind or ("mode:" + override.mode if override.mode else None),
         fallback_providers=fallback,
         locality_policy=slot_locality_policy,
+        base_url=policy_base_url,
     )
 
 

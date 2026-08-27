@@ -56,6 +56,7 @@ class CLIAgentSetupMixin:
             requested_provider = _route.provider or requested_provider
             if _route.model:
                 self.model = _route.model
+            route_base_url = _route.base_url or self._explicit_base_url
         except Exception as exc:
             ChatConsole().print(f"[bold red]Hafiye policy failed: {exc}[/]")
             return False
@@ -63,7 +64,7 @@ class CLIAgentSetupMixin:
             runtime = resolve_runtime_provider(
                 requested=requested_provider,
                 explicit_api_key=self._explicit_api_key,
-                explicit_base_url=self._explicit_base_url,
+                explicit_base_url=route_base_url or None,
             )
         except Exception as exc:
             _primary_exc = exc

@@ -436,7 +436,11 @@ def _apply_runtime_agent_overrides(
     return runtime_kwargs
 
 
-def _resolve_request_runtime_agent_kwargs(provider: str, target_model: Optional[str] = None) -> Dict[str, Any]:
+def _resolve_request_runtime_agent_kwargs(
+    provider: str,
+    target_model: Optional[str] = None,
+    explicit_base_url: Optional[str] = None,
+) -> Dict[str, Any]:
     """Resolve runtime kwargs for a one-request provider override.
 
     This mirrors gateway.run._resolve_runtime_agent_kwargs(), but accepts an
@@ -446,7 +450,11 @@ def _resolve_request_runtime_agent_kwargs(provider: str, target_model: Optional[
     from hermes_cli.runtime_provider import resolve_runtime_provider, format_runtime_provider_error, _get_model_config
 
     try:
-        runtime = resolve_runtime_provider(requested=provider, target_model=target_model)
+        runtime = resolve_runtime_provider(
+            requested=provider,
+            target_model=target_model,
+            explicit_base_url=explicit_base_url,
+        )
     except Exception as exc:
         raise RuntimeError(format_runtime_provider_error(exc)) from exc
 
@@ -2907,6 +2915,7 @@ class APIServerAdapter(BasePlatformAdapter):
             *,
             target_model: Optional[str],
             required: bool,
+            explicit_base_url: Optional[str] = None,
         ) -> Optional[Dict[str, Any]]:
             provider_name = _clean_request_string(provider)
             if not provider_name:
@@ -2915,6 +2924,7 @@ class APIServerAdapter(BasePlatformAdapter):
                 return _resolve_request_runtime_agent_kwargs(
                     provider_name,
                     target_model=target_model or None,
+                    explicit_base_url=explicit_base_url,
                 )
             except Exception as exc:
                 try:
@@ -3096,11 +3106,17 @@ class APIServerAdapter(BasePlatformAdapter):
         if hafiye_route.provider and (
             hafiye_route.provider != _clean_request_string(runtime_kwargs.get("provider"))
             or (hafiye_route.model and hafiye_route.model != model)
+            or (
+                hafiye_route.base_url
+                and hafiye_route.base_url.rstrip("/")
+                != str(runtime_kwargs.get("base_url") or "").rstrip("/")
+            )
         ):
             _route_runtime = _resolve_provider_runtime(
                 hafiye_route.provider,
                 target_model=hafiye_route.model or model,
                 required=True,
+                explicit_base_url=hafiye_route.base_url or None,
             )
             if _route_runtime:
                 _apply_runtime_agent_overrides(runtime_kwargs, _route_runtime)

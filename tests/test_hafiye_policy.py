@@ -60,6 +60,55 @@ def test_normal_local_task_uses_default_route():
     assert route.task_override == "mode:LOCAL_ONLY"
 
 
+def test_local_only_route_resolves_named_custom_endpoint_over_remote_global_model():
+    config = _config()
+    config["model"] = {
+        "default": "gemini-3.1-flash-lite",
+        "provider": "gemini",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta",
+    }
+    config["custom_providers"] = [
+        {
+            "name": "Local llama.cpp",
+            "base_url": "http://127.0.0.1:11435/v1",
+            "models": {
+                "/home/tolga/.local/share/hafiye/models/qwen3-4b-q4_k_m.gguf": {}
+            },
+        }
+    ]
+    config["hafiye"]["privacy_mode"] = "LOCAL_ONLY"
+    config["hafiye"]["route_slots"]["default"] = {
+        "provider": "custom",
+        "model": "qwen3-4b-q4_k_m",
+    }
+
+    route = resolve_hafiye_route(config)
+
+    assert route.provider == "custom"
+    assert route.model == "qwen3-4b-q4_k_m"
+    assert route.privacy_mode == "LOCAL_ONLY"
+    assert route.base_url == "http://127.0.0.1:11435/v1"
+    assert route.as_dict()["base_url"] == "http://127.0.0.1:11435/v1"
+
+
+def test_route_level_endpoint_is_used_for_selected_provider():
+    config = _config()
+    config["model"] = {
+        "default": "gemini-3.1-flash-lite",
+        "provider": "gemini",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta",
+    }
+    config["hafiye"]["route_slots"]["default"] = {
+        "provider": "custom",
+        "model": "local-model",
+        "base_url": "http://127.0.0.1:19001/v1",
+    }
+
+    route = resolve_hafiye_route(config)
+
+    assert route.base_url == "http://127.0.0.1:19001/v1"
+
+
 def test_explicit_remote_task_uses_configured_remote_override():
     route = resolve_hafiye_route(_config(), task_text="Bu görev için remote modeli kullan")
 

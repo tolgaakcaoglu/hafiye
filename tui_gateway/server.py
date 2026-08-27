@@ -7150,11 +7150,17 @@ def _resolve_hafiye_agent_runtime(
     if route.provider and (
         route.provider != current_provider
         or (route.model and route.model != model)
+        or (
+            route.base_url
+            and route.base_url.rstrip("/")
+            != str(runtime.get("base_url") or "").rstrip("/")
+        )
     ):
         resolution = _resolve_runtime_with_fallback(
             {
                 "requested": route.provider,
                 "target_model": route.model or model,
+                "explicit_base_url": route.base_url or None,
             }
         )
         runtime = resolution.runtime

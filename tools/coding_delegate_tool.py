@@ -114,7 +114,11 @@ def _parent_route(parent_agent: Any) -> tuple[dict[str, Any], str]:
     base_url = ""
     if isinstance(entry, dict):
         base_url = str(entry.get("base_url") or "").strip()
-    base_url = base_url or str(getattr(parent_agent, "base_url", "") or "").strip()
+    base_url = (
+        str(route.base_url or "").strip()
+        or base_url
+        or str(getattr(parent_agent, "base_url", "") or "").strip()
+    )
     return (
         {
             "provider": route.provider,

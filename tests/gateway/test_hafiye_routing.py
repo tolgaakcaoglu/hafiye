@@ -126,3 +126,49 @@ def test_native_gateway_rejects_remote_task_under_local_only(monkeypatch):
         assert "forbids remote/cloud" in str(exc)
     else:
         raise AssertionError("LOCAL_ONLY must reject a Gemini task before agent creation")
+
+
+def test_native_gateway_passes_route_endpoint_when_global_url_is_stale(monkeypatch):
+    config = _config()
+    config["model"] = {
+        "default": "gemini-3.1-flash-lite",
+        "provider": "gemini",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta",
+    }
+    config["custom_providers"] = [
+        {
+            "name": "Local llama.cpp",
+            "base_url": "http://127.0.0.1:11435/v1",
+            "models": {"local-model": {}},
+        }
+    ]
+    config["hafiye"]["route_slots"]["default"] = {
+        "provider": "custom",
+        "model": "local-model",
+    }
+    monkeypatch.setattr("gateway.run._load_gateway_config", lambda: config)
+
+    calls = []
+
+    def resolve_runtime_provider(*, requested=None, target_model=None, **kwargs):
+        calls.append((requested, target_model, kwargs.get("explicit_base_url")))
+        if requested == "custom":
+            return _runtime("custom", "http://127.0.0.1:11435/v1")
+        return _runtime(requested or "gemini", "https://generativelanguage.googleapis.com/v1beta")
+
+    monkeypatch.setattr(
+        "hermes_cli.runtime_provider.resolve_runtime_provider",
+        resolve_runtime_provider,
+    )
+
+    runner = object.__new__(GatewayRunner)
+    runner._service_tier = None
+    result = runner._resolve_turn_agent_config(
+        "yerel görev",
+        "gemini-3.1-flash-lite",
+        _runtime("gemini", "https://generativelanguage.googleapis.com/v1beta"),
+    )
+
+    assert result["model"] == "local-model"
+    assert result["runtime"]["provider"] == "custom"
+    assert calls[-1] == ("custom", "local-model", "http://127.0.0.1:11435/v1")

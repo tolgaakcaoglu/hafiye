@@ -460,10 +460,16 @@ def _run_agent(
     if hafiye_route.model:
         effective_model = hafiye_route.model
 
+    route_base_url = (
+        explicit_base_url_from_alias
+        or (hafiye_route.base_url or "").strip()
+        or None
+    )
+
     runtime = resolve_runtime_provider(
         requested=effective_provider,
         target_model=effective_model or None,
-        explicit_base_url=explicit_base_url_from_alias,
+        explicit_base_url=route_base_url,
     )
 
     # Pull in explicit toolsets when provided; otherwise use whatever the user

@@ -8292,12 +8292,18 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         if hafiye_route.provider and (
             hafiye_route.provider != runtime_kwargs.get("provider")
             or (hafiye_route.model and hafiye_route.model != model)
+            or (
+                hafiye_route.base_url
+                and hafiye_route.base_url.rstrip("/")
+                != str(runtime_kwargs.get("base_url") or "").rstrip("/")
+            )
         ):
             from hermes_cli.runtime_provider import resolve_runtime_provider
 
             _route_runtime = resolve_runtime_provider(
                 requested=hafiye_route.provider,
                 target_model=hafiye_route.model or model,
+                explicit_base_url=hafiye_route.base_url or None,
             )
             for _key in (
                 "api_key",
