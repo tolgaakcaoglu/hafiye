@@ -887,6 +887,22 @@ further reduction within `ACCEPTED_UPSTREAM_BASELINE`, with no new/different
 regression. P24 remains open because installed voice, recovery/re-arm,
 coding/browser, and physical acceptance evidence is still incomplete.
 
+### P24 current credential and installed Qwen3-14B Composer smoke — 2026-08-27
+
+- The active Gemini credential was rechecked through the installed
+  Secret-Service-backed CLI path. Model discovery/configuration remains valid,
+  while a fresh `gemini-3.1-flash-lite` generation probe returned HTTP 429
+  `RESOURCE_EXHAUSTED` / `prepayment credits are depleted`; KI-059 remains
+  open and no Gemini acceptance is claimed.
+- A real isolated installed Desktop Composer run selected the qualified local
+  Qwen3-14B GGUF route, executed the file-write and read-back tool path, and
+  independently verified the expected file content. The bounded capture did
+  not reach a stable final assistant response, so this is supporting installed
+  tool-path evidence only; P24.9/P24.11/P24.14 remain unchecked.
+- Temporary test configuration was removed afterward. The local managed
+  server is restored to Qwen3-4B with `AUTO → CUDA`, and the product route is
+  Gemini/NORMAL. No source commit or phase status changed.
+
 The final post-source automated rerun after `4bfe7add` recorded targeted
 backend `153 passed`, P24 UI `93 passed`, Desktop typecheck exit 0, packaging
 tests `15 passed`, and the canonical five-node comparison `3 passed, 2 failed`.

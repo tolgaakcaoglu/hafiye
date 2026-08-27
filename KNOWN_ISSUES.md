@@ -1088,6 +1088,10 @@ silently treated as passing.
   `/v1beta/openai/chat/completions` endpoint also returned HTTP 429. This
   excludes the native Gemini adapter as the cause of the current quota error;
   no transport fallback was introduced.
+- The latest installed `/usr/bin/hafiye ask --provider gemini
+  --model gemini-3.1-flash-lite` probe again hydrated the configured keyring
+  aliases and received the same HTTP 429 after retries. This is the current
+  provider response, not evidence of a wrong key or model-picker mismatch.
 - P24 browser acceptance remains NOT ACCEPTED until a real clean Composer
   turn can reach `browser_native`, verify the target video, and terminate
   cleanly. Restore or reconfigure usable Gemini API quota through the normal
@@ -1135,3 +1139,10 @@ silently treated as passing.
   logged `n_slots=1` and returned `AUTO→CUDA`/HTTP-200 health. A subsequent
   local model attempt still exhibited a model-side repeated tool/log action,
   so no browser or coding acceptance is claimed.
+- A separate real isolated run of the installed Desktop with Qwen3-14B used
+  the Composer UI and completed the file-write/read-back tool path; the
+  independent file content matched the requested value. The 130-second
+  capture still showed an active `assistant-stream` at its boundary, so this
+  strengthens installed local-agent evidence without resolving the practical
+  final-response/browser/coding acceptance. KI-046 remains the resource
+  warning and P24 remains open.

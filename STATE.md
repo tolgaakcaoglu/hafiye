@@ -120,9 +120,18 @@ transcript, short spoken acknowledgement, real tool execution and
 verification, concise completion, then clean wake re-arm. P24 reuses the
 fixed architecture and does not create a second agent/runtime.
 
+Current active checkpoint (2026-08-27): the active Gemini credential is
+correctly hydrated from Linux Secret Service and model discovery succeeds, but
+fresh generation is rejected by the provider with HTTP 429
+`RESOURCE_EXHAUSTED` / `prepayment credits are depleted` (KI-059). The
+installed packaged Desktop has also completed a real Qwen3-14B Composer
+tool-path smoke through the local CUDA runtime; the tool result and independent
+file verification are recorded below, but the bounded capture did not reach a
+stable final assistant response, so no P24 acceptance row is promoted.
+
 The installed package is `hafiye 0.20.5-1` and its
 `/usr/lib/hafiye/package-manifest.json` now carries source
-`4bfe7add708935f9d364dc65364e5c58e58c9144`, the pinned upstream commit, and
+`bc8151b42f0e35d4e9b908b5696adeb51a92d86b`, the pinned upstream commit, and
 the baseline merge commit. The package was rebuilt and reinstalled through the
 existing `hafiye-rootd` boundary; the selected-route endpoint fix is now in
 the installed backend. The live Desktop process remains under
@@ -2626,3 +2635,29 @@ offline replay remain unaccepted. No P25 or release tag was created.
   accepted whitelist IDs 2 and 3 failed. Gemini remains the configured
   `NORMAL` route, with the same Secret-Service credential and current provider
   quota blocker KI-059; no credential was printed or written to the repository.
+
+### P24 installed Qwen3-14B Composer smoke and Gemini credential probe — 2026-08-27
+
+- A real isolated launch of the installed `/usr/lib/hafiye/desktop/hafiye-desktop`
+  used the actual Composer UI, the installed gateway, and the agent-qualified
+  Qwen3-14B GGUF route. The UI showed `Qwen3 14b Q4_k_m.Gguf · Med` and
+  `Gateway ready`. The natural-language Composer task created
+  `/tmp/hafiye-p24-qwen14-composer-20260827-2.txt`; the visible tool trace
+  showed the file write and `Read ... 79ms`, and independent host inspection
+  found the exact expected file content. This is real installed tool-path
+  evidence, but the 130-second bounded capture still showed an
+  `assistant-stream` at its boundary; a stable final assistant response was
+  not accepted, so P24.9/P24.11/P24.14 remain open.
+- The latest installed `/usr/bin/hafiye ask --provider gemini
+  --model gemini-3.1-flash-lite` probe used the configured Secret Service
+  credential and returned the provider's HTTP 429
+  `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` response after
+  retries. `hafiye config check` reported both Gemini aliases hydrated; no raw
+  credential was printed or written.
+- After the tests, the temporary 14B catalog entry was removed and the
+  managed server was restored to Qwen3-4B. Health is HTTP 200 with
+  `requested_backend=AUTO`, `selected_backend=CUDA`; the product route is
+  restored to `gemini/gemini-3.1-flash-lite` with `NORMAL` privacy.
+- No source changed in this checkpoint. The current Hafiye source remains
+  `bc8151b42f0e35d4e9b908b5696adeb51a92d86b`; pinned upstream and baseline
+  merge identities remain unchanged. P24 is still open.

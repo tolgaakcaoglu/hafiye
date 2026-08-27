@@ -771,3 +771,14 @@ but Qwen3-4B still produced a repeated tool/log loop and the real native
 browser accessibility tree remains non-actionable. It does not promote P24.9,
 P24.10, P24.11, or P24.14 to PASS. The product route remains Gemini/NORMAL;
 Gemini generation remains blocked by KI-059.
+
+## P24 current credential and installed Qwen3-14B Composer smoke — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-QWEN14-PACKAGED-COMPOSER-01 | Installed Desktop → gateway → local agent → terminal/file verification | Isolated Playwright launch of `/usr/lib/hafiye/desktop/hafiye-desktop` with a completed onboarding state and the real Composer `Gönder` action; local Qwen3-14B managed route was selected | UI showed Qwen3-14B and `Gateway ready`; the Composer task wrote and read `/tmp/hafiye-p24-qwen14-composer-20260827-2.txt`; independent content matched exactly. The bounded 130-second capture still had an `assistant-stream`, so stable final-response completion was not claimed | PASS / SUPPORTING INSTALLED TOOL PATH; P24 ACCEPTANCE STILL OPEN |
+| P24-GEMINI-CREDENTIAL-RECHECK-06 | Active Gemini credential and generation availability | `/usr/bin/hafiye ask --provider gemini --model gemini-3.1-flash-lite 'Yalnızca OK yaz.'`; `/usr/bin/hafiye config check` | Keyring-backed aliases were hydrated and the real request returned HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` after retries; no raw credential was printed | NOT ACCEPTED / KI-059 |
+
+The temporary local 14B catalog entry was removed after the replay. The
+managed local server is Qwen3-4B with `AUTO → CUDA`, the product route is
+Gemini/NORMAL, and no P24 acceptance status was changed.
