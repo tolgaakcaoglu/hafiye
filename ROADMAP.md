@@ -790,9 +790,10 @@ must be replayed from the installed post-P24 package.
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
 `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`; these implementation marks do not
-promote the physical P24.14 acceptance to PASS. The installed package still
-carries the prior source checkpoint
-`8b7c29aa8197595a479e35bb85ef081cec2b7a11`.
+promote the physical P24.14 acceptance to PASS. The installed package was
+rebuilt/reinstalled from packaging closure
+`2c749c93d643d22c0e16ca2318aab4473094a4ef`, which contains the source
+checkpoint above; physical acceptance remains open.
 
 - [x] P24.1 Capture the installed-product baseline: package/source identity,
       login/autostart state, current wake/voice settings, Composer behavior,
@@ -835,9 +836,10 @@ carries the prior source checkpoint
       through registry capability metadata. Keep Qwen2 validation-only and
       retain Qwen3 KI-046/non-default status unless host evidence changes.
       Registry metadata remains correct and a real source CLI `LOCAL_ONLY`
-      Qwen3-4B terminal workflow now passes; the route endpoint correction is
-      committed in `10bd0b8f`, but installed and browser/coding qualification
-      remain open.
+      Qwen3-4B terminal workflow now passes; the installed `/usr/bin/hafiye`
+      path also passed `P24_INSTALLED_LOCAL_ROUTE_OK` under `LOCAL_ONLY` after
+      the route endpoint correction in `10bd0b8f`. Browser/coding practical
+      qualification and default-route selection remain open.
 - [ ] P24.12 Make completion, failure, cancellation, no-speech, provider/tool
       error, restart and suspend/resume converge on clean microphone release,
       Composer lifecycle and verified wake re-arm.
@@ -853,8 +855,8 @@ carries the prior source checkpoint
 P24.1–P24.8 and P24.13 are source-level implementation checkpoints backed by
 targeted tests and the installed package smoke check. The native browser
 focus-recovery correction is in source checkpoint `8b7c29aa`; the selected
-route endpoint correction is in `10bd0b8f` and has a real source CLI
-`LOCAL_ONLY` Qwen3-4B route replay. These source checks have a real
+route endpoint correction is in `10bd0b8f` and has real source and installed
+CLI `LOCAL_ONLY` Qwen3-4B route replays. These source checks have a real
 GNOME/AT-SPI tool-boundary replay, but they do not themselves satisfy P24.10.
 P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
 evidence exists. The user's explicitly deferred offline replay is not marked

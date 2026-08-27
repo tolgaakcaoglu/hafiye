@@ -952,12 +952,14 @@ silently treated as passing.
   recovers one unique visible browser when Composer owns focus and fails
   closed when target selection is ambiguous. The source implementation is not
   itself the installed real-machine acceptance.
-- The installed package is `hafiye 0.20.5-1` from source `8b7c29aa`; its
-  package manifest also records the pinned upstream and baseline merge SHAs.
+- The installed package is `hafiye 0.20.5-1` with packaging-closure source
+  `2c749c93d643d22c0e16ca2318aab4473094a4ef`; its manifest also records the
+  pinned upstream and baseline merge SHAs. That package contains source route
+  checkpoint `10bd0b8f`.
   The package doctor, gateway health, voice doctor, OpenHands doctor, and four
   required computer-use readiness flags are green. Source/browser/package
-  targeted tests are green and the exact upstream comparison is `2 failed, 3
-  passed` with only historical whitelist IDs 2 and 3 failing.
+  targeted tests are green and the latest exact upstream comparison is `3
+  passed, 2 failed` with only historical whitelist IDs 2 and 3 failing.
 - The live configuration deliberately still records
   `wake_word.enabled=false` and `voice.auto_tts=false`. Auto-arm must remain
   consent/setting gated; no source or doctor result is physical microphone
@@ -967,6 +969,8 @@ silently treated as passing.
 - The local Qwen3 terminal/file agent workflows pass, and source-level
   `LOCAL_ONLY` route resolution now correctly selects the configured loopback
   endpoint even while the global model remains Gemini (KI-058 is resolved).
+  The installed `/usr/bin/hafiye` replay also selected that loopback endpoint,
+  returned `P24_INSTALLED_LOCAL_ROUTE_OK`, and restored Gemini/NORMAL afterward.
   The pre-patch installed Qwen3-14B browser replay ended without verified channel/latest-
   video/playback state. The Qwen3-14B Randevu replay resolved the project and
   performed read-only inspection but timed out before evidence-backed
@@ -1012,8 +1016,8 @@ silently treated as passing.
 ## KI-058 — LOCAL_ONLY route inherited the global provider endpoint
 
 - Status: RESOLVED in source commit
-  `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`; installed package update remains
-  pending.
+  `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927` and verified in the installed
+  package closure `2c749c93d643d22c0e16ca2318aab4473094a4ef`.
 - When the Hafiye default slot selected `custom/qwen3-4b` but the global
   `model.provider` and `model.base_url` still described Gemini, the shared
   route policy inspected the stale Gemini URL. `LOCAL_ONLY` therefore rejected
@@ -1026,4 +1030,6 @@ silently treated as passing.
   targeted policy/native-gateway/Desktop tests passed, and a real source CLI
   `LOCAL_ONLY` Qwen3-4B CUDA run executed `terminal`, returned
   `P24_LOCAL_ONLY_QWEN3_OK`, and exited 0. The route/privacy configuration was
-  restored to Gemini/NORMAL. No cloud call was used in that local test.
+  restored to Gemini/NORMAL. A real installed `/usr/bin/hafiye` replay then
+  returned `P24_INSTALLED_LOCAL_ROUTE_OK` under `LOCAL_ONLY` and exited 0 before
+  the same restoration. No cloud call was used in either local test.

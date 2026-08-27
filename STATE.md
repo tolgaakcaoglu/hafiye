@@ -15,7 +15,7 @@ Last updated: 2026-08-27
   selected endpoint, with regression coverage.) Earlier source identities
   remain recorded below.
 - Current repository/documentation closure HEAD:
-  `aa304739645a1db1f0360ac676d30f13c8e691b4`.
+  `2c749c93d643d22c0e16ca2318aab4473094a4ef`.
 - Earlier documentation closure HEAD:
   `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
   change the Hafiye source checkpoint or installed package source.
@@ -120,10 +120,13 @@ verification, concise completion, then clean wake re-arm. P24 reuses the
 fixed architecture and does not create a second agent/runtime.
 
 The installed package is `hafiye 0.20.5-1` and its
-`/usr/lib/hafiye/package-manifest.json` still carries source
-`8b7c29aa8197595a479e35bb85ef081cec2b7a11`, the pinned upstream commit, and
-the baseline merge commit; the new route-endpoint source checkpoint has not
-yet been repackaged/reinstalled. The live Desktop process remains under
+`/usr/lib/hafiye/package-manifest.json` now carries packaging closure source
+`2c749c93d643d22c0e16ca2318aab4473094a4ef` (the package was built from the
+repository state containing source checkpoint
+`10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`), the pinned upstream commit, and
+the baseline merge commit. The package was rebuilt and reinstalled through the
+existing `hafiye-rootd` boundary; the selected-route endpoint fix is now in
+the installed backend. The live Desktop process remains under
 `/usr/lib/hafiye/desktop`, the user autostart entry targets that installed
 binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
 returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
@@ -161,8 +164,10 @@ absolute `.gguf` catalog key) instead of reusing the stale Gemini URL. The
 fix is covered by policy and native-gateway regression tests and has passed a
 real source CLI run in `LOCAL_ONLY`: Qwen3-4B on CUDA executed `terminal`,
 verified `P24_LOCAL_ONLY_QWEN3_OK`, and exited 0. The live route was restored
-to `gemini/gemini-3.1-flash-lite` with `NORMAL` privacy afterward. The
-installed package still predates this source fix.
+to `gemini/gemini-3.1-flash-lite` with `NORMAL` privacy afterward. The same
+installed `/usr/bin/hafiye` path later completed
+`P24_INSTALLED_LOCAL_ROUTE_OK` through the loopback Qwen3-4B/CUDA server under
+`LOCAL_ONLY`, then restored Gemini/NORMAL again.
 
 ## Verified working
 
@@ -2408,13 +2413,23 @@ by this session.
 - The exact historical five-node upstream comparison returned `3 passed, 2
   failed`; only accepted whitelist IDs 2 and 3 failed. IDs 1, 4, and 5 passed;
   no new/different failure was introduced.
+- The Desktop was repacked with `npm run pack`, the unified
+  `dist/hafiye_0.20.5_amd64.deb` was rebuilt, and the package was reinstalled
+  through `hafiye-rootd` using `apt-get --reinstall`. The installed manifest
+  reports source `2c749c93d643d22c0e16ca2318aab4473094a4ef`, while the pinned
+  upstream and baseline merge values remain unchanged. Installed package
+  doctor returned `OK` with only the existing optional `cargo: not found`
+  warning; gateway health remained HTTP 200 and the new Desktop logged install
+  stamp `2c749c93d643`.
+- A real installed `/usr/bin/hafiye ask --safe-mode` replay temporarily set
+  `custom/qwen3-4b` plus `LOCAL_ONLY`; Qwen3-4B/CUDA executed `terminal`,
+  verified `P24_INSTALLED_LOCAL_ROUTE_OK`, and exited 0. The route/privacy
+  configuration was restored to Gemini/NORMAL after the replay.
 
 ### Exact next actions
 
-1. Repackage/reinstall the new source checkpoint before treating this route
-   fix as installed-product evidence; then explicitly enable wake listening
-   after granting microphone consent. Do not infer consent from source or
-   doctor output.
+1. Explicitly enable wake listening after granting microphone consent. Do not
+   infer consent from source or doctor output.
 2. Replay P24.14's physical wake/transcript/short-speech, coding, YouTube,
    repeated re-arm, barge-in, emergency-stop, reconnect, and affected P23
    checks. Keep the offline item deferred as instructed by the user.

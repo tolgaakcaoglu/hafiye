@@ -15,7 +15,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  8b7c29aa8197595a479e35bb85ef081cec2b7a11
+  10bd0b8f32b99b9a7ad91317dfb2f88b5204b927
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -675,6 +675,14 @@ P0 computer-use acceptance requires:
   runtime, privacy policy, upstream commit, or history was changed. The exact
   five-ID comparison remains 3 failed/2 passed with only accepted IDs 2, 3,
   and 5.
+- The selected-route endpoint hardening commit is
+  `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`. It resolves the matching
+  custom-provider loopback endpoint for a selected local route even when the
+  global model URL describes Gemini, and carries that endpoint through CLI,
+  gateway, Desktop/TUI, API, and cron callers. Policy/native-gateway tests and
+  real source and installed `LOCAL_ONLY` Qwen3-4B terminal replays passed. This
+  is a Hafiye routing integration change; the pinned Hermes source, baseline
+  merge, and upstream history remain unchanged.
 
 ## P17 Control Center patch group
 
