@@ -718,3 +718,14 @@ acceptance can be accepted. No raw credential is stored in this matrix.
 The installed route was restored to `gemini/gemini-3.1-flash-lite` with
 `NORMAL` locality after the local replay. The local terminal PASS does not
 promote P24.10, P24.12, physical voice acceptance, or P24.14 to PASS.
+
+## P24 Gemini credential and model-picker recheck — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-GEMINI-CREDENTIAL-RECHECK-05 | Credential identity, model discovery, and generation availability | Installed Python keyring read through both Hafiye profile paths (masked only); direct `GET /v1beta/models`; direct `generateContent` for `gemini-3.1-flash-lite`, `gemini-3.1-flash-lite-preview`, and `gemini-3.5-flash-lite` | Secret Service backend is active; configured aliases resolve to one identical credential; model discovery HTTP 200 lists all three; current generation calls all return HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted`. An earlier immediate marker probe was HTTP 200, so credential resolution is proven but current generation is not stable | NOT ACCEPTED / KI-059 |
+| P24-GEMINI-DESKTOP-MODEL-01 | Installed Desktop model identity and real Composer provider path | Isolated Playwright launch of `/usr/lib/hafiye/desktop/hafiye-desktop`; model picker search `gemini-3.1-flash-lite`; keyboard selection; Composer marker submission | UI selected actual `gemini-3.1-flash-lite-preview` (not the global `gemini-3.5-flash` default); gateway issued three provider retries and received HTTP 429 before any browser tool event | NOT ACCEPTED / KI-059 |
+
+The key identity and route-selection checks pass, but the provider's current
+generation response prevents a clean Gemini browser acceptance. No raw
+credential is stored in this matrix.

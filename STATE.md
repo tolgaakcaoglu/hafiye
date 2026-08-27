@@ -2522,3 +2522,38 @@ in P24 and P23; no phase is closed here.
 P24 remains open. P24.9 coding, P24.10 clean browser, P24.12 recovery/re-arm,
 physical voice/barge-in/emergency acceptance, and the explicitly deferred
 offline replay remain unaccepted. No P25 or release tag was created.
+
+### P24 Gemini credential and Desktop model-selection recheck — 2026-08-27
+
+- The installed Hafiye Python environment reports the Linux Secret Service
+  backend (`keyring.backends.SecretService.Keyring`). In the active product
+  profile `/home/tolga/.config/hafiye`, both `GEMINI_API_KEY` and
+  `GOOGLE_API_KEY` references resolve to the same non-empty credential and
+  match the credential supplied by the user; only masked metadata was used.
+  The `/home/tolga/.local/share/hafiye` compatibility profile has only its
+  `GOOGLE_API_KEY` alias, and it resolves to that same credential rather than
+  to a second/old key. No raw credential was printed or written to the
+  repository.
+- With that key, the real Gemini `GET /v1beta/models` request returned HTTP
+  200 and listed `gemini-3.1-flash-lite`,
+  `gemini-3.1-flash-lite-preview`, and `gemini-3.5-flash-lite`. Current direct
+  `generateContent` probes for those three model IDs all returned HTTP 429
+  `RESOURCE_EXHAUSTED` with Google's exact `Your prepayment credits are
+  depleted` message. An earlier immediate direct/Hafiye marker probe did
+  return HTTP 200, but subsequent independent calls reproduced the 429;
+  authentication and model discovery are therefore proven, while current
+  generation availability is not.
+- A clean isolated launch of the installed Desktop used the actual model
+  picker, searched `gemini-3.1-flash-lite`, and selected the real model ID
+  `gemini-3.1-flash-lite-preview` (the UI display text omits the `-preview`
+  suffix). The Composer marker was submitted through the installed UI; the
+  gateway used `gemini-3.1-flash-lite-preview` and received the same 429 after
+  three retries before any browser tool event. This rules out the earlier
+  suspicion that the clean test was silently using Qwen or the Settings
+  `gemini-3.5-flash` default.
+- The route was left restored as `gemini/gemini-3.1-flash-lite` with `NORMAL`
+  locality; `hafiye-gateway.service` remains active and its health endpoint
+  returns `ok=true`. KI-059 remains the exact operational blocker for a clean
+  Gemini Composer/browser acceptance. Hafiye cannot infer the Google Console
+  project's credit ledger from an API key; the provider's current response
+  must be resolved in the project attached to this key before retrying.

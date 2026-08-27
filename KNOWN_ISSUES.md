@@ -1050,12 +1050,24 @@ silently treated as passing.
   metadata was inspected and the raw credential was neither printed nor
   written to repository files. The installed gateway also logged its normal
   `Linux Secret Service: applied 2 secrets` hydration.
-- Fresh real requests through installed `/usr/bin/hafiye ask` for both
-  `gemini-3.5-flash` and `gemini-3.1-flash-lite` returned Gemini HTTP 429
-  `RESOURCE_EXHAUSTED` with the provider message `Your prepayment credits are
-  depleted`. A real installed Composer replay showed the same provider error
-  before any browser tool event. This is a provider project/quota response,
-  not the earlier Qwen/Gemini endpoint mismatch.
+- The same credential was re-read through the installed Python environment in
+  both `/home/tolga/.config/hafiye` and `/home/tolga/.local/share/hafiye`:
+  the former's `GEMINI_API_KEY`/`GOOGLE_API_KEY` aliases and the latter's
+  `GOOGLE_API_KEY` alias resolve to one identical non-empty value. A real
+  `GET /v1beta/models` request returned HTTP 200 and listed the requested
+  Gemini models, so this is not a missing-key or authentication failure.
+- Current direct `generateContent` requests for
+  `gemini-3.1-flash-lite`, `gemini-3.1-flash-lite-preview`, and
+  `gemini-3.5-flash-lite`, plus installed `/usr/bin/hafiye ask` probes,
+  returned Gemini HTTP 429 `RESOURCE_EXHAUSTED` with the provider message
+  `Your prepayment credits are depleted`. A previous immediate direct/Hafiye
+  marker probe returned HTTP 200 before later independent calls returned 429;
+  current generation availability is intermittent/blocked even though the
+  credential resolves correctly. A clean installed Desktop model-picker
+  replay selected the actual `gemini-3.1-flash-lite-preview` model and its
+  Composer marker call received the same 429 before any browser tool event.
+  This is a provider project/quota response, not the earlier Qwen/Gemini
+  endpoint mismatch.
 - P24 browser acceptance remains NOT ACCEPTED until a real clean Composer
   turn can reach `browser_native`, verify the target video, and terminate
   cleanly. Restore or reconfigure usable Gemini API quota through the normal

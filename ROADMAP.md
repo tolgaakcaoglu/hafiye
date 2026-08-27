@@ -871,6 +871,18 @@ the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,
 computer-use-linux, OpenHands and rootd machinery into Hafiye's primary Jarvis
 assistant loop.
 
+### P24 credential/model-picker recheck — 2026-08-27
+
+The active Gemini credential was revalidated through both configured Secret
+Service profiles: the aliases resolve to one identical credential. Gemini
+model discovery returned HTTP 200, and the installed Desktop model picker was
+verified to select the real `gemini-3.1-flash-lite-preview` identity rather
+than the global `gemini-3.5-flash` default. Current `generateContent` calls,
+including the clean installed Composer marker turn, still receive HTTP 429
+`RESOURCE_EXHAUSTED` / `prepayment credits are depleted` before any tool
+event. This remains KI-059 and keeps P24.10/P24.14 open; no Gemini acceptance
+is claimed.
+
 ### P24 local Desktop and credential evidence — 2026-08-27
 
 - A real installed Desktop Composer route using the model picker selected
