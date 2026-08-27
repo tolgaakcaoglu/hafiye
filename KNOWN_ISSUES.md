@@ -1188,3 +1188,17 @@ silently treated as passing.
 - This repair is not a physical emergency-stop PASS: the required shortcut must
   still be pressed while a real managed computer-use action is active, with
   cancellation/root-RPC/TTS gating observed. No P24 phase status changed.
+
+## KI-062 — P24 physical and active-turn acceptance remains outstanding
+
+- Status: OPEN / ACCEPTANCE GAP; no new source regression established.
+- A real user-scoped gateway restart recovered to `enabled/active`, health HTTP
+  200, a fresh WebSocket `gateway.ready`, and GUI-owned wake status with
+  `enabled=true`, `available=true`, and `capture=client`. This is support
+  evidence only: the restart did not interrupt an active recoverable Composer
+  task.
+- P24 still requires physical wake/transcript/short-speech, three clean wake
+  cycles, physical barge-in and emergency-stop, completed coding/browser flows,
+  and final installed acceptance. The offline replay remains explicitly
+  deferred by the user. Gemini generation remains separately blocked by KI-059;
+  local browser/coding limitations remain separately recorded by KI-060.

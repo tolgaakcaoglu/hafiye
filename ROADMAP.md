@@ -1031,3 +1031,17 @@ is claimed.
   `AUTO → CUDA` with Qwen3-4B and one slot, and the gateway is enabled/active
   with HTTP-200 health. These results do not satisfy P24.14's physical or
   complete task-flow acceptance, so P24 remains unchecked.
+
+### P24 gateway restart/reconnect support recheck — 2026-08-27
+
+- A real user-scoped `systemctl --user restart hafiye-gateway.service` changed
+  the gateway PID from `17216` to `87501`; the installed service recovered to
+  `enabled/active` and `/api/health` returned HTTP 200.
+- A new authenticated WebSocket received `gateway.ready`; `wake.status` then
+  reported the GUI wake owner, `enabled=true`, `available=true`, and
+  `capture=client`. The diagnostic socket was not the wake owner, so the
+  Desktop lease remained authoritative.
+- This strengthens restart/reconnect support evidence but is not an active
+  recoverable-turn P24.12 PASS. P24.14 remains open for physical voice,
+  repeated re-arm, coding/browser completion, barge-in, emergency-stop, and
+  the explicitly deferred offline replay.

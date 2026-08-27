@@ -836,3 +836,14 @@ and completion contract. The temporary runtime state was restored afterward.
 These support checks do not claim physical wake, speech, barge-in,
 emergency-stop, coding/browser completion, re-arm, or restart-recovery
 acceptance. The offline replay remains user-deferred.
+
+## P24 gateway restart/reconnect support recheck — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-RESTART-SUPPORT-01 | Persistent gateway restart | `systemctl --user restart hafiye-gateway.service`; health poll; `systemctl --user is-active/is-enabled` | Main PID changed `17216 → 87501`; health recovered to HTTP 200/`ok=true`; service remained `active` and `enabled` | PASS / SUPPORT |
+| P24-RECONNECT-SUPPORT-01 | Desktop-compatible WebSocket reconnect and wake ownership | Fresh authenticated `/api/ws` connection; `gateway.ready`; `wake.status` with GUI/client capture | `gateway.ready` received; wake reported `owner_surface=gui`, `enabled=true`, `available=true`, `capture=client`; diagnostic socket `owned_by_caller=false` | PASS / SUPPORT |
+
+This does not satisfy the active-recoverable-turn requirement in P24.12 or the
+full P24.14 restart acceptance. No route change was left behind; Gemini/NORMAL
+remains the configured product route.

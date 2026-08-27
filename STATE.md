@@ -2775,3 +2775,21 @@ offline replay remain unaccepted. No P25 or release tag was created.
   re-arm, barge-in, emergency-stop and gateway-recovery acceptances remain
   unverified; the offline replay remains explicitly deferred. P24 is still
   open and no release tag or P25 was created.
+
+### P24 gateway restart/reconnect support recheck — 2026-08-27
+
+- A real `systemctl --user restart hafiye-gateway.service` was performed from
+  the installed environment. The gateway main PID changed from `17216` to
+  `87501`; after the normal startup delay, `/api/health` returned HTTP 200 with
+  `ok=true`, and the service remained `enabled` and `active`.
+- A fresh authenticated WebSocket connection received `gateway.ready`. A
+  follow-up `wake.status` reported `owner_surface=gui`, `enabled=true`,
+  `available=true`, and `capture=client`; the diagnostic connection itself
+  reported `owned_by_caller=false`, so it did not steal the Desktop wake lease.
+  The installed Desktop process remained running and the gateway log recorded
+  the expected Secret Service hydration of two provider aliases.
+- This is real gateway/reconnect/re-arm support evidence. It is not the full
+  P24.12 acceptance because no recoverable long-running Composer task was
+  active during the restart, and it does not replace the required physical
+  wake, voice, barge-in, emergency-stop, coding, browser, or repeated-cycle
+  acceptance. The route was not changed: Gemini/NORMAL remains configured.
