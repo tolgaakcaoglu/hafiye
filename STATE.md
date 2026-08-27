@@ -16,7 +16,7 @@ Last updated: 2026-08-27
   bounded defaults of 200 nodes and depth 20.) Earlier source identities
   remain recorded below.
 - Current repository/documentation closure HEAD:
-  `e9b38d13c` (substantive documentation closure; this metadata pointer is
+  `bf66856ba` (substantive documentation closure; this metadata pointer is
   kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
   `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
