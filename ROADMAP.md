@@ -789,9 +789,10 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`8b7c29aa8197595a479e35bb85ef081cec2b7a11`; these implementation marks do not
-promote the physical P24.14 acceptance to PASS. The installed package now
-carries this same source checkpoint.
+`10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`; these implementation marks do not
+promote the physical P24.14 acceptance to PASS. The installed package still
+carries the prior source checkpoint
+`8b7c29aa8197595a479e35bb85ef081cec2b7a11`.
 
 - [x] P24.1 Capture the installed-product baseline: package/source identity,
       login/autostart state, current wake/voice settings, Composer behavior,
@@ -833,6 +834,10 @@ carries this same source checkpoint.
 - [ ] P24.11 Qualify and select a practical agent-capable local-first default
       through registry capability metadata. Keep Qwen2 validation-only and
       retain Qwen3 KI-046/non-default status unless host evidence changes.
+      Registry metadata remains correct and a real source CLI `LOCAL_ONLY`
+      Qwen3-4B terminal workflow now passes; the route endpoint correction is
+      committed in `10bd0b8f`, but installed and browser/coding qualification
+      remain open.
 - [ ] P24.12 Make completion, failure, cancellation, no-speech, provider/tool
       error, restart and suspend/resume converge on clean microphone release,
       Composer lifecycle and verified wake re-arm.
@@ -847,8 +852,10 @@ carries this same source checkpoint.
 
 P24.1–P24.8 and P24.13 are source-level implementation checkpoints backed by
 targeted tests and the installed package smoke check. The native browser
-focus-recovery correction is in source checkpoint `8b7c29aa` and has a real
-GNOME/AT-SPI tool-boundary replay, but it does not itself satisfy P24.10.
+focus-recovery correction is in source checkpoint `8b7c29aa`; the selected
+route endpoint correction is in `10bd0b8f` and has a real source CLI
+`LOCAL_ONLY` Qwen3-4B route replay. These source checks have a real
+GNOME/AT-SPI tool-boundary replay, but they do not themselves satisfy P24.10.
 P24.9–P24.12 and P24.14 remain open until their real task/voice/recovery
 evidence exists. The user's explicitly deferred offline replay is not marked
 PASS.

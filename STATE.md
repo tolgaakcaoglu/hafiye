@@ -9,10 +9,11 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: 8b7c29aa8197595a479e35bb85ef081cec2b7a11
-  (P24 native-browser target recovery: safely discovers one visible browser
-  when Composer owns focus, with regression coverage.) Earlier source
-  identities remain recorded below.
+- Current Hafiye source HEAD: 10bd0b8f32b99b9a7ad91317dfb2f88b5204b927
+  (P24 route-endpoint hardening: selected Hafiye routes no longer inherit a
+  stale global provider URL; CLI/gateway/Desktop/cron/API paths carry the
+  selected endpoint, with regression coverage.) Earlier source identities
+  remain recorded below.
 - Current repository/documentation closure HEAD:
   `aa304739645a1db1f0360ac676d30f13c8e691b4`.
 - Earlier documentation closure HEAD:
@@ -110,7 +111,7 @@ qualification subtask is complete with a measured host resource warning.
 Unaccepted P23 rows remain open and must not be represented as passed.
 
 P24 — Hafiye Jarvis experience convergence: source implementation and
-automated verification are complete at `8b7c29aa`, but the phase remains open
+automated verification are complete at `10bd0b8f`, but the phase remains open
 for installed real-machine acceptance. The user explicitly added this binding
 phase on 2026-08-27 to make the installed product operate as one assistant
 loop: login auto-arm, “Hafiye” wake, visible Composer, visible Turkish
@@ -119,9 +120,10 @@ verification, concise completion, then clean wake re-arm. P24 reuses the
 fixed architecture and does not create a second agent/runtime.
 
 The installed package is `hafiye 0.20.5-1` and its
-`/usr/lib/hafiye/package-manifest.json` carries source
+`/usr/lib/hafiye/package-manifest.json` still carries source
 `8b7c29aa8197595a479e35bb85ef081cec2b7a11`, the pinned upstream commit, and
-the baseline merge commit. The live Desktop process remains under
+the baseline merge commit; the new route-endpoint source checkpoint has not
+yet been repackaged/reinstalled. The live Desktop process remains under
 `/usr/lib/hafiye/desktop`, the user autostart entry targets that installed
 binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
 returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
@@ -150,6 +152,17 @@ Composer task; P24 browser acceptance therefore remains open. The Qwen3-14B
 Randevu replay resolved the project and ran real read-only inspection, but
 timed out before an evidence-backed diagnosis/OpenHands verification. Neither
 P24 coding nor P24 YouTube acceptance is claimed.
+
+The source-level local-first route defect found during P24 was fixed in
+`10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`: when the selected Hafiye slot
+uses `custom/qwen3-4b` while the global model still points at Gemini, route
+policy now resolves the matching custom-provider endpoint (including an
+absolute `.gguf` catalog key) instead of reusing the stale Gemini URL. The
+fix is covered by policy and native-gateway regression tests and has passed a
+real source CLI run in `LOCAL_ONLY`: Qwen3-4B on CUDA executed `terminal`,
+verified `P24_LOCAL_ONLY_QWEN3_OK`, and exited 0. The live route was restored
+to `gemini/gemini-3.1-flash-lite` with `NORMAL` privacy afterward. The
+installed package still predates this source fix.
 
 ## Verified working
 
@@ -184,6 +197,10 @@ P24 coding nor P24 YouTube acceptance is claimed.
   is `agent=true, tool_calling=true, validation=false` with
   `resource_warning=KI-046`. The current test route is
   `gemini/gemini-3.1-flash-lite`; Qwen3 is selectable and not default.
+- The selected-route endpoint fix is source-verified: a custom route matched
+  its configured loopback provider by model/GGUF identity even while the
+  global model URL was Gemini; the real `LOCAL_ONLY` Qwen3-4B agent call
+  returned `P24_LOCAL_ONLY_QWEN3_OK` through `terminal`, with no cloud route.
 - The Desktop Models settings page now exposes the existing managed
   `/api/local-runtime/models/download` contract: a Hugging Face repo, GGUF
   filename, optional model id/revision/SHA-256, and a Download GGUF action.
@@ -2369,10 +2386,35 @@ by this session.
   YouTube replay, or offline replay was claimed. P23 remains open and P23.4
   remains explicitly user-deferred.
 
+### P24 route-endpoint hardening — 2026-08-27
+
+- Source commit: `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`.
+- Red-first evidence: the new policy regression reproduced the real defect as
+  `1 failed, 12 passed` when a `LOCAL_ONLY` custom Qwen3 route inherited the
+  global Gemini URL.
+- After the fix, policy/native-gateway/Desktop route tests passed `23`; the
+  combined CLI/provider/route tests passed `91`; API server tests passed
+  `133` (72 framework warnings); and the agent/cron/persistence group passed
+  `121` (only existing async resource warnings).
+- The wider P24 source matrix passed `806` tests. Three unchanged
+  `tests/test_tui_gateway_server.py` fixture/order assumptions failed because
+  the live managed MCP surface is present; these remain diagnostics, not new
+  Hafiye route regressions. Ruff, compileall, and `git diff --check` passed.
+- Real source CLI acceptance used the running Qwen3-4B CUDA llama.cpp server:
+  temporary `custom/qwen3-4b-q4_k_m` + `LOCAL_ONLY` route, exact terminal
+  marker `P24_LOCAL_ONLY_QWEN3_OK`, exit code 0, session DB tool result, then
+  restoration to Gemini/NORMAL. No raw Gemini credential was printed or
+  persisted.
+- The exact historical five-node upstream comparison returned `3 passed, 2
+  failed`; only accepted whitelist IDs 2 and 3 failed. IDs 1, 4, and 5 passed;
+  no new/different failure was introduced.
+
 ### Exact next actions
 
-1. In the installed Hafiye UI, explicitly enable wake listening after granting
-   microphone consent; do not infer consent from source or doctor output.
+1. Repackage/reinstall the new source checkpoint before treating this route
+   fix as installed-product evidence; then explicitly enable wake listening
+   after granting microphone consent. Do not infer consent from source or
+   doctor output.
 2. Replay P24.14's physical wake/transcript/short-speech, coding, YouTube,
    repeated re-arm, barge-in, emergency-stop, reconnect, and affected P23
    checks. Keep the offline item deferred as instructed by the user.

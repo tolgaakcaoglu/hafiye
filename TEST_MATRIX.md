@@ -598,10 +598,11 @@ current observed comparison subset is 2, 3, and 5.
 ## P24 Hafiye Jarvis experience convergence — source implementation and final acceptance
 
 P24 was defined on 2026-08-27 by binding user direction. The current source
-implementation checkpoint is `8b7c29aa8197595a479e35bb85ef081cec2b7a11`, and
-the installed package now carries the same checkpoint. Implementation and
-automated evidence below do not promote the installed physical P24.14
-acceptance to PASS.
+implementation checkpoint is `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`; the
+installed package still carries the prior source checkpoint
+`8b7c29aa8197595a479e35bb85ef081cec2b7a11`. Implementation and automated
+evidence below do not promote the installed physical P24.14 acceptance to
+PASS.
 
 | ID | Boundary | Required command / observation | Current evidence | Status |
 |---|---|---|---|---|
@@ -613,12 +614,13 @@ acceptance to PASS.
 | P24-YOUTUBE-01 | Jarvis browser/media workflow | Installed-product prompt “YouTube'dan Mertcan Bahar'ın son videosunu aç”; verify channel/latest video/local browser/playback | Post-install Gemini 3.5 replay used the real Composer and native route; click succeeded and a fresh final state showed `YAYINCI KIŞKIRTMA : EVE DÖNÜŞ`, `Mevtcan Bahav`, a concrete `youtube.com/watch` URL, and `Pause`/playing. The model then entered unnecessary file/search tooling and did not close cleanly, so this is supporting evidence only; final natural-language acceptance remains open | NOT ACCEPTED / CLEAN TURN OPEN |
 | P24-CODE-GEMINI-REPLAY-02 | Installed Gemini coding replay | Real packaged Composer exact request, then clarification response asking for test/bug inspection; session evidence and `git -C /home/tolga/projects/randevu-musteri-saas status --short` | Gemini route resolved project `randevu`; `php /home/tolga/projects/randevu-musteri-saas/tests/run.php` returned `Tests: 165 passed, 0 failed`; TODO/bug searches ran; the user's worktree remained unchanged. No concrete defect or OpenHands edit was found, so the required coding acceptance is not complete | SUPPORTING EVIDENCE / NOT ACCEPTED |
 | P24-YOUTUBE-GEMINI-REPLAY-02 | Installed Gemini clean browser replay | New Desktop session, model picker `Gemini 3.5 flash`, exact prompt “YouTube'dan Mertcan Bahar'ın son videosunu aç”, real Firefox precondition at `https://www.youtube.com/` | Gemini client was created; API call #1 took `131.8s`, then `web_search` ran. The turn was stopped during API call #2 before native browser navigation/playback verification; no credential error occurred | NOT ACCEPTED / PROVIDER-TURN TIMEOUT |
-| P24-LOCAL-01 | Practical local-first agent route | Capability metadata, installed local GGUF task evidence, LOCAL_ONLY/OFFLINE fail-closed behavior, and Qwen2 validation-only boundary | Registry state is correct: Qwen2.5-0.5B `validation=true, agent=false`; Qwen3-14B/4B `agent=true, tool_calling=true, validation=false, resource_warning=KI-046`. Real Qwen3-4B terminal/file workflows pass; browser/coding practical evidence is incomplete; default remains Gemini and Qwen3 remains selectable/non-default | PARTIAL / ACCEPTANCE OPEN |
+| P24-LOCAL-01 | Practical local-first agent route | Capability metadata, local GGUF task evidence, LOCAL_ONLY/OFFLINE fail-closed behavior, and Qwen2 validation-only boundary | Registry state is correct: Qwen2.5-0.5B `validation=true, agent=false`; Qwen3-14B/4B `agent=true, tool_calling=true, validation=false, resource_warning=KI-046`. A real source CLI `LOCAL_ONLY` Qwen3-4B terminal task passed through CUDA, loopback custom endpoint, and session DB tool evidence. Browser/coding practical evidence is incomplete; default remains Gemini and Qwen3 remains selectable/non-default | PARTIAL / ROUTE SMOKE PASS; ACCEPTANCE OPEN |
+| P24-LOCAL-ROUTE-02 | Selected local route must not inherit global remote endpoint | Policy route resolution, native gateway route construction, and real source CLI `LOCAL_ONLY` task with global Gemini config plus custom Qwen3 route | Red-first policy test reproduced `1 failed, 12 passed`; source fix `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927` now resolves the matching loopback custom endpoint, passes targeted route tests, and real Qwen3-4B `terminal` returned `P24_LOCAL_ONLY_QWEN3_OK` with exit 0. Installed package has not yet been rebuilt/reinstalled | PASS / SOURCE + REAL CLI; INSTALL ACCEPTANCE OPEN |
 | P24-REPEAT-01 | Completion, barge-in, recovery, and re-arm | Three physical wake/task/completion cycles, “Hafiye dur.” interruption, no-speech/provider/tool recovery, restart/reconnect, and emergency-stop/resume | Reducer, cancellation, emergency, voice, and restart-related automated coverage passes; no three-cycle physical replay, audible barge-in, or real managed-desktop emergency action was performed | NOT ACCEPTED / PHYSICAL EVIDENCE REQUIRED |
 | P24-GEMINI-CREDENTIAL-01 | Installed Gemini credential and provider route | Secret Service alias/read verification plus direct `generateContent` marker probe; packaged Composer Gemini client creation | Linux Secret Service backend is available; `GEMINI_API_KEY` and `GOOGLE_API_KEY` are present and equal; configured route restored to `gemini/gemini-3.1-flash-lite`; direct Gemini probe returned HTTP 200 with `GEMINI_KEY_OK`; temporary `gemini-3.5-flash` Composer replay also created the real Gemini client | PASS / CREDENTIAL + PROVIDER |
 | P24-GEMINI-CLI-01 | Hafiye provider credential resolution | `.venv/bin/hafiye ask --safe-mode --provider gemini --model gemini-3.1-flash-lite 'Reply with exactly HAFIYE_ACTIVE_GEMINI_KEY_OK'` | Real Hafiye CLI path returned `HAFIYE_ACTIVE_GEMINI_KEY_OK` without exposing the credential | PASS |
 | P24-GEMINI-CREDENTIAL-RECHECK-02 | Active Gemini credential recheck | Profile-scoped `keyring_references`/`get_secret`, direct `generateContent` marker probe, and the same Hafiye CLI marker command | Secret Service backend active; both Gemini aliases non-empty and equal; direct probe HTTP 200 with `HAFIYE_KEY_RECHECK_OK`; Hafiye CLI returned `HAFIYE_ACTIVE_GEMINI_KEY_OK`; raw credential was not printed | PASS / CREDENTIAL |
-| P24-REGRESSION-01 | Final regression and affected P23 replay | P24 backend/Desktop/package matrix, installed acceptance, affected P23 rows, exact historical comparison, diff check, and clean tree | P24 target backend/local/browser/policy/OpenHands/project matrix: 793 passed, 3 unrelated gateway fixture tests excluded; P23 target backend: 261 passed, 2 skipped; package doctor/health/voice/computer/OpenHands green; exact five-ID comparison: 2 failed, 3 passed, only whitelist IDs 2 and 3; `git diff --check` clean. Affected P23 physical/remote rows remain open | AUTOMATED PASS / FINAL OPEN |
+| P24-REGRESSION-01 | Final regression and affected P23 replay | P24 backend/Desktop/package matrix, installed acceptance, affected P23 rows, exact historical comparison, diff check, and clean tree | Updated source route matrix: `806 passed, 3 failed` in the combined run; the three failures are unchanged managed-MCP fixture/order diagnostics in `tests/test_tui_gateway_server.py`, not new route regressions. Targeted route/policy/CLI/provider tests passed; exact five-ID comparison: `3 passed, 2 failed`, only whitelist IDs 2 and 3; Ruff, compileall and `git diff --check` passed. Affected P23 physical/remote rows remain open | AUTOMATED PASS / FINAL OPEN |
 
 ### P24 automated command record
 
@@ -663,6 +665,17 @@ failures (the full `tests/test_tui_gateway_server.py` run remains `782 passed,
 P23 target backend matrix passed `261 passed, 2 skipped`. The exact historical
 five-ID command returned `2 failed, 3 passed`; failures were only IDs 2 and 3
 from `ACCEPTED_UPSTREAM_BASELINE`, so no new/different regression exists.
+
+After source commit `10bd0b8f`, the expanded route-aware source matrix
+returned `806 passed, 3 failed`; the three failures were the same managed-MCP
+fixture/order diagnostics in `tests/test_tui_gateway_server.py`. The focused
+policy/native-gateway/Desktop route tests passed `23`; the CLI/provider/route
+group passed `91`; the API server group passed `133` with 72 framework
+warnings; the agent/cron/persistence group passed `121` with existing async
+resource warnings. Ruff, compileall and `git diff --check` passed. A real
+source CLI `LOCAL_ONLY` Qwen3-4B CUDA run returned
+`P24_LOCAL_ONLY_QWEN3_OK` through `terminal` with exit code 0 and was followed
+by Gemini/NORMAL route restoration.
 
 ## P24 native-browser focus recovery — 2026-08-27
 

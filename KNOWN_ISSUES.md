@@ -944,7 +944,7 @@ silently treated as passing.
 - Status: OPEN / P24 PRODUCT BLOCKER.
 - The P24 source convergence checkpoint plus the native-browser recovery fix
   are implemented and tested through
-  `8b7c29aa8197595a479e35bb85ef081cec2b7a11`. It now has one canonical
+  `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`. It now has one canonical
   `BOOTING`→`IDLE_ARMED`→`WAKE_DETECTED`→voice/task/tool→`REARMING` state
   reducer, wake-to-Composer routing, transcript publication before submit,
   concise acknowledgement/completion speech, and task/tool/model/progress
@@ -964,8 +964,10 @@ silently treated as passing.
   consent. The actual wake→Composer→microphone→whisper.cpp→Piper sequence,
   audible barge-in, and emergency-stop during a real managed desktop action
   have not been replayed in this acceptance.
-- The local Qwen3 terminal/file agent workflows pass, but the pre-patch
-  installed Qwen3-14B browser replay ended without verified channel/latest-
+- The local Qwen3 terminal/file agent workflows pass, and source-level
+  `LOCAL_ONLY` route resolution now correctly selects the configured loopback
+  endpoint even while the global model remains Gemini (KI-058 is resolved).
+  The pre-patch installed Qwen3-14B browser replay ended without verified channel/latest-
   video/playback state. The Qwen3-14B Randevu replay resolved the project and
   performed read-only inspection but timed out before evidence-backed
   diagnosis/OpenHands verification. Qwen3-14B remains
@@ -1006,3 +1008,22 @@ silently treated as passing.
   call took 131.8 seconds and the turn was interrupted before any native
   browser navigation. This is an additional clean-turn failure, not evidence
   of an invalid API key; P24.10 remains NOT ACCEPTED.
+
+## KI-058 — LOCAL_ONLY route inherited the global provider endpoint
+
+- Status: RESOLVED in source commit
+  `10bd0b8f32b99b9a7ad91317dfb2f88b5204b927`; installed package update remains
+  pending.
+- When the Hafiye default slot selected `custom/qwen3-4b` but the global
+  `model.provider` and `model.base_url` still described Gemini, the shared
+  route policy inspected the stale Gemini URL. `LOCAL_ONLY` therefore rejected
+  a valid running local llama.cpp server before the agent call.
+- The route boundary now resolves a direct route endpoint or the matching
+  custom-provider entry by provider/model identity, including managed models
+  represented by absolute `.gguf` catalog paths. CLI, native gateway,
+  Desktop/TUI, API and cron runtime callers receive the selected endpoint.
+- Evidence: the red-first policy regression failed `1/13`; after the fix the
+  targeted policy/native-gateway/Desktop tests passed, and a real source CLI
+  `LOCAL_ONLY` Qwen3-4B CUDA run executed `terminal`, returned
+  `P24_LOCAL_ONLY_QWEN3_OK`, and exited 0. The route/privacy configuration was
+  restored to Gemini/NORMAL. No cloud call was used in that local test.
