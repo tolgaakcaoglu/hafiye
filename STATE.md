@@ -2488,3 +2488,37 @@ Secret Service-backed Hafiye setup), then repeat the installed clean Composer
 browser acceptance. Physical voice, barge-in, emergency-stop, coding,
 re-arm, and the explicitly deferred offline acceptance remain open as listed
 in P24 and P23; no phase is closed here.
+
+### P24 local Desktop route and current Gemini credential recheck — 2026-08-27
+
+- The installed Desktop model picker was used to select the agent-capable local
+  Qwen3-4B GGUF route (`custom:local-(127.0.0.1:11435)`) rather than relying on
+  a model-name UI shortcut. A real packaged Composer session
+  (`20260827_103330_17e54f`) used the loopback CUDA llama.cpp endpoint, executed
+  two real `terminal` tool calls, wrote/read the exact marker
+  `P24_LOCAL_DESKTOP_REAL_20260827`, returned a final response, and was
+  recorded by the gateway as `status=complete`. This is installed local
+  Desktop terminal evidence, not browser/coding qualification.
+- A second installed local Qwen3-4B Composer browser attempt
+  (`20260827_104500_767eb1`) submitted through the real `Gönder` button and
+  reached the actual Firefox window through `browser_native`:
+  `windows → focused → navigate(https://www.youtube.com/) → state`. The
+  default Firefox accessibility state was 1,102,848 characters; Qwen3-4B then
+  repeated the same `state` call and never reached channel search, video
+  selection, playback or a clean final response before the 360-second test
+  deadline. This is NOT ACCEPTED as P24.10 and is recorded as the operational
+  limitation KI-060; no source change was made.
+- The current profile-scoped Secret Service credential was re-read through the
+  configured `/home/tolga/.config/hafiye` profile reference without printing
+  its value. `GEMINI_API_KEY` and `GOOGLE_API_KEY` are both present, equal, and
+  match the user-provided credential fingerprint (length 53; SHA-256 recorded
+  only in the private diagnostic output). Fresh Gemini requests still return
+  HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted`, so this is
+  a provider project/quota response rather than a wrong-key or Qwen-route
+  result.
+- The product route was restored after local testing with
+  `gemini/gemini-3.1-flash-lite` and `NORMAL`; gateway health remains HTTP 200.
+
+P24 remains open. P24.9 coding, P24.10 clean browser, P24.12 recovery/re-arm,
+physical voice/barge-in/emergency acceptance, and the explicitly deferred
+offline replay remain unaccepted. No P25 or release tag was created.

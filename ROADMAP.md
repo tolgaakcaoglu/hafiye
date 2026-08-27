@@ -870,3 +870,22 @@ P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,
 computer-use-linux, OpenHands and rootd machinery into Hafiye's primary Jarvis
 assistant loop.
+
+### P24 local Desktop and credential evidence — 2026-08-27
+
+- A real installed Desktop Composer route using the model picker selected
+  `custom:local-(127.0.0.1:11435)` / Qwen3-4B GGUF and completed a terminal
+  marker task through the loopback CUDA llama.cpp endpoint. Gateway session
+  `20260827_103330_17e54f` recorded two terminal calls and
+  `status=complete`; this strengthens P24.11's local route evidence but does
+  not satisfy browser/coding qualification.
+- A real installed local browser attempt reached Firefox through
+  `browser_native` and navigated to YouTube, but Qwen3-4B looped on the
+  1.1-MB default accessibility state and did not reach channel/video
+  verification before the 360-second deadline. P24.10 remains open; KI-060
+  records the operational limitation and no source workaround is claimed.
+- Secret Service re-read confirms both Gemini aliases resolve to the same
+  user-provided credential. Gemini remains unavailable for acceptance because
+  fresh requests return provider HTTP 429 `RESOURCE_EXHAUSTED` with
+  `prepayment credits are depleted` (KI-059). The route was restored to
+  Gemini/NORMAL after local testing.

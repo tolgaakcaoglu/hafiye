@@ -706,3 +706,15 @@ The current Gemini credential is therefore a configured, correctly resolved
 credential rather than a missing-key or Qwen-route problem. The provider's
 current quota response must be resolved before another clean Gemini Composer
 acceptance can be accepted. No raw credential is stored in this matrix.
+
+## P24 installed local Desktop route replay — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-LOCAL-DESKTOP-01 | Installed Composer local agent route | Model picker selected `custom:local-(127.0.0.1:11435)` / Qwen3-4B GGUF; Composer submitted a terminal marker task through the installed package | Session `20260827_103330_17e54f` used the loopback CUDA llama.cpp endpoint, executed two real `terminal` calls, wrote/read `P24_LOCAL_DESKTOP_REAL_20260827`, returned a final response, and gateway recorded `status=complete` | PASS / INSTALLED LOCAL ROUTE |
+| P24-YOUTUBE-LOCAL-01 | Installed local browser/media route | Model picker selected local Qwen3-4B; Composer submitted the constrained native-browser YouTube task through the real `Gönder` button | Session `20260827_104500_767eb1` reached Firefox with `browser_native` and navigated to YouTube, but repeated the 1,102,848-character accessibility `state` result until the 360-second deadline; no channel/video/playback acceptance | NOT ACCEPTED / KI-060 |
+| P24-GEMINI-CREDENTIAL-RECHECK-04 | Exact active credential identity | Profile-scoped Secret Service read through `/home/tolga/.config/hafiye`, masked metadata only; route restored afterward | Both Gemini aliases present/equal and match the user-provided key fingerprint; fresh provider responses remain HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` | NOT ACCEPTED / KI-059 |
+
+The installed route was restored to `gemini/gemini-3.1-flash-lite` with
+`NORMAL` locality after the local replay. The local terminal PASS does not
+promote P24.10, P24.12, physical voice acceptance, or P24.14 to PASS.

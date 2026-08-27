@@ -1060,3 +1060,19 @@ silently treated as passing.
   turn can reach `browser_native`, verify the target video, and terminate
   cleanly. Restore or reconfigure usable Gemini API quota through the normal
   Secret Service-backed Hafiye setup, then repeat the installed acceptance.
+
+## KI-060 — Local Qwen3 browser state payload causes an operational loop
+
+- Status: OPEN / P24 ACCEPTANCE LIMITATION; no source regression established.
+- On 2026-08-27, the installed Desktop model picker selected the real local
+  Qwen3-4B GGUF route and a Composer terminal marker task completed through
+  the loopback CUDA endpoint. A separate real local browser attempt reached
+  Firefox through `browser_native`, navigated to YouTube, and requested fresh
+  state, but the default accessibility result was 1,102,848 characters. The
+  model repeated the same state request until the 360-second test deadline,
+  without channel search, video/playback verification, or a clean final turn.
+- This is not accepted as P24.10 or full P24.11 practical browser
+  qualification. No source change was made and no success was inferred from
+  the navigation alone. A future acceptance replay may use a bounded,
+  model-compatible state request only if it is implemented as a genuine
+  product behavior and independently verified.
