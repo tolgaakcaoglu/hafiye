@@ -13,10 +13,10 @@ Last updated: 2026-08-27
   (Pinned Qwen3.8-27B production catalog/download integration and native
   context compatibility.) Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `b8e0417cd72c7c92231b9b64049f92e896290bc1` (substantive documentation
+  `8a8546e454bd1f2b48bd9ed5e09e704329f46972` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
-  `6895013dc18575f3a704a9288092a6d81a49bbf7`; documentation commits do not
+  `b8e0417cd72c7c92231b9b64049f92e896290bc1`; documentation commits do not
   change the Hafiye source checkpoint or installed package source.
 
 The three SHA values above are intentionally separate: the first is the
