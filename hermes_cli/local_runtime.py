@@ -232,6 +232,26 @@ def _memory_compatibility_args(
     return []
 
 
+def _parallel_compatibility_args(
+    model_id: str,
+    model_path: Path,
+    context_size: int,
+) -> list[str]:
+    """Keep large Qwen3 agent contexts to one llama-server slot.
+
+    llama-server's automatic slot count created four 65K KV slots on the
+    current host.  That multiplies the cache footprint for a model already
+    carrying the Qwen3 resource warning and can starve a single Hafiye agent
+    request.  The managed Qwen3 path is single-agent at a time on this
+    resource envelope, so use one slot only for the large-context compatibility
+    path.  Other models retain llama-server's upstream automatic behavior.
+    """
+    identity = f"{model_id} {model_path.name}".lower()
+    if int(context_size) > 40960 and re.search(r"qwen3(?:[._-]|$)", identity):
+        return ["--parallel", "1"]
+    return []
+
+
 def _default_gpu_layers(model_id: str, model_path: Path, selected_backend: str) -> int | str:
     """Use llama.cpp's fit-aware GPU selection for large Qwen3 GGUFs."""
     identity = f"{model_id} {model_path.name}".lower()
@@ -817,6 +837,7 @@ class LocalRuntimeManager:
             str(actual_gpu_layers),
             *_chat_template_args(model_id, Path(str(item["path"]))),
             *_context_compatibility_args(model_id, Path(str(item["path"])), int(context_size)),
+            *_parallel_compatibility_args(model_id, Path(str(item["path"])), int(context_size)),
             *_memory_compatibility_args(
                 model_id,
                 Path(str(item["path"])),

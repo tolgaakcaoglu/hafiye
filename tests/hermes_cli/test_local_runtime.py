@@ -98,6 +98,19 @@ def test_qwen3_large_context_uses_yarn_override_and_cpu_kv():
     ) == "auto"
 
 
+def test_qwen3_large_context_uses_one_server_slot():
+    model_path = Path("Qwen3-14B-Q4_K_M.gguf")
+    assert local_runtime._parallel_compatibility_args(
+        "qwen3-14b-q4_k_m", model_path, 65536
+    ) == ["--parallel", "1"]
+    assert local_runtime._parallel_compatibility_args(
+        "qwen3-14b-q4_k_m", model_path, 40960
+    ) == []
+    assert local_runtime._parallel_compatibility_args(
+        "llama-3.2-1b-instruct-q4", Path("llama-3.2-1b.gguf"), 65536
+    ) == []
+
+
 def test_local_model_registry_exposes_evidence_backed_capability_state(tmp_path: Path):
     manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
     qwen2_source = tmp_path / "qwen2.5-0.5b-instruct-q4.gguf"
