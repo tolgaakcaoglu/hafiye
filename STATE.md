@@ -117,17 +117,16 @@ transcript, short spoken acknowledgement, real tool execution and
 verification, concise completion, then clean wake re-arm. P24 reuses the
 fixed architecture and does not create a second agent/runtime.
 
-The installed package is still `hafiye 0.20.5-1` from source
-`0d98610a2558a09ceba34436f1f4362082ed3e83`; the replacement package built in
-this session carries source `8b7c29aa8197595a479e35bb85ef081cec2b7a11` but
-has not been installed because installation requires the user's visible sudo
-step. The live Desktop process remains under `/usr/lib/hafiye/desktop`, the
-user autostart entry targets that installed binary,
-`hafiye-gateway.service` is enabled/active, and the health endpoint returns
-`ok=true`. P24 implementation and automated checks pass; P24.14 is not yet
-accepted because physical wake/microphone/barge-in/emergency actions, the
-real coding and YouTube scenarios, and the user's deferred offline replay
-still require final real-machine evidence.
+The installed package is `hafiye 0.20.5-1` and its
+`/usr/lib/hafiye/package-manifest.json` carries source
+`8b7c29aa8197595a479e35bb85ef081cec2b7a11`, the pinned upstream commit, and
+the baseline merge commit. The live Desktop process remains under
+`/usr/lib/hafiye/desktop`, the user autostart entry targets that installed
+binary, `hafiye-gateway.service` is enabled/active, and the health endpoint
+returns `ok=true`. P24 implementation and automated checks pass; P24.14 is
+not yet accepted because physical wake/microphone/barge-in/emergency actions,
+the real coding scenario, clean browser-task completion, and the user's
+deferred offline replay still require final real-machine evidence.
 
 The KI-043 source-level privileged-command boundary is now resolved: normal
 terminal escalation attempts route through `hafiye-rootd`, READ_ONLY and
@@ -135,9 +134,11 @@ confirmation policies remain enforced, and the normal route is not changed.
 The clean Gemini Composer file-task replay still passes P23.6. The exact
 `Firefox'u aç.` replay remains unaccepted because Gemini performed unrelated
 privileged package remediation. The pre-patch installed Qwen3 browser replay
-ended without a verified video result; the source wrapper now has a tested
-focus-recovery path, but the replacement package has not yet been installed.
-The Qwen3-14B Randevu replay resolved the project and ran real read-only
+ended without a verified video result. The replacement package is now
+installed and its native browser focus-recovery path has been exercised. A
+Gemini 3.5 replay reached the correct latest-video state, but the model then
+continued into unnecessary file/search tooling and did not close as a clean
+Composer task; P24 browser acceptance therefore remains open. The Qwen3-14B Randevu replay resolved the project and ran real read-only
 inspection, but timed out before an evidence-backed diagnosis/OpenHands
 verification. Neither P24 coding nor P24 YouTube acceptance is claimed.
 
@@ -172,8 +173,8 @@ verification. Neither P24 coding nor P24 YouTube acceptance is claimed.
 - The local GGUF registry exposes evidence-backed capability metadata: the
   Qwen2.5-0.5B validation fixture is `validation=true, agent=false`; Qwen3-14B
   is `agent=true, tool_calling=true, validation=false` with
-  `resource_warning=KI-046`. The current default route is
-  `gemini/gemini-3.1-pro-preview`; Qwen3 is selectable and not default.
+  `resource_warning=KI-046`. The current test route is
+  `gemini/gemini-3.1-flash-lite`; Qwen3 is selectable and not default.
 - The Desktop Models settings page now exposes the existing managed
   `/api/local-runtime/models/download` contract: a Hugging Face repo, GGUF
   filename, optional model id/revision/SHA-256, and a Download GGUF action.
@@ -191,6 +192,15 @@ verification. Neither P24 coding nor P24 YouTube acceptance is claimed.
   temporarily forced to Gemini executed the Firefox operation; the turn then
   received a Gemini free-tier HTTP 429 and remains a P23 warning, not a clean
   final acceptance.
+- The active Gemini credential was revalidated on 2026-08-27 through the real
+  Linux Secret Service: both configured aliases resolved to the same value and
+  a direct `generateContent` probe for `gemini-3.1-flash-lite` returned HTTP
+  200 with `GEMINI_KEY_OK`; `.venv/bin/hafiye ask --safe-mode` on the same
+  route returned `HAFIYE_ACTIVE_GEMINI_KEY_OK`. Temporary real packaged
+  Composer replays with `gemini-3.5-flash` also created the Gemini client and
+  executed native browser calls; the credential is not the current P24
+  blocker. The route was restored to `gemini-3.1-flash-lite` after the
+  comparison.
 - A real `hafiye restart` left `hafiye-gateway.service` active and enabled; a
   real model unload/load cycle restored the Qwen GGUF server with
   `selected_backend=CUDA` and `ready=true`.
@@ -850,17 +860,13 @@ bugs are not being fixed by Hafiye.
 
 ## Exact next actions
 
-1. Install the rebuilt package from source
-   `8b7c29aa8197595a479e35bb85ef081cec2b7a11` through the user's visible sudo
-   path, then restart the user gateway and repeat the installed acceptance.
-2. Perform the remaining physical P24 acceptance: consent-enabled wake,
+1. Perform the remaining physical P24 acceptance: consent-enabled wake,
    Turkish transcript/short speech, three clean cycles, barge-in, and
    long-running managed-desktop emergency stop. Keep the explicitly deferred
    offline replay unaccepted.
-3. Re-run the real Randevu and YouTube Composer scenarios with the newly
-   installed package. Do not promote the source-level browser recovery or a
-   tool-only probe to P24 acceptance.
-4. Run the final P24/P23 regression matrices and close P24 only if every
+2. Re-run the real Randevu and YouTube Composer scenarios with the installed
+   `8b7c29aa` package. Do not promote a partial tool trace to P24 acceptance.
+3. Run the final P24/P23 regression matrices and close P24 only if every
    installed real-machine acceptance item is genuinely green; do not create
    P25 or a release tag.
 
@@ -2280,8 +2286,8 @@ by this session.
   (`fix(browser): recover native target when Composer owns focus`). It adds a
   conservative `list_windows` recovery to the native browser wrapper when
   Composer owns focus, plus nested-envelope parsing and ambiguous-target
-  fail-closed behavior. The earlier `0d98610a` Jarvis-loop source remains the
-  installed baseline.
+  fail-closed behavior. This source is now also the installed package
+  baseline.
 - The clean Electron package was built with `cd apps/desktop && npm run pack`;
   the build wrote clean install stamp `8b7c29aa8197` on `main`. The real
   combined package was built with
@@ -2289,13 +2295,11 @@ by this session.
   --desktop-dir apps/desktop/release/linux-unpacked --json`; its manifest
   records source `8b7c29aa`, the pinned upstream commit, and the baseline
   merge commit.
-- The replacement package has not been installed yet: `dpkg-query` and the
-  live `/usr/lib/hafiye` package still report the prior installed source
-  `0d98610a`. Installing the replacement requires the user's visible
-  interactive sudo step. The live installed Desktop process remains
-  `/usr/lib/hafiye/desktop/hafiye-desktop` and the user autostart entry still
-  targets that installed binary.
-- The prior installed package doctor returned `ok=true` with `blockers=[]`. The user
+- `dpkg-query` and `/usr/lib/hafiye/package-manifest.json` now report the
+  installed source `8b7c29aa8197595a479e35bb85ef081cec2b7a11`. The live
+  installed Desktop process remains `/usr/lib/hafiye/desktop/hafiye-desktop`
+  and the user autostart entry still targets that installed binary.
+- The installed package doctor returned `ok=true` with `blockers=[]`. The user
   gateway is enabled/active and
   `curl http://127.0.0.1:9120/api/health` returned
   `{"ok":true,"version":"0.20.5","auth_required":false}`. Voice doctor
@@ -2305,7 +2309,7 @@ by this session.
   blockers list.
 - Installed-binary Electron smoke opened the real `/usr/lib/hafiye/desktop`
   binary, rendered a Hafiye document with one root child, and matched the
-  `0d98610a` install stamp. The workspace packaged Electron acceptance remains
+  `8b7c29aa` install stamp. The workspace packaged Electron acceptance remains
   green: 116 files, 1,615 tests passed, 3 skipped; the P24 targeted UI suite
   passed 93/93 and Desktop typecheck passed. The P24 backend/local/browser/
   policy/OpenHands/project matrix passed 793 tests after excluding three
@@ -2329,6 +2333,14 @@ by this session.
   promoted to P24 acceptance. Qwen3-14B remains qualified/selectable but
   non-default with `KI-046` resource warning; Qwen2.5-0.5B remains
   validation-only.
+- A post-install Gemini replay used `gemini-3.5-flash` through the real
+  packaged Composer. Native `windows → navigate → state → click → state`
+  succeeded; the final persisted browser state showed the exact latest video
+  title `YAYINCI KIŞKIRTMA : EVE DÖNÜŞ`, `Mevtcan Bahav`, a concrete
+  `youtube.com/watch` URL, and `Pause`/playing evidence. The model then
+  continued into unnecessary `search_files`/`execute_code` tooling instead of
+  closing the turn cleanly, so this remains supporting evidence rather than a
+  P24.10 acceptance.
 - After the source browser patch, focused native-browser tests returned
   `16 passed`; the broader relevant P24 backend subset returned `212 passed`;
   packaging tests returned `15 passed`; Ruff and `git diff --check` passed.
@@ -2344,14 +2356,11 @@ by this session.
 
 ### Exact next actions
 
-1. Install the rebuilt package from source `8b7c29aa` through the user's
-   visible sudo path; then restart the user gateway and confirm the installed
-   manifest/stamp before replaying acceptance.
-2. In the installed Hafiye UI, explicitly enable wake listening after granting
+1. In the installed Hafiye UI, explicitly enable wake listening after granting
    microphone consent; do not infer consent from source or doctor output.
-3. Replay P24.14's physical wake/transcript/short-speech, coding, YouTube,
+2. Replay P24.14's physical wake/transcript/short-speech, coding, YouTube,
    repeated re-arm, barge-in, emergency-stop, reconnect, and affected P23
    checks. Keep the offline item deferred as instructed by the user.
-4. Run the final regression matrix after those replays. Mark P24 complete only
+3. Run the final regression matrix after those replays. Mark P24 complete only
    when every required installed real-machine item is green; do not create
    P25 or a release tag.

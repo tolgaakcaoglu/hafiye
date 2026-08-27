@@ -790,8 +790,8 @@ must be replayed from the installed post-P24 package.
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
 `8b7c29aa8197595a479e35bb85ef081cec2b7a11`; these implementation marks do not
-promote the physical P24.14 acceptance to PASS. The newly rebuilt package is
-not yet installed; the live installed package remains source `0d98610a`.
+promote the physical P24.14 acceptance to PASS. The installed package now
+carries this same source checkpoint.
 
 - [x] P24.1 Capture the installed-product baseline: package/source identity,
       login/autostart state, current wake/voice settings, Composer behavior,
@@ -820,9 +820,9 @@ not yet installed; the live installed package remains source `0d98610a`.
       diagnosis, OpenHands when editing is required, tests and concise speech.
 - [ ] P24.10 Implement and verify the browser/media flow for “YouTube'dan
       Mertcan Bahar'ın son videosunu aç”: correct channel, latest video,
-      open/playback verification and concise speech. A source-level native
-      browser focus-recovery patch is now tested, but the installed
-      natural-language scenario remains unaccepted.
+      open/playback verification and concise speech. The installed package's
+      Gemini replay reached the correct video/playback state, but did not
+      terminate as a clean Composer task; final acceptance remains open.
 - [ ] P24.11 Qualify and select a practical agent-capable local-first default
       through registry capability metadata. Keep Qwen2 validation-only and
       retain Qwen3 KI-046/non-default status unless host evidence changes.

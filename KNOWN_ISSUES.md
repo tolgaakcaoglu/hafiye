@@ -893,9 +893,10 @@ silently treated as passing.
 - Targeted Desktop tests returned 171 passed, full Desktop tests returned 7,175
   passed with 3 skipped, backend route tests returned 17 passed, typecheck/lint/
   Ruff passed, and the exact upstream comparison remained 3 failed/2 passed
-  with only accepted IDs 2, 3, and 5. The rebuilt package is installed and its
-  live model API reports the Settings value
-  `gemini/gemini-3.1-pro-preview`.
+  with only accepted IDs 2, 3, and 5. At the time of the 2026-08-26 fix, the
+  rebuilt package's live model API reported the then-selected Settings value
+  `gemini/gemini-3.1-pro-preview`; the current route is tracked by the P24
+  credential/provider row and is `gemini/gemini-3.1-flash-lite`.
 
 ## KI-054 — Post-roadmap implementation audit inconsistencies
 
@@ -951,13 +952,12 @@ silently treated as passing.
   recovers one unique visible browser when Composer owns focus and fails
   closed when target selection is ambiguous. The source implementation is not
   itself the installed real-machine acceptance.
-- The installed package is still `hafiye 0.20.5-1` from source `0d98610a`;
-  the replacement artifact from `8b7c29aa` is built but awaits the user's
-  visible sudo installation step. The prior package doctor, gateway health,
-  voice doctor, OpenHands doctor, and four required computer-use readiness
-  flags are green. Source/browser/package targeted tests are green and the
-  exact upstream comparison is `2 failed, 3 passed` with only historical
-  whitelist IDs 2 and 3 failing.
+- The installed package is `hafiye 0.20.5-1` from source `8b7c29aa`; its
+  package manifest also records the pinned upstream and baseline merge SHAs.
+  The package doctor, gateway health, voice doctor, OpenHands doctor, and four
+  required computer-use readiness flags are green. Source/browser/package
+  targeted tests are green and the exact upstream comparison is `2 failed, 3
+  passed` with only historical whitelist IDs 2 and 3 failing.
 - The live configuration deliberately still records
   `wake_word.enabled=false` and `voice.auto_tts=false`. Auto-arm must remain
   consent/setting gated; no source or doctor result is physical microphone
@@ -976,3 +976,22 @@ silently treated as passing.
   acceptance evidence exists. P23 remains open; its user-deferred offline
   item is not promoted here. KI-056 is resolved only after the installed
   product passes the complete P24.14 real-machine acceptance.
+
+## KI-057 — Gemini browser Composer turn did not close cleanly
+
+- Status: OPEN / P24 ACCEPTANCE WARNING; no Gemini credential or Hafiye source
+  regression is established.
+- On 2026-08-27, the installed package stamped `8b7c29aa` was exercised through
+  the real Composer with `gemini-3.5-flash`. The Secret Service credential was
+  valid, native `windows → navigate → state → click → state` calls succeeded,
+  and an independently inspected final state showed the correct Mertcan
+  Bahar/Mevtcan Bahav latest video, a concrete YouTube watch URL, and
+  `Pause`/playing evidence.
+- The model nevertheless continued into unnecessary `search_files` and
+  `execute_code` tooling after the browser evidence, and did not finish as a
+  clean concise Composer turn. Earlier Gemini attempts also showed invalid
+  selector/action usage. Therefore P24.10 remains NOT ACCEPTED; do not treat
+  the browser-state evidence alone as final product acceptance.
+- The active route was restored to `gemini-3.1-flash-lite` after testing. The
+  user-supplied credential is stored only in Linux Secret Service and is not
+  recorded here.
