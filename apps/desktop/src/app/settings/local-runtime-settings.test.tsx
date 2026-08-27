@@ -188,7 +188,10 @@ describe('LocalRuntimeSettings', () => {
       blockers: [],
       environment: { nvidia_name: 'GeForce RTX 3080', nvidia_present: true },
       paths: {},
-      runtime: { installed: true, version: '0.2.0-dev' },
+      runtime: {
+        installed: true,
+        version: 'version: 0.2.0-dev (build 1, commit c060ca9) built with GNU 15.2.0 for Linux x86_64'
+      },
       server: { model_id: 'qwen3.8-27b-ud-iq1_s', ready: true, running: true },
       warnings: []
     })
@@ -219,6 +222,10 @@ describe('LocalRuntimeSettings', () => {
 
     expect(await screen.findByText('Yerel GGUF Çalışma Zamanı')).toBeTruthy()
     expect(screen.getByText('İşlem backend’i')).toBeTruthy()
+    expect(screen.getByText(/llama-server sürüm: 0\.2\.0-dev \(derleme 1, commit c060ca9\)/)).toBeTruthy()
+    expect(screen.getByText(/NVIDIA GeForce RTX 3080/)).toBeTruthy()
+    expect(screen.queryByText(/built with/)).toBeNull()
+    expect(screen.queryByText(/NVIDIA NVIDIA/)).toBeNull()
     expect(screen.getByRole('button', { name: 'Çalışma zamanını kur / yeniden derle' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Yenile' })).toBeTruthy()
     expect(screen.getByText('Hafiye katalog varsayılanı')).toBeTruthy()

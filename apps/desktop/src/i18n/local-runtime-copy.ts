@@ -2,6 +2,17 @@ import type { Translations } from './types'
 
 type LocalRuntimeCopy = Translations['settings']['localRuntime']
 
+function formatNvidiaName(name: string): string {
+  return name.toLocaleUpperCase().startsWith('NVIDIA ') ? name : `NVIDIA ${name}`
+}
+
+function localizeTurkishRuntimeVersion(version: string): string {
+  return version
+    .replace(/^version:\s*/i, 'sürüm: ')
+    .replace(/\bbuild\s+(\d+)/i, 'derleme $1')
+    .replace(/\sbuilt with\s+(.+)\s+for\s+(.+)$/i, ' · $1 ile $2 için derlendi')
+}
+
 export const EN_LOCAL_RUNTIME_COPY: LocalRuntimeCopy = {
   title: 'Local GGUF Runtime',
   description: 'Managed llama.cpp server, local GGUF models, and the selected compute backend.',
@@ -11,7 +22,7 @@ export const EN_LOCAL_RUNTIME_COPY: LocalRuntimeCopy = {
   refresh: 'Refresh',
   runtimeInstalled: version => `llama-server ${version}`,
   runtimeNotInstalled: 'llama-server is not installed',
-  nvidiaPresent: name => `NVIDIA ${name}`,
+  nvidiaPresent: formatNvidiaName,
   servingModel: model => `serving ${model}`,
   modelFallback: 'model',
   catalogDefault: 'Hafiye catalog default',
@@ -65,9 +76,9 @@ export const TR_LOCAL_RUNTIME_COPY: LocalRuntimeCopy = {
   backend: 'İşlem backend’i',
   installRuntime: 'Çalışma zamanını kur / yeniden derle',
   refresh: 'Yenile',
-  runtimeInstalled: version => `llama-server ${version}`,
+  runtimeInstalled: version => `llama-server ${localizeTurkishRuntimeVersion(version)}`,
   runtimeNotInstalled: 'llama-server kurulu değil',
-  nvidiaPresent: name => `NVIDIA ${name}`,
+  nvidiaPresent: formatNvidiaName,
   servingModel: model => `${model} sunuluyor`,
   modelFallback: 'model',
   catalogDefault: 'Hafiye katalog varsayılanı',
