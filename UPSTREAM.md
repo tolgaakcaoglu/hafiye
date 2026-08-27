@@ -17,6 +17,8 @@ upstream https://github.com/NousResearch/hermes-agent.git
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
   4d4cde3dbf864d485bb49a12fe8a3f1f6ab7c1f2
+- Current repository/documentation closure HEAD:
+  b71714e63754277ea29e4387832baded8887a58c
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third

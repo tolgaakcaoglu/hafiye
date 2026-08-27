@@ -15,7 +15,7 @@ Last updated: 2026-08-27
   rejects a competing writer before it can touch the shared partial file.)
   Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `b2a5d152c92ab5bb441e6a96da30faf5f84d61f2` (substantive documentation
+  `b71714e63754277ea29e4387832baded8887a58c` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
   `baf0a3d2203b4580d25546d4e979bef7f1712b12`; documentation commits do not
