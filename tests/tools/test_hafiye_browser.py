@@ -87,7 +87,12 @@ def test_native_state_and_click_preserve_exact_window_binding(monkeypatch):
     assert click["success"] is True
     assert calls[0] == (
         "get_app_state",
-        {"window_id": 99, "include_screenshot": False, "max_nodes": 200},
+        {
+            "window_id": 99,
+            "include_screenshot": False,
+            "max_nodes": 200,
+            "max_depth": 20,
+        },
     )
     assert calls[1] == ("activate_window", {"window_id": 99})
     assert calls[2] == (
@@ -96,7 +101,7 @@ def test_native_state_and_click_preserve_exact_window_binding(monkeypatch):
     )
 
 
-def test_native_state_defaults_to_without_screenshot(monkeypatch):
+def test_native_state_defaults_to_bounded_tree_without_screenshot(monkeypatch):
     calls = []
 
     def fake_call(tool, args, **kwargs):
@@ -108,7 +113,49 @@ def test_native_state_defaults_to_without_screenshot(monkeypatch):
     result = json.loads(native_browser.browser_native("state", window_id=99))
 
     assert result["success"] is True
-    assert calls == [("get_app_state", {"window_id": 99, "include_screenshot": False})]
+    assert calls == [
+        (
+            "get_app_state",
+            {
+                "window_id": 99,
+                "include_screenshot": False,
+                "max_nodes": 200,
+                "max_depth": 20,
+            },
+        )
+    ]
+
+
+def test_native_state_preserves_explicit_tree_bounds(monkeypatch):
+    calls = []
+
+    def fake_call(tool, args, **kwargs):
+        calls.append((tool, args))
+        return json.dumps({"ok": True})
+
+    monkeypatch.setattr(native_browser, "_call_managed_tool", fake_call)
+
+    result = json.loads(
+        native_browser.browser_native(
+            "state",
+            window_id=99,
+            max_nodes=80,
+            max_depth=12,
+        )
+    )
+
+    assert result["success"] is True
+    assert calls == [
+        (
+            "get_app_state",
+            {
+                "window_id": 99,
+                "include_screenshot": False,
+                "max_nodes": 80,
+                "max_depth": 12,
+            },
+        )
+    ]
 
 
 def test_native_navigation_can_use_focused_browser_without_model_id(monkeypatch):

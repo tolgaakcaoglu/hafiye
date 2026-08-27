@@ -26,6 +26,13 @@ logger = logging.getLogger(__name__)
 
 _MCP_SERVER = "hafiye-computer-use-linux"
 _MCP_PREFIX = f"mcp__{_MCP_SERVER.replace('-', '_')}__"
+# The upstream accessibility-tree default is intentionally generous for
+# general-purpose callers.  The Hafiye native browser lane is model-facing,
+# and an unbounded/default tree can overwhelm a local agent before it can act.
+# Callers may still request a different bounded value through the public
+# ``max_nodes``/``max_depth`` parameters.
+_DEFAULT_NATIVE_STATE_MAX_NODES = 200
+_DEFAULT_NATIVE_STATE_MAX_DEPTH = 20
 _TARGET_KEYS = (
     "window_id",
     "pid",
@@ -115,8 +122,20 @@ _NATIVE_BROWSER_SCHEMA: Dict[str, Any] = {
             },
             "pages": {"type": "number"},
             "include_screenshot": {"type": "boolean"},
-            "max_nodes": {"type": "integer"},
-            "max_depth": {"type": "integer"},
+            "max_nodes": {
+                "type": "integer",
+                "description": (
+                    "Maximum accessibility nodes for action='state'. "
+                    "When omitted, Hafiye uses a safe default of 200."
+                ),
+            },
+            "max_depth": {
+                "type": "integer",
+                "description": (
+                    "Maximum accessibility depth for action='state'. "
+                    "When omitted, Hafiye uses a safe default of 20."
+                ),
+            },
             "action_name": {
                 "type": "string",
                 "description": "Optional accessibility action for action='click'.",
@@ -589,9 +608,8 @@ def browser_native(
         # Accessibility trees can be very large. Request a screenshot only
         # when the model explicitly asks for visual verification.
         state_args["include_screenshot"] = bool(args.get("include_screenshot", False))
-        for key_name in ("include_screenshot", "max_nodes", "max_depth"):
-            if key_name in args:
-                state_args[key_name] = args[key_name]
+        state_args["max_nodes"] = args.get("max_nodes", _DEFAULT_NATIVE_STATE_MAX_NODES)
+        state_args["max_depth"] = args.get("max_depth", _DEFAULT_NATIVE_STATE_MAX_DEPTH)
         return _run_steps(
             action,
             [("get_app_state", state_args)],
