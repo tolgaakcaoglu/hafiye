@@ -2722,3 +2722,37 @@ offline replay remain unaccepted. No P25 or release tag was created.
   only accepted whitelist IDs 2 and 3 failed; IDs 1, 4, and 5 passed. No new
   or different upstream regression was found. P24 remains open; no P25 or
   release tag was created.
+
+### P24 installed Qwen3-14B coding replay and Gemini credential recheck — 2026-08-27
+
+- A controlled installed Desktop replay used the real Composer `Gönder` path,
+  the installed gateway, and the agent-qualified Qwen3-14B GGUF route. The
+  temporary model registration exposed a 65,536-token context and the managed
+  llama.cpp server selected `AUTO → CUDA` with one slot.
+- Exact prompt `Randevu projesini açıp bug fix yapalım` created session
+  `20260827_143425_5bddd9`. The gateway recorded the local custom provider,
+  the real Randevu project path, two model calls, and one `project_switch`
+  tool call. Project registry resolution succeeded and returned
+  `/home/tolga/projects/randevu-musteri-saas`; the agent then asked for more
+  bug details. It did not reach IDE/workspace focus, repository diagnosis,
+  diagnostics/tests, OpenHands delegation, independent verification, or a
+  stable coding completion. This is supporting real-agent evidence only, not
+  a P24.9 or P24.14 acceptance. No Hafiye source change was made.
+- The temporary 14B catalog mapping was removed after the replay. The installed
+  configuration again exposes only the Qwen3-4B GGUF custom model; the managed
+  server is ready on `127.0.0.1:11435`, and its command/log reports
+  `n_slots=1`, requested backend `AUTO`, selected backend `CUDA`, and HTTP
+  health 200. The product route remains `gemini/gemini-3.1-flash-lite` with
+  `NORMAL` privacy. `hafiye-gateway.service` is enabled/active and its health
+  endpoint is HTTP 200.
+- `hafiye config check` exited 0 and showed both `GEMINI_API_KEY` and
+  `GOOGLE_API_KEY` hydrated through Linux Secret Service. A fresh installed
+  `hafiye ask --provider gemini --model gemini-3.1-flash-lite` used that
+  credential and again received Gemini HTTP 429
+  `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` after retries.
+  This confirms the credential is the configured key and the current blocker
+  is provider-side generation/quota availability; no raw credential was
+  printed or written.
+- P24 remains open. Gemini generation, coding/browser completion, physical
+  voice/barge-in/emergency acceptance, reconnect/re-arm, and the explicitly
+  deferred offline replay remain unaccepted. No P25 or release tag was created.

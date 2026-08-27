@@ -1153,6 +1153,14 @@ silently treated as passing.
   transcript, short spoken acknowledgement, re-arm, and barge-in replays are
   still not accepted. This is an acceptance gap, not evidence of a source
   defect.
+- A real installed Composer replay with the qualified Qwen3-14B route and the
+  exact Randevu coding prompt successfully resolved the project through
+  `project_switch`, but the model stopped to request additional bug details.
+  It did not produce the required diagnosis, IDE/workspace operation,
+  OpenHands delegation, tests, independent verification, or stable completion.
+  Session `20260827_143425_5bddd9` is therefore supporting evidence only; it
+  does not qualify the coding or browser acceptance and does not establish a
+  Hafiye source defect.
 
 ## KI-061 — Legacy GNOME emergency binding required upgrade repair
 

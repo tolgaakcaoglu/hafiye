@@ -810,3 +810,15 @@ The Gemini key identity is proven by Secret Service hydration and HTTP-200 model
 discovery; generation is still NOT ACCEPTED because the provider returns HTTP
 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` (KI-059). These
 support checks do not promote any deferred physical P24 row.
+
+## P24 installed Qwen3-14B coding replay and Gemini credential recheck — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-QWEN14-CODING-REAL-01 | Installed Desktop Composer → gateway → project registry → local agent | Temporary 14B model registration; managed `llama-server` at `127.0.0.1:11435`; real model-picker selection; exact Composer prompt `Randevu projesini açıp bug fix yapalım` | Session `20260827_143425_5bddd9` used the local Qwen3-14B route, recorded two API calls and one real `project_switch`, and resolved `/home/tolga/projects/randevu-musteri-saas`. The agent then requested more bug details; no IDE focus, diagnosis/tests, OpenHands delegation, independent verification, or stable coding completion occurred | SUPPORTING EVIDENCE; P24.9 NOT ACCEPTED |
+| P24-QWEN14-RUNTIME-RESTORE-01 | Temporary model/runtime cleanup | `/usr/bin/hafiye config set custom_providers.0.models '{"/home/tolga/.local/share/hafiye/models/qwen3-4b-q4_k_m.gguf": {}}'`; managed runtime restart; service/health checks | Configuration exposes only Qwen3-4B; server ready with one slot, `AUTO → CUDA`, HTTP 200; gateway enabled/active and HTTP 200; product route Gemini/NORMAL | PASS / RESTORED |
+| P24-GEMINI-CREDENTIAL-RECHECK-07 | Active Secret Service credential and real generation | `/usr/bin/hafiye config check`; `/usr/bin/hafiye ask --safe-mode --provider gemini --model gemini-3.1-flash-lite 'Yalnızca HAFIYE_GEMINI_LIVE_CHECK yaz.'` | Config check exit 0 with both Gemini aliases hydrated; generation used the configured credential but returned HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` after retries; no raw credential printed | NOT ACCEPTED / KI-059 |
+
+The local 14B replay is not a coding-agent acceptance because project selection
+alone does not satisfy the required diagnosis, implementation, verification,
+and completion contract. The temporary runtime state was restored afterward.

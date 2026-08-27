@@ -1003,3 +1003,20 @@ is claimed.
   upstream comparison returned `3 passed, 2 failed`, only accepted whitelist
   IDs 2 and 3. Gemini remains the configured NORMAL route and KI-059 remains
   the provider-generation blocker.
+
+### P24 installed Qwen3-14B coding replay and Gemini credential recheck — 2026-08-27
+
+- The real installed Composer path selected the agent-qualified Qwen3-14B
+  local route and resolved the exact `Randevu projesini açıp bug fix yapalım`
+  prompt through the project registry. Session
+  `20260827_143425_5bddd9` executed `project_switch` against the real Randevu
+  workspace, then asked for more bug information. It did not perform the
+  required IDE focus, diagnosis, diagnostics/tests, OpenHands coding
+  delegation, independent verification, or stable final completion, so
+  P24.9 and P24.14 remain unchecked.
+- The temporary 14B test registration was removed. The managed Qwen3-4B
+  server is restored with `AUTO → CUDA`, one slot, and HTTP-200 health; the
+  product route is Gemini/NORMAL. No source or phase status changed.
+- The active Gemini key is correctly hydrated through Secret Service and model
+  discovery remains valid, but a fresh Hafiye generation attempt returns HTTP
+  429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` (KI-059).
