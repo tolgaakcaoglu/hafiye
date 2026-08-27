@@ -2557,3 +2557,16 @@ offline replay remain unaccepted. No P25 or release tag was created.
   Gemini Composer/browser acceptance. Hafiye cannot infer the Google Console
   project's credit ledger from an API key; the provider's current response
   must be resolved in the project attached to this key before retrying.
+
+### P24 Gemini quota-scope recheck — 2026-08-27
+
+- The key's live model catalog still returned HTTP 200 and advertised
+  `generateContent` for current Gemini 3 families. Direct probes for
+  `gemini-3-flash-preview`, `gemini-3.6-flash`, and `gemini-3.7-flash` all
+  returned HTTP 429 `RESOURCE_EXHAUSTED` with the same prepayment-credit
+  message. The installed Hafiye CLI also reproduced the 429 on a fresh
+  `gemini-3.1-flash-lite` retry.
+- This rules out a single-model retirement/selection problem as the current
+  Gemini blocker. The configured credential authenticates and discovers the
+  catalog, but the provider currently refuses generation across the tested
+  current model families. No source change or route change was made.

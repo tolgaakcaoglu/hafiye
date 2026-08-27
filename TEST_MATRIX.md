@@ -729,3 +729,12 @@ promote P24.10, P24.12, physical voice acceptance, or P24.14 to PASS.
 The key identity and route-selection checks pass, but the provider's current
 generation response prevents a clean Gemini browser acceptance. No raw
 credential is stored in this matrix.
+
+## P24 Gemini quota-scope recheck — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-GEMINI-QUOTA-SCOPE-01 | Current-model availability is not limited to one selected model | Direct Secret Service-backed probes for `gemini-3-flash-preview`, `gemini-3.6-flash`, and `gemini-3.7-flash`; fresh installed Hafiye CLI retry for `gemini-3.1-flash-lite` | Model catalog HTTP 200 lists generation-capable models, but every tested generation call returns HTTP 429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` | NOT ACCEPTED / KI-059 |
+
+This confirms a provider project/credit-ledger blocker across the tested
+current model families; it is not a Qwen fallback or model-picker mismatch.

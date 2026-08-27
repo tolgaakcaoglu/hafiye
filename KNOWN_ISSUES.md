@@ -1068,6 +1068,13 @@ silently treated as passing.
   Composer marker call received the same 429 before any browser tool event.
   This is a provider project/quota response, not the earlier Qwen/Gemini
   endpoint mismatch.
+- The live model catalog still returns HTTP 200 and advertises
+  `generateContent`, but direct probes for `gemini-3-flash-preview`,
+  `gemini-3.6-flash`, and `gemini-3.7-flash` all return the same HTTP 429
+  `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` response. A fresh
+  installed Hafiye CLI retry for `gemini-3.1-flash-lite` does too. The issue
+  therefore spans the tested model families rather than being a single retired
+  model ID or Desktop picker mismatch.
 - P24 browser acceptance remains NOT ACCEPTED until a real clean Composer
   turn can reach `browser_native`, verify the target video, and terminate
   cleanly. Restore or reconfigure usable Gemini API quota through the normal
