@@ -2756,3 +2756,22 @@ offline replay remain unaccepted. No P25 or release tag was created.
 - P24 remains open. Gemini generation, coding/browser completion, physical
   voice/barge-in/emergency acceptance, reconnect/re-arm, and the explicitly
   deferred offline replay remain unaccepted. No P25 or release tag was created.
+
+### P24 installed acceptance recheck — 2026-08-27
+
+- Fresh targeted regression checks after restoring the test runtime passed:
+  backend policy/routing/native-browser `35 passed`; voice, gateway command,
+  TTS-stream, completion and voice-reply coverage `255 passed, 12 skipped,
+  2 warnings`; Desktop Jarvis/wake/composer/voice UI `113 passed`; and
+  Electron Composer/wake/emergency coverage `40 passed`.
+- Installed checks report llama.cpp `ok=true`, `blockers=[]`, Qwen3-4B ready
+  with `AUTO → CUDA` and one server slot; whisper.cpp/Piper are ready with
+  local CUDA selection; computer-use-linux readiness booleans remain true
+  with `blockers=[]`; package doctor is OK with only the existing optional
+  `cargo: not found` warning. `hafiye-gateway.service` is enabled/active and
+  `/api/health` returns HTTP 200.
+- These are support/regression results only. The real physical wake,
+  transcript, short acknowledgement, coding/browser completion, three-cycle
+  re-arm, barge-in, emergency-stop and gateway-recovery acceptances remain
+  unverified; the offline replay remains explicitly deferred. P24 is still
+  open and no release tag or P25 was created.

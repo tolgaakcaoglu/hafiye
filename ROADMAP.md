@@ -1020,3 +1020,14 @@ is claimed.
 - The active Gemini key is correctly hydrated through Secret Service and model
   discovery remains valid, but a fresh Hafiye generation attempt returns HTTP
   429 `RESOURCE_EXHAUSTED` / `prepayment credits are depleted` (KI-059).
+
+### P24 installed acceptance recheck — 2026-08-27
+
+- Fresh targeted checks passed: backend policy/routing/browser `35 passed`,
+  voice/gateway coverage `255 passed, 12 skipped, 2 warnings`, Desktop UI
+  Jarvis/wake/composer/voice coverage `113 passed`, and Electron coverage
+  `40 passed`.
+- Runtime, voice, package and computer-use doctors remain ready; llama.cpp is
+  `AUTO → CUDA` with Qwen3-4B and one slot, and the gateway is enabled/active
+  with HTTP-200 health. These results do not satisfy P24.14's physical or
+  complete task-flow acceptance, so P24 remains unchecked.

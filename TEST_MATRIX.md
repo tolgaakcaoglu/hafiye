@@ -822,3 +822,17 @@ support checks do not promote any deferred physical P24 row.
 The local 14B replay is not a coding-agent acceptance because project selection
 alone does not satisfy the required diagnosis, implementation, verification,
 and completion contract. The temporary runtime state was restored afterward.
+
+## P24 installed acceptance support recheck — 2026-08-27
+
+| ID | Boundary | Command / observation | Result | Status |
+|---|---|---|---|---|
+| P24-RECHECK-BACKEND-01 | Policy, routing and native-browser backend coverage | `.venv/bin/pytest -q tests/test_hafiye_policy.py tests/gateway/test_hafiye_routing.py tests/tools/test_hafiye_browser.py` | `35 passed in 1.29s` | PASS / SUPPORT |
+| P24-RECHECK-VOICE-01 | Voice/gateway command and completion support | `.venv/bin/pytest -q tests/tools/test_wake_word.py tests/tools/test_voice_mode.py tests/tools/test_voice_stop_phrase.py tests/tools/test_voice_cli_integration.py tests/gateway/test_voice_command.py tests/gateway/test_auto_voice_reply_format.py tests/gateway/test_streaming_tts_consumer.py tests/gateway/test_completion_delivery.py` | `255 passed, 12 skipped, 2 warnings in 9.94s` | PASS / SUPPORT; PHYSICAL ACCEPTANCE OPEN |
+| P24-RECHECK-UI-01 | Desktop Jarvis/wake/composer/voice UI support | `../../node_modules/.bin/vitest run --project ui` over the targeted Jarvis, wake, Composer and voice files | `9 files; 113 passed` | PASS / SUPPORT |
+| P24-RECHECK-ELECTRON-01 | Installed Desktop lifecycle and emergency support | `../../node_modules/.bin/vitest run --project electron` over Composer, wake indicator and emergency shortcut files | `5 files; 40 passed` | PASS / SUPPORT |
+| P24-RECHECK-DOCTOR-01 | Installed runtime and computer-use readiness | `/usr/bin/hafiye runtime doctor`; `/usr/bin/hafiye voice doctor`; `/usr/bin/hafiye package doctor`; `/home/tolga/.local/bin/computer-use-linux doctor` | Runtime/voice/computer-use report `ok=true`, readiness blockers empty; package doctor OK with existing optional `cargo: not found` warning | PASS / SUPPORT; P24 ACCEPTANCE OPEN |
+
+These support checks do not claim physical wake, speech, barge-in,
+emergency-stop, coding/browser completion, re-arm, or restart-recovery
+acceptance. The offline replay remains user-deferred.

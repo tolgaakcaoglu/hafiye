@@ -1153,6 +1153,10 @@ silently treated as passing.
   transcript, short spoken acknowledgement, re-arm, and barge-in replays are
   still not accepted. This is an acceptance gap, not evidence of a source
   defect.
+- The latest installed support recheck passed the targeted backend, Desktop,
+  Electron, voice/gateway, runtime, voice, package and computer-use checks;
+  these results do not replace the missing physical P24 acceptance and do not
+  change the coding/browser limitation status.
 - A real installed Composer replay with the qualified Qwen3-14B route and the
   exact Randevu coding prompt successfully resolved the project through
   `project_switch`, but the model stopped to request additional bug details.
