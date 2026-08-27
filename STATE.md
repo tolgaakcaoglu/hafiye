@@ -14,10 +14,10 @@ Last updated: 2026-08-27
   Qwen3.8 Flash Next security-research catalog integration.) Earlier source
   identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `8a8546e454bd1f2b48bd9ed5e09e704329f46972` (substantive documentation
+  `1edc72dbfcfe3961342c0ffe901dbc5eec02823e` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
-  `b8e0417cd72c7c92231b9b64049f92e896290bc1`; documentation commits do not
+  `8a8546e454bd1f2b48bd9ed5e09e704329f46972`; documentation commits do not
   change the Hafiye source checkpoint or installed package source.
 
 The three SHA values above are intentionally separate: the first is the
