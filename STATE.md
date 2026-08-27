@@ -14,7 +14,7 @@ Last updated: 2026-08-27
   emergency bindings are repaired in place only when their reserved Hafiye
   ownership marker matches.) Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
-  `e73f4dc8596149d62b7c7e191bf792e2889c2922` (substantive documentation
+  `028fb50ee5d63d6e15bca12ddcb3cf728821f24d` (substantive documentation
   closure; this metadata pointer is kept separate from the source HEAD).
 - Earlier documentation closure HEAD:
   `b6ab0371f25ffe0dcda6f17e89737daaf8458fc2`; documentation commits do not
