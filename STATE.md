@@ -2572,3 +2572,20 @@ offline replay remain unaccepted. No P25 or release tag was created.
   current model families. The same key/model through Google's documented
   OpenAI-compatible endpoint also returned HTTP 429, so this is not a native
   Gemini transport defect. No source change or route change was made.
+
+### P24 latest exact upstream comparison — 2026-08-27
+
+- The canonical five-node comparison was rerun after the Gemini and installed
+  runtime checks. It returned `3 passed, 2 failed`; only accepted historical
+  IDs 2 and 3 failed, while IDs 1, 4, and 5 passed. This is a reduction from
+  the earlier `3 failed, 2 passed` observation inside the accepted historical
+  whitelist, not a new or different regression.
+- The two failing nodes were the FTS5 context-enrichment projection test and
+  the `sort` leading-dash program-payload test. The exact command and raw
+  result are retained in the session evidence; no upstream bug was changed.
+- A fresh deterministic read-only check of the registered Randevu project
+  returned `Tests: 165 passed, 0 failed.` A bounded installed Qwen3-4B coding
+  qualification request was also attempted with explicit no-edit/no-OpenHands
+  constraints, but produced no final agent response before it was stopped;
+  the project worktree was unchanged. This is supporting evidence only, not a
+  P24.9 coding-agent acceptance.

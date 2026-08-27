@@ -823,6 +823,9 @@ physical acceptance remains open.
       verified `tests/run.php` (`165 passed, 0 failed`) plus TODO/bug searches
       without changing the user's dirty worktree, but no concrete bug or
       OpenHands edit was evidenced; acceptance remains open.
+      A subsequent bounded installed Qwen3-4B read-only qualification request
+      produced no final agent response and was stopped with the project
+      worktree unchanged; this is not an acceptance.
 - [ ] P24.10 Implement and verify the browser/media flow for “YouTube'dan
       Mertcan Bahar'ın son videosunu aç”: correct channel, latest video,
       open/playback verification and concise speech. The installed package's
@@ -870,6 +873,12 @@ P24 is not a new generic runtime or technology-selection phase. It converges
 the existing Hermes, Composer, gateway, llama.cpp, whisper.cpp, Piper,
 computer-use-linux, OpenHands and rootd machinery into Hafiye's primary Jarvis
 assistant loop.
+
+The latest canonical five-node upstream comparison on 2026-08-27 returned
+`3 passed, 2 failed`; only accepted historical IDs 2 and 3 failed. This is a
+further reduction within `ACCEPTED_UPSTREAM_BASELINE`, with no new/different
+regression. P24 remains open because installed voice, recovery/re-arm,
+coding/browser, and physical acceptance evidence is still incomplete.
 
 ### P24 credential/model-picker recheck — 2026-08-27
 

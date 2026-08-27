@@ -38,6 +38,10 @@ silently treated as passing.
   IDs 1 and 4 passed. This is a reduced observed subset inside the same
   accepted five-ID whitelist, not a new/different regression. A separate
   targeted `run_tests.sh` invocation also passed all 35 relevant tests.
+- A fresh canonical five-node replay on 2026-08-27 returned `3 passed,
+  2 failed`; only historical IDs 2 and 3 failed, while IDs 1, 4, and 5
+  passed. This further reduction remains inside the accepted whitelist and
+  does not add a Hafiye regression or change the historical five-ID set.
 
 ## KI-002 — System Python is outside the Hermes constraint
 
@@ -1099,3 +1103,7 @@ silently treated as passing.
   the navigation alone. A future acceptance replay may use a bounded,
   model-compatible state request only if it is implemented as a genuine
   product behavior and independently verified.
+- A separate installed Qwen3-4B read-only coding qualification request was
+  stopped after producing no final agent response; the Randevu worktree was
+  unchanged. This does not establish a coding-agent acceptance or a source
+  defect.
