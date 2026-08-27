@@ -110,29 +110,120 @@ def test_curated_model_catalog_is_pinned_and_reports_install_state(tmp_path: Pat
     manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
 
     catalog = manager.model_catalog()
-    assert len(catalog) == 1
-    item = catalog[0]
-    assert item["id"] == "qwen3.8-27b-ud-iq1_s"
-    assert item["revision"] == "4ca720788d1e01f1bff70c033e0d0028fd02e502"
-    assert item["sha256"] == "3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887"
-    assert item["size"] == 6_192_222_208
-    assert item["qualification"] == "pending"
-    assert item["install_status"] == "downloadable"
+    assert len(catalog) == 3
+    by_id = {item["id"]: item for item in catalog}
 
-    source = tmp_path / "catalog.gguf"
-    source.write_bytes(b"catalog-model")
-    imported = manager.import_model(source, item["id"])
-    # Simulate an exact catalog registration without downloading 6.19 GB.
-    registry = manager._registry()
-    registry["models"][0]["sha256"] = item["sha256"]
-    manager._save_registry(registry)
-    assert imported["id"] == item["id"]
-    assert manager.model_catalog()[0]["install_status"] == "installed"
+    default = by_id["qwen3.8-27b-ud-iq1_s"]
+    assert default["revision"] == "4ca720788d1e01f1bff70c033e0d0028fd02e502"
+    assert default["sha256"] == "3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887"
+    assert default["size"] == 6_192_222_208
+    assert default["featured"] is True
 
-    registry = manager._registry()
-    registry["models"][0]["sha256"] = "different"
-    manager._save_registry(registry)
-    assert manager.model_catalog()[0]["install_status"] == "conflict"
+    ollama = by_id["qwen3.8-27b-uncensored-q4_k_m"]
+    assert ollama["source_type"] == "ollama"
+    assert ollama["revision"] == "q4_K_M@sha256:6fac2f98fdf7"
+    assert ollama["sha256"] == "3445102e9cde5d562508642c100a2f5ac3368a5a3f748442811d7a95daee3bec"
+    assert ollama["size"] == 16_810_714_496
+
+    flash = by_id["qwen3.8-flash-next-uncensored-iq2_m"]
+    assert flash["requires_auth"] is True
+    assert flash["revision"] == "3da364f04d1e0161cae12db000399e0a91a9466f"
+    assert flash["size"] == 80_086_292_992
+    assert len(flash["download_files"]) == 2
+    assert all(item["qualification"] == "pending" for item in catalog)
+    assert all(item["install_status"] == "downloadable" for item in catalog)
+
+
+def test_catalog_download_registers_ollama_and_split_huggingface_models(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    calls: list[tuple[str, Path, dict[str, str]]] = []
+
+    def fake_download(file_entry, destination, *, headers=None):
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(b"GGUF-catalog-fixture")
+        calls.append((file_entry["filename"], destination, dict(headers or {})))
+
+    monkeypatch.setattr(manager, "_download_catalog_file", fake_download)
+    ollama = manager.download_catalog_model("qwen3.8-27b-uncensored-q4_k_m")
+    assert ollama["source"] == "catalog:ollama"
+    assert Path(ollama["path"]).name == "Qwen3.8-27B-Uncensored-Q4_K_M.gguf"
+    assert manager.model_catalog()[1]["install_status"] == "installed"
+    assert calls[0][2] == {}
+
+    monkeypatch.setenv("HF_TOKEN", "hf_test_token")
+    flash = manager.download_catalog_model("qwen3.8-flash-next-uncensored-iq2_m")
+    assert flash["source"] == "catalog:huggingface"
+    assert len(flash["catalog_files"]) == 2
+    assert calls[-2][2] == {"Authorization": "Bearer hf_test_token"}
+    assert calls[-1][2] == {"Authorization": "Bearer hf_test_token"}
+    assert manager.model_catalog()[2]["install_status"] == "installed"
+
+    second_shard = Path(flash["path"]).parent / flash["catalog_files"][1]["filename"]
+    second_shard.unlink()
+    assert manager.model_catalog()[2]["install_status"] == "downloadable"
+    repaired = manager.download_catalog_model(flash["id"])
+    assert second_shard.is_file()
+    assert repaired["catalog_files"] == flash["catalog_files"]
+
+    manager.delete_model(flash["id"])
+    assert not Path(flash["path"]).parent.exists()
+
+
+def test_gated_catalog_download_requires_huggingface_credential(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.setattr(
+        manager,
+        "_download_catalog_file",
+        lambda *_args, **_kwargs: pytest.fail("download must not start without HF_TOKEN"),
+    )
+
+    with pytest.raises(LocalRuntimeError, match="HF_TOKEN"):
+        manager.download_catalog_model("qwen3.8-flash-next-uncensored-iq2_m")
+
+
+def test_catalog_file_download_verifies_digest_and_removes_corrupt_partial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    payload = b"GGUF-catalog-download"
+
+    class Response:
+        status = 200
+
+        def __init__(self):
+            self.done = False
+
+        def read(self, _size: int) -> bytes:
+            if self.done:
+                return b""
+            self.done = True
+            return payload
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(local_runtime.urllib.request, "urlopen", lambda *_args, **_kwargs: Response())
+    destination = tmp_path / "catalog.gguf"
+    entry = {
+        "filename": destination.name,
+        "url": "https://models.example/catalog.gguf",
+        "sha256": hashlib.sha256(payload).hexdigest(),
+    }
+    manager._download_catalog_file(entry, destination)
+    assert destination.read_bytes() == payload
+
+    corrupt_destination = tmp_path / "corrupt.gguf"
+    with pytest.raises(LocalRuntimeError, match="checksum mismatch"):
+        manager._download_catalog_file(
+            {**entry, "filename": corrupt_destination.name, "sha256": "0" * 64},
+            corrupt_destination,
+        )
+    assert not corrupt_destination.with_name("corrupt.gguf.part").exists()
 
 
 def test_qwen3_large_context_uses_one_server_slot():
@@ -248,12 +339,15 @@ def test_download_uses_partial_file_and_registers_checksum(tmp_path: Path, monke
 
     def fake_urlopen(request, timeout=0):
         captured["range"] = request.headers.get("Range")
+        captured["authorization"] = request.headers.get("Authorization")
         return Response()
 
+    monkeypatch.setenv("HF_TOKEN", "hf_manual_download_token")
     monkeypatch.setattr(local_runtime.urllib.request, "urlopen", fake_urlopen)
     item = manager.download_model("owner/repo", "downloaded.gguf", model_id="downloaded")
 
     assert captured["range"] == "bytes=7-"
+    assert captured["authorization"] == "Bearer hf_manual_download_token"
     assert Path(item["path"]).read_bytes() == b"prefix-suffix"
     assert item["source"] == "huggingface"
     assert item["source_url"].endswith("/owner/repo/resolve/main/downloaded.gguf")

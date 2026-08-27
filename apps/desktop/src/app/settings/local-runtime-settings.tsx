@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
+  downloadLocalRuntimeCatalogModel,
   downloadLocalRuntimeModel,
   getLocalRuntime,
   getLocalRuntimeModels,
@@ -127,13 +128,7 @@ export function LocalRuntimeSettings() {
 
   const downloadCatalogModel = (catalogModel: LocalRuntimeCatalogModel) =>
     run(`catalog:${catalogModel.id}`, async () => {
-      const model = await downloadLocalRuntimeModel({
-        filename: catalogModel.filename,
-        model_id: catalogModel.id,
-        repo_id: catalogModel.repo_id,
-        revision: catalogModel.revision,
-        sha256: catalogModel.sha256
-      })
+      const model = await downloadLocalRuntimeCatalogModel(catalogModel.id)
       setSelectedModel(model.id)
     })
 
@@ -225,8 +220,15 @@ export function LocalRuntimeSettings() {
                     ) : null}
                   </div>
                   <span className="text-[0.7rem] text-muted-foreground">
-                    {formatSize(catalogModel.size)} · {catalogModel.license} · {catalogModel.repo_id}
+                    {formatSize(catalogModel.size)} · {catalogModel.license} ·{' '}
+                    {catalogModel.source_type === 'ollama' ? 'Ollama' : 'Hugging Face'} · {catalogModel.repo_id}
                   </span>
+                  <span className="text-[0.7rem] text-muted-foreground">{catalogModel.intended_use}</span>
+                  {catalogModel.requires_auth ? (
+                    <span className="text-[0.7rem] text-amber-300">
+                      Requires approved Hugging Face access and an HF_TOKEN credential in Providers.
+                    </span>
+                  ) : null}
                   {catalogModel.resource_warning ? (
                     <span className="text-[0.7rem] text-amber-300">{catalogModel.resource_warning}</span>
                   ) : null}

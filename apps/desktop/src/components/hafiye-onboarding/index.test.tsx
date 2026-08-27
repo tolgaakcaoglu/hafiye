@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HafiyeOnboardingState } from '@/hermes'
 
 const mocks = vi.hoisted(() => ({
+  downloadLocalRuntimeCatalogModel: vi.fn(),
   downloadLocalRuntimeModel: vi.fn(),
   getHafiyeOnboarding: vi.fn(),
   updateHafiyeOnboarding: vi.fn(),
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/hermes', () => ({
   completeHafiyeOnboarding: mocks.completeHafiyeOnboarding,
+  downloadLocalRuntimeCatalogModel: mocks.downloadLocalRuntimeCatalogModel,
   downloadLocalRuntimeModel: mocks.downloadLocalRuntimeModel,
   getHafiyeAutostartStatus: mocks.getHafiyeAutostartStatus,
   getHafiyeOnboarding: mocks.getHafiyeOnboarding,
@@ -128,6 +130,10 @@ beforeEach(() => {
     id: 'qwen3.8-27b-ud-iq1_s',
     path: '/managed/models/qwen3.8-27b-ud-iq1_s.gguf'
   })
+  mocks.downloadLocalRuntimeCatalogModel.mockResolvedValue({
+    id: 'qwen3.8-27b-ud-iq1_s',
+    path: '/managed/models/qwen3.8-27b-ud-iq1_s.gguf'
+  })
   mocks.getVoiceRuntime.mockResolvedValue({ blockers: [], ok: true, piper: { ready: true }, whisper: { ready: true } })
   mocks.getHafiyeAutostartStatus.mockResolvedValue({
     active: true,
@@ -149,18 +155,22 @@ describe('Hafiye first-run onboarding wizard', () => {
     mocks.getLocalRuntimeModels.mockResolvedValue({
       catalog: [
         {
+          download_files: [],
           featured: true,
           filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
           id: 'qwen3.8-27b-ud-iq1_s',
           install_status: 'downloadable',
+          intended_use: 'General local-agent qualification candidate',
           license: 'Apache-2.0',
           name: 'Qwen3.8 27B UD-IQ1_S',
           qualification: 'pending',
+          requires_auth: false,
           repo_id: 'unsloth/Qwen3.8-27B-GGUF',
           revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
           sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887',
           size: 6_192_222_208,
-          source_url: 'https://huggingface.co/example'
+          source_url: 'https://huggingface.co/example',
+          source_type: 'huggingface'
         }
       ],
       models: []
@@ -170,13 +180,7 @@ describe('Hafiye first-run onboarding wizard', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Önerilen modeli indir' }))
 
     await waitFor(() => {
-      expect(mocks.downloadLocalRuntimeModel).toHaveBeenCalledWith({
-        filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
-        model_id: 'qwen3.8-27b-ud-iq1_s',
-        repo_id: 'unsloth/Qwen3.8-27B-GGUF',
-        revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
-        sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887'
-      })
+      expect(mocks.downloadLocalRuntimeCatalogModel).toHaveBeenCalledWith('qwen3.8-27b-ud-iq1_s')
     })
   })
 

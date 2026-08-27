@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  downloadLocalRuntimeCatalogModel: vi.fn(),
   downloadLocalRuntimeModel: vi.fn(),
   getLocalRuntime: vi.fn(),
   getLocalRuntimeModels: vi.fn(),
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/hermes', () => ({
+  downloadLocalRuntimeCatalogModel: mocks.downloadLocalRuntimeCatalogModel,
   downloadLocalRuntimeModel: mocks.downloadLocalRuntimeModel,
   getLocalRuntime: mocks.getLocalRuntime,
   getLocalRuntimeModels: mocks.getLocalRuntimeModels,
@@ -36,12 +38,40 @@ beforeEach(() => {
     path: '/managed/models/qwen3-test.gguf',
     size: 123
   })
+  mocks.downloadLocalRuntimeCatalogModel.mockResolvedValue({
+    id: 'qwen3.8-27b-ud-iq1_s',
+    path: '/managed/models/qwen3.8-27b-ud-iq1_s.gguf',
+    size: 6_192_222_208
+  })
 })
 
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
 })
+
+function catalogModel(overrides: Record<string, unknown> = {}) {
+  return {
+    download_files: [],
+    featured: false,
+    filename: 'model.gguf',
+    id: 'catalog-model',
+    install_status: 'downloadable',
+    intended_use: 'Local model evaluation',
+    license: 'Apache-2.0',
+    name: 'Catalog model',
+    qualification: 'pending',
+    requires_auth: false,
+    repo_id: 'owner/repository',
+    resource_warning: 'Agent qualification is pending.',
+    revision: 'pinned-revision',
+    sha256: 'pinned-sha256',
+    size: 6_192_222_208,
+    source_url: 'https://models.example/catalog',
+    source_type: 'huggingface',
+    ...overrides
+  }
+}
 
 describe('LocalRuntimeSettings', () => {
   it('downloads a GGUF model through the managed runtime API', async () => {
@@ -86,21 +116,17 @@ describe('LocalRuntimeSettings', () => {
   it('downloads the pinned production catalog model with integrity metadata', async () => {
     mocks.getLocalRuntimeModels.mockResolvedValue({
       catalog: [
-        {
+        catalogModel({
           featured: true,
           filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
           id: 'qwen3.8-27b-ud-iq1_s',
-          install_status: 'downloadable',
-          license: 'Apache-2.0',
+          intended_use: 'General local-agent qualification candidate',
           name: 'Qwen3.8 27B UD-IQ1_S',
-          qualification: 'pending',
           repo_id: 'unsloth/Qwen3.8-27B-GGUF',
-          resource_warning: 'Agent qualification is pending.',
           revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
           sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887',
-          size: 6_192_222_208,
           source_url: 'https://huggingface.co/example'
-        }
+        })
       ],
       models: []
     })
@@ -112,13 +138,46 @@ describe('LocalRuntimeSettings', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Download verified GGUF' }))
 
     await waitFor(() => {
-      expect(mocks.downloadLocalRuntimeModel).toHaveBeenCalledWith({
-        filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
-        model_id: 'qwen3.8-27b-ud-iq1_s',
-        repo_id: 'unsloth/Qwen3.8-27B-GGUF',
-        revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
-        sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887'
-      })
+      expect(mocks.downloadLocalRuntimeCatalogModel).toHaveBeenCalledWith('qwen3.8-27b-ud-iq1_s')
+    })
+  })
+
+  it('shows and downloads the Ollama-source and gated security catalog entries by trusted ID', async () => {
+    mocks.getLocalRuntimeModels.mockResolvedValue({
+      catalog: [
+        catalogModel({
+          id: 'qwen3.8-27b-uncensored-q4_k_m',
+          name: 'Qwen3.8 27B Uncensored Q4_K_M',
+          repo_id: 'orcarouter/Qwen3.8-27B-Uncensored',
+          source_type: 'ollama'
+        }),
+        catalogModel({
+          id: 'qwen3.8-flash-next-uncensored-iq2_m',
+          intended_use: 'Security researchers, red teams, and blue teams',
+          name: 'Qwen3.8 Flash Next Uncensored IQ2_M',
+          repo_id: 'orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF',
+          requires_auth: true,
+          size: 80_086_292_992
+        })
+      ],
+      models: []
+    })
+
+    const { LocalRuntimeSettings } = await import('./local-runtime-settings')
+    render(<LocalRuntimeSettings />)
+
+    expect(await screen.findByText(/Ollama · orcarouter\/Qwen3\.8-27B-Uncensored/)).toBeTruthy()
+    expect(screen.getByText('Security researchers, red teams, and blue teams')).toBeTruthy()
+    expect(screen.getByText(/Requires approved Hugging Face access/)).toBeTruthy()
+
+    const buttons = screen.getAllByRole('button', { name: 'Download verified GGUF' })
+    fireEvent.click(buttons[0])
+    await waitFor(() => {
+      expect(mocks.downloadLocalRuntimeCatalogModel).toHaveBeenCalledWith('qwen3.8-27b-uncensored-q4_k_m')
+    })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Download verified GGUF' })[1])
+    await waitFor(() => {
+      expect(mocks.downloadLocalRuntimeCatalogModel).toHaveBeenCalledWith('qwen3.8-flash-next-uncensored-iq2_m')
     })
   })
 })

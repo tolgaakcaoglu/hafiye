@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   completeHafiyeOnboarding,
+  downloadLocalRuntimeCatalogModel,
   downloadLocalRuntimeModel,
   enableHafiyeAutostart,
   getHafiyeAutostartStatus,
@@ -563,13 +564,7 @@ export function HafiyeOnboardingWizard() {
         throw new Error('Bu model kimliği farklı içerikle zaten kayıtlı. Ayarlar’dan kaldırın veya yeniden adlandırın.')
       }
 
-      const model = await downloadLocalRuntimeModel({
-        filename: catalogModel.filename,
-        model_id: catalogModel.id,
-        repo_id: catalogModel.repo_id,
-        revision: catalogModel.revision,
-        sha256: catalogModel.sha256
-      })
+      const model = await downloadLocalRuntimeCatalogModel(catalogModel.id)
       const nextModels = await getLocalRuntimeModels()
       setModels(nextModels.models)
       setModelCatalog(nextModels.catalog || [])
@@ -1180,11 +1175,19 @@ function renderStepContent(props: StepContentProps): ReactNode {
             <div className="grid gap-2 rounded-md border border-primary/30 bg-primary/5 p-3" key={catalogModel.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="grid gap-1">
-                  <p className="text-xs font-semibold">Önerilen: {catalogModel.name}</p>
+                  <p className="text-xs font-semibold">
+                    {catalogModel.featured ? `Önerilen: ${catalogModel.name}` : catalogModel.name}
+                  </p>
                   <p className="text-[0.7rem] text-muted-foreground">
                     {(catalogModel.size / 1024 ** 3).toFixed(1)} GiB · {catalogModel.license} · bütünlük doğrulamalı
                     indirme
                   </p>
+                  <p className="text-[0.7rem] text-muted-foreground">{catalogModel.intended_use}</p>
+                  {catalogModel.requires_auth ? (
+                    <p className="text-[0.7rem] text-amber-300">
+                      Hugging Face erişim onayı ve Providers bölümünde HF_TOKEN gerekir.
+                    </p>
+                  ) : null}
                   {catalogModel.resource_warning ? (
                     <p className="text-[0.7rem] text-amber-300">{catalogModel.resource_warning}</p>
                   ) : null}
@@ -1198,7 +1201,11 @@ function renderStepContent(props: StepContentProps): ReactNode {
                   type="button"
                   variant="outline"
                 >
-                  {catalogModel.install_status === 'installed' ? 'Bu modeli seç' : 'Önerilen modeli indir'}
+                  {catalogModel.install_status === 'installed'
+                    ? 'Bu modeli seç'
+                    : catalogModel.featured
+                      ? 'Önerilen modeli indir'
+                      : 'Modeli indir'}
                 </Button>
               </div>
             </div>

@@ -15,6 +15,7 @@ requested backend is never reported as available merely because a GPU exists.
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import os
 import platform
@@ -68,6 +69,102 @@ CURATED_LOCAL_MODEL_CATALOG: tuple[dict[str, Any], ...] = (
         "resource_warning": (
             "Agent qualification is pending; downloading this catalog model "
             "does not make it Hafiye's default route."
+        ),
+        "source_type": "huggingface",
+        "requires_auth": False,
+        "intended_use": "General local-agent qualification candidate",
+        "download_files": (
+            {
+                "filename": "Qwen3.8-27B-UD-IQ1_S.gguf",
+                "url": (
+                    "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/"
+                    "4ca720788d1e01f1bff70c033e0d0028fd02e502/"
+                    "Qwen3.8-27B-UD-IQ1_S.gguf"
+                ),
+                "sha256": "3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887",
+                "size": 6_192_222_208,
+            },
+        ),
+    },
+    {
+        "id": "qwen3.8-27b-uncensored-q4_k_m",
+        "name": "Qwen3.8 27B Uncensored Q4_K_M",
+        "repo_id": "orcarouter/Qwen3.8-27B-Uncensored",
+        "filename": "Qwen3.8-27B-Uncensored-Q4_K_M.gguf",
+        "revision": "q4_K_M@sha256:6fac2f98fdf7",
+        "sha256": "3445102e9cde5d562508642c100a2f5ac3368a5a3f748442811d7a95daee3bec",
+        "size": 16_810_714_496,
+        "license": "Apache-2.0",
+        "source_url": "https://ollama.com/orcarouter/Qwen3.8-27B-Uncensored%3Aq4_K_M",
+        "featured": False,
+        "qualification": "pending",
+        "resource_warning": (
+            "Uncensored model; Hafiye host, privilege, privacy, and emergency "
+            "boundaries remain mandatory. The 15.7 GiB GGUF exceeds this "
+            "host's 10 GiB VRAM and practical qualification envelope, so it "
+            "is not a default route. Agent qualification is pending. The "
+            "separate Ollama vision projector is not imported."
+        ),
+        "source_type": "ollama",
+        "requires_auth": False,
+        "intended_use": "Uncensored local model evaluation",
+        "download_files": (
+            {
+                "filename": "Qwen3.8-27B-Uncensored-Q4_K_M.gguf",
+                "url": (
+                    "https://registry.ollama.ai/v2/orcarouter/"
+                    "Qwen3.8-27B-Uncensored/blobs/sha256:"
+                    "3445102e9cde5d562508642c100a2f5ac3368a5a3f748442811d7a95daee3bec"
+                ),
+                "sha256": "3445102e9cde5d562508642c100a2f5ac3368a5a3f748442811d7a95daee3bec",
+                "size": 16_810_714_496,
+            },
+        ),
+    },
+    {
+        "id": "qwen3.8-flash-next-uncensored-iq2_m",
+        "name": "Qwen3.8 Flash Next Uncensored IQ2_M",
+        "repo_id": "orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF",
+        "filename": "Qwen3.8-Flash-Next-Uncensored-IQ2_M-00001-of-00002.gguf",
+        "revision": "3da364f04d1e0161cae12db000399e0a91a9466f",
+        "sha256": "4ba8d9bbe1e7439d6f1856998074df10fac97294320fa74b45c795d2fb6f4004",
+        "size": 80_086_292_992,
+        "license": "Apache-2.0",
+        "source_url": "https://huggingface.co/orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF",
+        "featured": False,
+        "qualification": "pending",
+        "resource_warning": (
+            "Security-research model for red teams and blue teams. Requires "
+            "Hugging Face access approval and HF_TOKEN. The 74.6 GiB IQ2_M "
+            "weights exceed this host's practical qualification envelope and "
+            "are not a default route."
+        ),
+        "source_type": "huggingface",
+        "requires_auth": True,
+        "intended_use": "Security researchers, red teams, and blue teams",
+        "download_files": (
+            {
+                "filename": "Qwen3.8-Flash-Next-Uncensored-IQ2_M-00001-of-00002.gguf",
+                "url": (
+                    "https://huggingface.co/orcarouter/"
+                    "Qwen3.8-Flash-Next-Uncensored-GGUF/resolve/"
+                    "3da364f04d1e0161cae12db000399e0a91a9466f/"
+                    "Qwen3.8-Flash-Next-Uncensored-IQ2_M-00001-of-00002.gguf"
+                ),
+                "sha256": "4ba8d9bbe1e7439d6f1856998074df10fac97294320fa74b45c795d2fb6f4004",
+                "size": 44_775_849_152,
+            },
+            {
+                "filename": "Qwen3.8-Flash-Next-Uncensored-IQ2_M-00002-of-00002.gguf",
+                "url": (
+                    "https://huggingface.co/orcarouter/"
+                    "Qwen3.8-Flash-Next-Uncensored-GGUF/resolve/"
+                    "3da364f04d1e0161cae12db000399e0a91a9466f/"
+                    "Qwen3.8-Flash-Next-Uncensored-IQ2_M-00002-of-00002.gguf"
+                ),
+                "sha256": "f4435dbacdca4d78b9aa50703bccd494386b27395bc82e4f7a3d15181d028fde",
+                "size": 35_310_443_840,
+            },
         ),
     },
 )
@@ -538,13 +635,42 @@ class LocalRuntimeManager:
         installed = {str(item.get("id")): item for item in self.models()}
         result: list[dict[str, Any]] = []
         for catalog_item in CURATED_LOCAL_MODEL_CATALOG:
-            item = dict(catalog_item)
+            item = json.loads(json.dumps(catalog_item))
             local = installed.get(str(item["id"]))
+            expected_files = [
+                {
+                    "filename": entry["filename"],
+                    "sha256": entry["sha256"],
+                    "size": entry["size"],
+                }
+                for entry in item["download_files"]
+            ]
+            exact_catalog_registration = bool(
+                local
+                and local.get("catalog_revision") == item["revision"]
+                and local.get("catalog_files") == expected_files
+            )
+            local_path = Path(str(local.get("path", ""))) if local else None
+            all_catalog_files_available = bool(
+                local_path
+                and all(
+                    (local_path.parent / Path(str(entry["filename"])).name).is_file()
+                    for entry in expected_files
+                )
+            )
             if not local:
+                item["install_status"] = "downloadable"
+            elif exact_catalog_registration and all_catalog_files_available:
+                item["install_status"] = "installed"
+            elif exact_catalog_registration:
+                # An interrupted or partially removed split download is safe
+                # to resume because its immutable file list is still exact.
                 item["install_status"] = "downloadable"
             elif (
                 local.get("available") is True
-                and str(local.get("sha256", "")).lower() == str(item["sha256"]).lower()
+                and len(expected_files) == 1
+                and str(local.get("sha256", "")).lower()
+                == str(item["sha256"]).lower()
             ):
                 item["install_status"] = "installed"
             else:
@@ -552,6 +678,133 @@ class LocalRuntimeManager:
                 item["install_status"] = "conflict"
             result.append(item)
         return result
+
+    def _download_catalog_file(
+        self,
+        file_entry: dict[str, Any],
+        destination: Path,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> None:
+        """Download one immutable catalog file with resume and SHA-256 verification."""
+        expected_sha = str(file_entry["sha256"]).lower()
+        if destination.is_file() and _sha256(destination).lower() == expected_sha:
+            return
+
+        partial = destination.with_name(destination.name + ".part")
+        offset = partial.stat().st_size if partial.exists() else 0
+        request_headers = dict(headers or {})
+        if offset:
+            request_headers["Range"] = f"bytes={offset}-"
+        request = urllib.request.Request(str(file_entry["url"]), headers=request_headers)
+        try:
+            response = urllib.request.urlopen(request, timeout=60)
+        except urllib.error.HTTPError as exc:
+            if exc.code in {401, 403}:
+                raise LocalRuntimeError(
+                    "Catalog download is not authorized; accept the model's access terms "
+                    "and configure HF_TOKEN in Hafiye Providers"
+                ) from exc
+            raise LocalRuntimeError(f"Catalog model download failed: HTTP {exc.code}") from exc
+        except urllib.error.URLError as exc:
+            raise LocalRuntimeError(f"Catalog model download failed: {exc}") from exc
+        try:
+            status = getattr(response, "status", 200)
+            if offset and status != 206:
+                offset = 0
+            mode = "ab" if offset else "wb"
+            with partial.open(mode) as output:
+                try:
+                    partial.chmod(0o600)
+                except OSError:
+                    pass
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    output.write(chunk)
+                output.flush()
+                os.fsync(output.fileno())
+        except (OSError, http.client.HTTPException) as exc:
+            raise LocalRuntimeError(
+                f"Catalog model download was interrupted for {file_entry['filename']}: {exc}"
+            ) from exc
+        finally:
+            response.close()
+
+        actual_sha = _sha256(partial).lower()
+        if actual_sha != expected_sha:
+            partial.unlink(missing_ok=True)
+            raise LocalRuntimeError(
+                f"Downloaded checksum mismatch for {file_entry['filename']}: "
+                f"expected {expected_sha}, got {actual_sha}"
+            )
+        os.replace(partial, destination)
+
+    def download_catalog_model(self, model_id: str) -> dict[str, Any]:
+        """Download a backend-owned catalog entry, including split GGUF shards."""
+        selected_id = _safe_model_id(model_id)
+        catalog = next(
+            (item for item in self.model_catalog() if item.get("id") == selected_id),
+            None,
+        )
+        if not catalog:
+            raise LocalRuntimeError(f"Unknown catalog model {selected_id!r}")
+        if catalog["install_status"] == "installed":
+            return self.model(selected_id)
+        if catalog["install_status"] == "conflict":
+            raise LocalRuntimeError(
+                f"Model id {selected_id!r} already exists; delete it before downloading"
+            )
+
+        headers: dict[str, str] = {}
+        if catalog.get("requires_auth"):
+            token = os.environ.get("HF_TOKEN", "").strip()
+            if not token or token.startswith("keyring://"):
+                raise LocalRuntimeError(
+                    "This gated Hugging Face model requires approved access and HF_TOKEN; "
+                    "configure the Hugging Face credential in Hafiye Providers"
+                )
+            headers["Authorization"] = f"Bearer {token}"
+
+        model_dir = self.paths.models / selected_id
+        _ensure_private_dir(model_dir)
+        files = list(catalog["download_files"])
+        for file_entry in files:
+            filename = Path(str(file_entry["filename"])).name
+            if not filename.lower().endswith(GGUF_SUFFIX):
+                raise LocalRuntimeError("Catalog entries may contain only .gguf files")
+            self._download_catalog_file(file_entry, model_dir / filename, headers=headers)
+
+        primary = model_dir / Path(str(files[0]["filename"])).name
+        registered_files = [
+            {
+                "filename": Path(str(entry["filename"])).name,
+                "sha256": str(entry["sha256"]).lower(),
+                "size": int(entry["size"]),
+            }
+            for entry in files
+        ]
+        item = {
+            "id": selected_id,
+            "name": catalog["name"],
+            "path": str(primary),
+            "size": int(catalog["size"]),
+            "sha256": registered_files[0]["sha256"],
+            "source": f"catalog:{catalog['source_type']}",
+            "source_url": catalog["source_url"],
+            "catalog_revision": catalog["revision"],
+            "catalog_files": registered_files,
+            "updated_at": _now(),
+        }
+        _apply_model_capabilities(item)
+        payload = self._registry()
+        payload["models"] = [
+            entry for entry in payload["models"] if entry.get("id") != selected_id
+        ]
+        payload["models"].append(item)
+        self._save_registry(payload)
+        return item
 
     def model(self, model_id: str) -> dict[str, Any]:
         model_id = _safe_model_id(model_id)
@@ -639,7 +892,11 @@ class LocalRuntimeManager:
         partial = destination.with_name(destination.name + ".part")
         url = f"https://huggingface.co/{repo_id}/resolve/{revision}/{filename}"
         offset = partial.stat().st_size if partial.exists() else 0
-        request = urllib.request.Request(url, headers={"Range": f"bytes={offset}-"} if offset else {})
+        request_headers = {"Range": f"bytes={offset}-"} if offset else {}
+        hf_token = os.environ.get("HF_TOKEN", "").strip()
+        if hf_token and not hf_token.startswith("keyring://"):
+            request_headers["Authorization"] = f"Bearer {hf_token}"
+        request = urllib.request.Request(url, headers=request_headers)
         try:
             response = urllib.request.urlopen(request, timeout=60)
         except urllib.error.URLError as exc:
@@ -677,12 +934,25 @@ class LocalRuntimeManager:
         return item
 
     def delete_model(self, model_id: str) -> dict[str, Any]:
+        model_id = _safe_model_id(model_id)
         item = self.model(model_id)
         state = self._read_server_state()
         if state.get("model_id") == model_id and self._server_is_alive(state):
             raise LocalRuntimeError("Stop/unload the active model before deleting it")
         path = Path(str(item["path"]))
-        path.unlink(missing_ok=True)
+        catalog_files = item.get("catalog_files")
+        if isinstance(catalog_files, list) and path.parent == self.paths.models / model_id:
+            for entry in catalog_files:
+                if isinstance(entry, dict):
+                    (path.parent / Path(str(entry.get("filename", ""))).name).unlink(
+                        missing_ok=True
+                    )
+            try:
+                path.parent.rmdir()
+            except OSError:
+                pass
+        else:
+            path.unlink(missing_ok=True)
         payload = self._registry()
         payload["models"] = [entry for entry in payload["models"] if entry.get("id") != model_id]
         self._save_registry(payload)

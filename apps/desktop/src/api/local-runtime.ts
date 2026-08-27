@@ -14,19 +14,23 @@ export interface LocalRuntimeModel {
 }
 
 export interface LocalRuntimeCatalogModel {
+  download_files: Array<{ filename: string; sha256: string; size: number; url: string }>
   featured: boolean
   filename: string
   id: string
   install_status: 'conflict' | 'downloadable' | 'installed'
+  intended_use: string
   license: string
   name: string
   qualification: 'pending' | 'qualified'
+  requires_auth: boolean
   repo_id: string
   resource_warning?: string
   revision: string
   sha256: string
   size: number
   source_url: string
+  source_type: 'huggingface' | 'ollama'
 }
 
 export interface LocalRuntimeModelsResponse {
@@ -119,6 +123,14 @@ export function downloadLocalRuntimeModel(body: LocalRuntimeModelDownloadRequest
     body,
     // Multi-gigabyte GGUF downloads legitimately take much longer than the
     // generic API timeout. The backend still streams to a resumable .part.
+    timeoutMs: 21_600_000
+  })
+}
+
+export function downloadLocalRuntimeCatalogModel(modelId: string) {
+  return hermesApi<LocalRuntimeModel>({
+    path: `/api/local-runtime/models/catalog/${encodeURIComponent(modelId)}/download`,
+    method: 'POST',
     timeoutMs: 21_600_000
   })
 }

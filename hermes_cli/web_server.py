@@ -7514,6 +7514,14 @@ async def download_local_runtime_model(body: dict[str, Any]):
     )
 
 
+@app.post("/api/local-runtime/models/catalog/{model_id}/download")
+async def download_local_runtime_catalog_model(model_id: str):
+    return await asyncio.to_thread(
+        _local_runtime_call,
+        lambda manager: manager.download_catalog_model(model_id),
+    )
+
+
 @app.delete("/api/local-runtime/models/{model_id}")
 async def delete_local_runtime_model(model_id: str):
     return await asyncio.to_thread(_local_runtime_call, lambda manager: manager.delete_model(model_id))
