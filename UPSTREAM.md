@@ -16,7 +16,7 @@ upstream https://github.com/NousResearch/hermes-agent.git
   earlier Jarvis interaction-loop, implementation-audit, model identity,
   Debian bootstrap, Desktop local-GGUF download, Electron packaging,
   computer-use MCP startup-gate, and KI-043 source/test commits remain below):
-  e00da6acd52d00a6bdb0f4c7094d01d154b26d57
+  beec5bd9c061b4c538e7916ee152c29264f6b8ad
 
 These SHA values are intentionally separate. The first is the Hermes source
 pin, the second is the history-preserving Hafiye baseline merge, and the third
@@ -720,6 +720,9 @@ P0 computer-use acceptance requires:
 
 - Hafiye source/test commit:
   `e00da6acd52d00a6bdb0f4c7094d01d154b26d57`.
+- Follow-up Desktop presentation fix:
+  `beec5bd9c061b4c538e7916ee152c29264f6b8ad` (correct IEC byte-unit
+  formatting for the multi-gigabyte catalog card).
 - The existing managed llama.cpp/GGUF boundary now publishes a backend-owned
   production catalog entry for the exact Unsloth Qwen3.8-27B UD-IQ1_S file,
   pinned by Hugging Face commit, SHA-256 and byte size. Desktop Settings and

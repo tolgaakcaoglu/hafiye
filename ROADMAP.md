@@ -789,7 +789,7 @@ must be replayed from the installed post-P24 package.
 
 Status: SOURCE IMPLEMENTATION COMPLETE; INSTALLED REAL-MACHINE ACCEPTANCE OPEN.
 Added by binding user direction on 2026-08-27. The current source checkpoint is
-`e00da6acd52d00a6bdb0f4c7094d01d154b26d57`; these implementation marks do not
+`beec5bd9c061b4c538e7916ee152c29264f6b8ad`; these implementation marks do not
 promote the physical P24.14 acceptance to PASS. The installed package was
 rebuilt/reinstalled from the package containing the source checkpoint above;
 physical acceptance remains open.
@@ -894,7 +894,7 @@ repaired only for the reserved Hafiye ownership marker, and the packaged
 managed STT child receives the exact Hafiye backend module root. The user's
 explicitly deferred offline replay is not marked PASS.
 
-The latest source checkpoint `e00da6acd` also installs the pinned Qwen3.8-27B
+The latest source checkpoint `beec5bd9c` also installs the pinned Qwen3.8-27B
 catalog entry in the production package. Its verified download surface is
 green, but P24.11 remains open because catalog availability is not practical
 agent qualification or default-route selection.

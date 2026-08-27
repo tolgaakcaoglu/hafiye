@@ -9,7 +9,7 @@ Last updated: 2026-08-27
 - upstream: https://github.com/NousResearch/hermes-agent.git
 - Pinned upstream commit: f293e7206b4ddd66042329442c6afebc19a8808d
 - Baseline merge commit: 2ac06b131a237916432503ac67bbcada6dbea39e
-- Current Hafiye source HEAD: e00da6acd52d00a6bdb0f4c7094d01d154b26d57
+- Current Hafiye source HEAD: beec5bd9c061b4c538e7916ee152c29264f6b8ad
   (Pinned Qwen3.8-27B production catalog/download integration and native
   context compatibility.) Earlier source identities remain recorded below.
 - Current repository/documentation closure HEAD:
@@ -2864,13 +2864,17 @@ offline replay remain unaccepted. No P25 or release tag was created.
   Qwen3.5/Qwen3.8 family, whose GGUF metadata supplies its larger native
   context. The managed pinned llama.cpp checkout contains the `qwen35`
   architecture implementation.
+- Follow-up source commit `beec5bd9c061b4c538e7916ee152c29264f6b8ad`
+  fixes the shared Desktop byte formatter so the catalog displays this file as
+  `5.8 GiB`, not an incorrectly skipped-unit value; its UI regression test
+  passed and Desktop typecheck remained clean.
 - Verification: local-runtime pytest `17 passed`; focused Settings/onboarding
   Vitest `6 passed`; full Desktop UI `5,575 passed`; Desktop typecheck exit 0;
   Ruff and Python compilation passed; production `npm run pack` and Debian
   build passed. The exact historical five-node comparison returned `3 passed,
   2 failed`, only accepted whitelist IDs 2 and 3.
 - The Debian package was rebuilt/reinstalled through `hafiye-rootd`. Installed
-  manifest source is `e00da6acd`, package doctor is OK with only the existing
+  manifest source is `beec5bd9c`, package doctor is OK with only the existing
   optional `cargo: not found` warning, gateway is active/HTTP 200, and the
   authenticated installed `/api/local-runtime/models` response reports the
   pinned entry as `downloadable`. The 6.19 GB model was intentionally not
