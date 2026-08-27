@@ -26,6 +26,7 @@ import {
   installPiperRuntime,
   installWhisperRuntime,
   type LocalRuntimeBackend,
+  type LocalRuntimeCatalogModel,
   type LocalRuntimeDoctor,
   type LocalRuntimeModel,
   saveHermesConfig,
@@ -262,6 +263,7 @@ export function HafiyeOnboardingWizard() {
   const [computer, setComputer] = useState<Record<string, unknown> | null>(null)
   const [runtime, setRuntime] = useState<LocalRuntimeDoctor | null>(null)
   const [models, setModels] = useState<LocalRuntimeModel[]>([])
+  const [modelCatalog, setModelCatalog] = useState<LocalRuntimeCatalogModel[]>([])
   const [voice, setVoice] = useState<VoiceRuntimeDoctor | null>(null)
   const [autostart, setAutostart] = useState<HafiyeAutostartStatus | null>(null)
   const [doctor, setDoctor] = useState<HafiyeOnboardingDoctor | null>(null)
@@ -359,7 +361,10 @@ export function HafiyeOnboardingWizard() {
     }
 
     void getLocalRuntimeModels()
-      .then(result => setModels(result.models))
+      .then(result => {
+        setModels(result.models)
+        setModelCatalog(result.catalog || [])
+      })
       .catch(errorValue => setError(String(errorValue)))
   }, [currentStep, state?.required])
 
@@ -447,6 +452,7 @@ export function HafiyeOnboardingWizard() {
     const [nextRuntime, nextModels] = await Promise.all([getLocalRuntime(), getLocalRuntimeModels()])
     setRuntime(nextRuntime)
     setModels(nextModels.models)
+    setModelCatalog(nextModels.catalog || [])
 
     return nextRuntime
   }
@@ -544,6 +550,29 @@ export function HafiyeOnboardingWizard() {
       const model = await downloadLocalRuntimeModel({ repo_id: downloadRepo.trim(), filename: downloadFilename.trim() })
       const nextModels = await getLocalRuntimeModels()
       setModels(nextModels.models)
+      await advance({ model_id: model.id })
+    })
+
+  const downloadCatalogModel = (catalogModel: LocalRuntimeCatalogModel) =>
+    void run('Doğrulanmış GGUF indiriliyor…', async () => {
+      if (catalogModel.install_status === 'installed') {
+        await advance({ model_id: catalogModel.id })
+        return
+      }
+      if (catalogModel.install_status === 'conflict') {
+        throw new Error('Bu model kimliği farklı içerikle zaten kayıtlı. Ayarlar’dan kaldırın veya yeniden adlandırın.')
+      }
+
+      const model = await downloadLocalRuntimeModel({
+        filename: catalogModel.filename,
+        model_id: catalogModel.id,
+        repo_id: catalogModel.repo_id,
+        revision: catalogModel.revision,
+        sha256: catalogModel.sha256
+      })
+      const nextModels = await getLocalRuntimeModels()
+      setModels(nextModels.models)
+      setModelCatalog(nextModels.catalog || [])
       await advance({ model_id: model.id })
     })
 
@@ -819,6 +848,7 @@ export function HafiyeOnboardingWizard() {
               currentStep,
               devices,
               doctor,
+              downloadCatalogModel,
               downloadFilename,
               downloadModel,
               downloadRepo,
@@ -833,6 +863,7 @@ export function HafiyeOnboardingWizard() {
               installPiper,
               installWhisper,
               models,
+              modelCatalog,
               piperVoice,
               privacyMode,
               refreshMicrophones,
@@ -885,6 +916,7 @@ interface StepContentProps {
   currentStep: HafiyeOnboardingStep
   devices: MediaDeviceInfo[]
   doctor: HafiyeOnboardingDoctor | null
+  downloadCatalogModel: (model: LocalRuntimeCatalogModel) => void
   downloadFilename: string
   downloadModel: () => void
   downloadRepo: string
@@ -899,6 +931,7 @@ interface StepContentProps {
   installPiper: () => void
   installWhisper: () => void
   models: LocalRuntimeModel[]
+  modelCatalog: LocalRuntimeCatalogModel[]
   piperVoice: string
   privacyMode: (typeof PRIVACY_MODES)[number]
   refreshMicrophones: () => void
@@ -952,6 +985,7 @@ function renderStepContent(props: StepContentProps): ReactNode {
     currentStep,
     devices,
     doctor,
+    downloadCatalogModel,
     downloadFilename,
     downloadModel,
     downloadRepo,
@@ -966,6 +1000,7 @@ function renderStepContent(props: StepContentProps): ReactNode {
     installPiper,
     installWhisper,
     models,
+    modelCatalog,
     piperVoice,
     privacyMode,
     refreshMicrophones,
@@ -1141,6 +1176,33 @@ function renderStepContent(props: StepContentProps): ReactNode {
     case 'local-model':
       return (
         <Panel>
+          {modelCatalog.map(catalogModel => (
+            <div className="grid gap-2 rounded-md border border-primary/30 bg-primary/5 p-3" key={catalogModel.id}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="grid gap-1">
+                  <p className="text-xs font-semibold">Önerilen: {catalogModel.name}</p>
+                  <p className="text-[0.7rem] text-muted-foreground">
+                    {(catalogModel.size / 1024 ** 3).toFixed(1)} GiB · {catalogModel.license} · bütünlük doğrulamalı
+                    indirme
+                  </p>
+                  {catalogModel.resource_warning ? (
+                    <p className="text-[0.7rem] text-amber-300">{catalogModel.resource_warning}</p>
+                  ) : null}
+                  {catalogModel.install_status === 'conflict' ? (
+                    <p className="text-[0.7rem] text-destructive">Aynı kimlikte farklı bir yerel model kayıtlı.</p>
+                  ) : null}
+                </div>
+                <Button
+                  disabled={Boolean(busy) || catalogModel.install_status === 'conflict'}
+                  onClick={() => downloadCatalogModel(catalogModel)}
+                  type="button"
+                  variant="outline"
+                >
+                  {catalogModel.install_status === 'installed' ? 'Bu modeli seç' : 'Önerilen modeli indir'}
+                </Button>
+              </div>
+            </div>
+          ))}
           <div className="grid gap-2">
             <p className="text-xs font-medium">İçe aktarılmış modeller</p>
             {models.length ? (

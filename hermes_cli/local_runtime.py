@@ -45,6 +45,33 @@ GPU_BACKENDS = ("CUDA", "VULKAN")
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 GGUF_SUFFIX = ".gguf"
 
+# Hafiye's production model catalog is backend-owned so every Desktop surface
+# sees the same pinned, integrity-checked choices. Catalog membership does not
+# imply agent qualification or make a model the active/default route.
+CURATED_LOCAL_MODEL_CATALOG: tuple[dict[str, Any], ...] = (
+    {
+        "id": "qwen3.8-27b-ud-iq1_s",
+        "name": "Qwen3.8 27B UD-IQ1_S",
+        "repo_id": "unsloth/Qwen3.8-27B-GGUF",
+        "filename": "Qwen3.8-27B-UD-IQ1_S.gguf",
+        "revision": "4ca720788d1e01f1bff70c033e0d0028fd02e502",
+        "sha256": "3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887",
+        "size": 6_192_222_208,
+        "license": "Apache-2.0",
+        "source_url": (
+            "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/blob/"
+            "4ca720788d1e01f1bff70c033e0d0028fd02e502/"
+            "Qwen3.8-27B-UD-IQ1_S.gguf"
+        ),
+        "featured": True,
+        "qualification": "pending",
+        "resource_warning": (
+            "Agent qualification is pending; downloading this catalog model "
+            "does not make it Hafiye's default route."
+        ),
+    },
+)
+
 # Qualification is model-registry state, not a UI/model-name special case.
 # Keep this table limited to Hafiye's evidence-backed local qualification
 # identities; unknown GGUFs remain unqualified until they have their own
@@ -181,7 +208,14 @@ def _context_compatibility_args(model_id: str, model_path: Path, context_size: i
             "--override-kv",
             f"qwen2.context_length=int:{requested}",
         ]
-    if re.search(r"qwen3(?:[._-]|$)", identity) and requested > 40960:
+    # Qwen3.5/Qwen3.8 GGUFs advertise their much larger native context and
+    # must not inherit the original Qwen3 40,960-token YaRN workaround.
+    qwen35_family = bool(re.search(r"qwen3(?:[._-]?5|\.8)(?:[._-]|$)", identity))
+    if (
+        re.search(r"qwen3(?:[._-]|$)", identity)
+        and not qwen35_family
+        and requested > 40960
+    ):
         # Official Qwen3 GGUFs advertise a 40,960-token training window.
         # Keep Hermes' 64K contract explicit while using the model's native
         # context as the YaRN origin and overriding llama.cpp's slot cap.
@@ -499,6 +533,26 @@ class LocalRuntimeManager:
             self._save_registry(payload)
         return result
 
+    def model_catalog(self) -> list[dict[str, Any]]:
+        """Return curated downloads enriched with their local install state."""
+        installed = {str(item.get("id")): item for item in self.models()}
+        result: list[dict[str, Any]] = []
+        for catalog_item in CURATED_LOCAL_MODEL_CATALOG:
+            item = dict(catalog_item)
+            local = installed.get(str(item["id"]))
+            if not local:
+                item["install_status"] = "downloadable"
+            elif (
+                local.get("available") is True
+                and str(local.get("sha256", "")).lower() == str(item["sha256"]).lower()
+            ):
+                item["install_status"] = "installed"
+            else:
+                # Never overwrite a user model which happens to share the id.
+                item["install_status"] = "conflict"
+            result.append(item)
+        return result
+
     def model(self, model_id: str) -> dict[str, Any]:
         model_id = _safe_model_id(model_id)
         for item in self.models():
@@ -572,6 +626,16 @@ class LocalRuntimeManager:
         selected_id = _safe_model_id(model_id or Path(filename).stem)
         _ensure_private_dir(self.paths.models)
         destination = self.paths.models / f"{selected_id}.gguf"
+        existing = next((item for item in self.models() if item.get("id") == selected_id), None)
+        if existing and destination.is_file():
+            if (
+                sha256
+                and str(existing.get("sha256", "")).lower() == sha256.strip().lower()
+            ):
+                return existing
+            raise LocalRuntimeError(
+                f"Model id {selected_id!r} already exists; delete it or choose another id"
+            )
         partial = destination.with_name(destination.name + ".part")
         url = f"https://huggingface.co/{repo_id}/resolve/{revision}/{filename}"
         offset = partial.stat().st_size if partial.exists() else 0

@@ -10,6 +10,7 @@ import {
   importLocalRuntimeModel,
   installLocalRuntime,
   type LocalRuntimeBackend,
+  type LocalRuntimeCatalogModel,
   type LocalRuntimeDoctor,
   type LocalRuntimeModel,
   startLocalRuntimeServer,
@@ -40,6 +41,7 @@ function formatSize(size?: number): string {
 export function LocalRuntimeSettings() {
   const [doctor, setDoctor] = useState<LocalRuntimeDoctor | null>(null)
   const [models, setModels] = useState<LocalRuntimeModel[]>([])
+  const [catalog, setCatalog] = useState<LocalRuntimeCatalogModel[]>([])
   const [selectedModel, setSelectedModel] = useState('')
   const [backend, setBackend] = useState<LocalRuntimeBackend>('AUTO')
   const [modelPath, setModelPath] = useState('')
@@ -65,6 +67,7 @@ export function LocalRuntimeSettings() {
       const [nextDoctor, nextModels] = await Promise.all([getLocalRuntime(), getLocalRuntimeModels()])
       setDoctor(nextDoctor)
       setModels(nextModels.models || [])
+      setCatalog(nextModels.catalog || [])
       setSelectedModel(current => current || nextModels.models?.[0]?.id || '')
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -121,6 +124,18 @@ export function LocalRuntimeSettings() {
       setSelectedModel(model.id)
     })
   }
+
+  const downloadCatalogModel = (catalogModel: LocalRuntimeCatalogModel) =>
+    run(`catalog:${catalogModel.id}`, async () => {
+      const model = await downloadLocalRuntimeModel({
+        filename: catalogModel.filename,
+        model_id: catalogModel.id,
+        repo_id: catalogModel.repo_id,
+        revision: catalogModel.revision,
+        sha256: catalogModel.sha256
+      })
+      setSelectedModel(model.id)
+    })
 
   const start = () => {
     if (!selectedModel) {
@@ -197,6 +212,42 @@ export function LocalRuntimeSettings() {
         ))}
 
         <div className="mt-2 grid gap-3 border-t border-border/60 pt-3">
+          {catalog.map(catalogModel => (
+            <div className="grid gap-2 rounded-md border border-primary/30 bg-primary/5 p-3" key={catalogModel.id}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="grid gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold">{catalogModel.name}</span>
+                    {catalogModel.featured ? (
+                      <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[0.65rem] font-medium text-primary">
+                        Hafiye catalog default
+                      </span>
+                    ) : null}
+                  </div>
+                  <span className="text-[0.7rem] text-muted-foreground">
+                    {formatSize(catalogModel.size)} · {catalogModel.license} · {catalogModel.repo_id}
+                  </span>
+                  {catalogModel.resource_warning ? (
+                    <span className="text-[0.7rem] text-amber-300">{catalogModel.resource_warning}</span>
+                  ) : null}
+                  {catalogModel.install_status === 'conflict' ? (
+                    <span className="text-[0.7rem] text-destructive">
+                      This model ID already exists with different contents. Remove or rename it before downloading.
+                    </span>
+                  ) : null}
+                </div>
+                <Button
+                  disabled={catalogModel.install_status !== 'downloadable' || !!busy}
+                  onClick={() => void downloadCatalogModel(catalogModel)}
+                  size="sm"
+                  type="button"
+                >
+                  {busy === `catalog:${catalogModel.id}` && <Loader2 className="size-3.5 animate-spin" />}
+                  {catalogModel.install_status === 'installed' ? 'Installed' : 'Download verified GGUF'}
+                </Button>
+              </div>
+            </div>
+          ))}
           <div className="grid gap-1">
             <span className="text-xs font-medium">Download a GGUF model</span>
             <span className="text-[0.7rem] text-muted-foreground">

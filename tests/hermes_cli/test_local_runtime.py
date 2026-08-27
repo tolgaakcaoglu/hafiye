@@ -98,6 +98,43 @@ def test_qwen3_large_context_uses_yarn_override_and_cpu_kv():
     ) == "auto"
 
 
+def test_qwen38_uses_native_context_instead_of_original_qwen3_yarn_override():
+    assert local_runtime._context_compatibility_args(
+        "qwen3.8-27b-ud-iq1_s",
+        Path("Qwen3.8-27B-UD-IQ1_S.gguf"),
+        65536,
+    ) == []
+
+
+def test_curated_model_catalog_is_pinned_and_reports_install_state(tmp_path: Path):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+
+    catalog = manager.model_catalog()
+    assert len(catalog) == 1
+    item = catalog[0]
+    assert item["id"] == "qwen3.8-27b-ud-iq1_s"
+    assert item["revision"] == "4ca720788d1e01f1bff70c033e0d0028fd02e502"
+    assert item["sha256"] == "3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887"
+    assert item["size"] == 6_192_222_208
+    assert item["qualification"] == "pending"
+    assert item["install_status"] == "downloadable"
+
+    source = tmp_path / "catalog.gguf"
+    source.write_bytes(b"catalog-model")
+    imported = manager.import_model(source, item["id"])
+    # Simulate an exact catalog registration without downloading 6.19 GB.
+    registry = manager._registry()
+    registry["models"][0]["sha256"] = item["sha256"]
+    manager._save_registry(registry)
+    assert imported["id"] == item["id"]
+    assert manager.model_catalog()[0]["install_status"] == "installed"
+
+    registry = manager._registry()
+    registry["models"][0]["sha256"] = "different"
+    manager._save_registry(registry)
+    assert manager.model_catalog()[0]["install_status"] == "conflict"
+
+
 def test_qwen3_large_context_uses_one_server_slot():
     model_path = Path("Qwen3-14B-Q4_K_M.gguf")
     assert local_runtime._parallel_compatibility_args(
@@ -222,6 +259,26 @@ def test_download_uses_partial_file_and_registers_checksum(tmp_path: Path, monke
     assert item["source_url"].endswith("/owner/repo/resolve/main/downloaded.gguf")
     assert item["revision"] == "main"
     assert not partial.exists()
+
+
+def test_download_does_not_overwrite_an_existing_model_id(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    manager = LocalRuntimeManager(RuntimePaths.from_roots(tmp_path / "data", tmp_path / "state"))
+    source = tmp_path / "existing.gguf"
+    source.write_bytes(b"existing")
+    manager.import_model(source, "catalog-id")
+    monkeypatch.setattr(
+        local_runtime.urllib.request,
+        "urlopen",
+        lambda *_args, **_kwargs: pytest.fail("download must not start"),
+    )
+
+    with pytest.raises(LocalRuntimeError, match="already exists"):
+        manager.download_model(
+            "owner/repo",
+            "replacement.gguf",
+            model_id="catalog-id",
+            sha256="different",
+        )
 
 
 def test_server_health_is_safe_when_not_running(tmp_path: Path):

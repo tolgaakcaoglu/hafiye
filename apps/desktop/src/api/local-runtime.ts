@@ -13,6 +13,27 @@ export interface LocalRuntimeModel {
   updated_at?: string
 }
 
+export interface LocalRuntimeCatalogModel {
+  featured: boolean
+  filename: string
+  id: string
+  install_status: 'conflict' | 'downloadable' | 'installed'
+  license: string
+  name: string
+  qualification: 'pending' | 'qualified'
+  repo_id: string
+  resource_warning?: string
+  revision: string
+  sha256: string
+  size: number
+  source_url: string
+}
+
+export interface LocalRuntimeModelsResponse {
+  catalog: LocalRuntimeCatalogModel[]
+  models: LocalRuntimeModel[]
+}
+
 export interface LocalRuntimeServerHealth {
   endpoint?: string
   health_response?: unknown
@@ -67,8 +88,8 @@ export function getLocalRuntime(): Promise<LocalRuntimeDoctor> {
   return hermesApi<LocalRuntimeDoctor>({ path: '/api/local-runtime' })
 }
 
-export function getLocalRuntimeModels(): Promise<{ models: LocalRuntimeModel[] }> {
-  return hermesApi<{ models: LocalRuntimeModel[] }>({ path: '/api/local-runtime/models' })
+export function getLocalRuntimeModels(): Promise<LocalRuntimeModelsResponse> {
+  return hermesApi<LocalRuntimeModelsResponse>({ path: '/api/local-runtime/models' })
 }
 
 export function installLocalRuntime(backend: LocalRuntimeBackend = 'AUTO', sourceRef = 'master') {
@@ -95,7 +116,10 @@ export function downloadLocalRuntimeModel(body: LocalRuntimeModelDownloadRequest
   return hermesApi<LocalRuntimeModel>({
     path: '/api/local-runtime/models/download',
     method: 'POST',
-    body
+    body,
+    // Multi-gigabyte GGUF downloads legitimately take much longer than the
+    // generic API timeout. The backend still streams to a resumable .part.
+    timeoutMs: 21_600_000
   })
 }
 

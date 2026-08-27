@@ -7468,7 +7468,10 @@ async def get_local_runtime():
 
 @app.get("/api/local-runtime/models")
 async def get_local_runtime_models():
-    return await asyncio.to_thread(_local_runtime_call, lambda manager: {"models": manager.models()})
+    return await asyncio.to_thread(
+        _local_runtime_call,
+        lambda manager: {"models": manager.models(), "catalog": manager.model_catalog()},
+    )
 
 
 @app.post("/api/local-runtime/install")

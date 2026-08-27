@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { HafiyeOnboardingState } from '@/hermes'
 
 const mocks = vi.hoisted(() => ({
+  downloadLocalRuntimeModel: vi.fn(),
   getHafiyeOnboarding: vi.fn(),
   updateHafiyeOnboarding: vi.fn(),
   getHafiyeOnboardingEnvironment: vi.fn(),
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/hermes', () => ({
   completeHafiyeOnboarding: mocks.completeHafiyeOnboarding,
+  downloadLocalRuntimeModel: mocks.downloadLocalRuntimeModel,
   getHafiyeAutostartStatus: mocks.getHafiyeAutostartStatus,
   getHafiyeOnboarding: mocks.getHafiyeOnboarding,
   getHafiyeOnboardingDoctor: mocks.getHafiyeOnboardingDoctor,
@@ -121,7 +123,11 @@ beforeEach(() => {
     server: { ready: true, running: true },
     warnings: []
   })
-  mocks.getLocalRuntimeModels.mockResolvedValue({ models: [] })
+  mocks.getLocalRuntimeModels.mockResolvedValue({ catalog: [], models: [] })
+  mocks.downloadLocalRuntimeModel.mockResolvedValue({
+    id: 'qwen3.8-27b-ud-iq1_s',
+    path: '/managed/models/qwen3.8-27b-ud-iq1_s.gguf'
+  })
   mocks.getVoiceRuntime.mockResolvedValue({ blockers: [], ok: true, piper: { ready: true }, whisper: { ready: true } })
   mocks.getHafiyeAutostartStatus.mockResolvedValue({
     active: true,
@@ -138,6 +144,42 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 describe('Hafiye first-run onboarding wizard', () => {
+  it('offers the pinned catalog model without manual Hugging Face fields', async () => {
+    mocks.getHafiyeOnboarding.mockResolvedValue(state({ current_step: 'local-model' }))
+    mocks.getLocalRuntimeModels.mockResolvedValue({
+      catalog: [
+        {
+          featured: true,
+          filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
+          id: 'qwen3.8-27b-ud-iq1_s',
+          install_status: 'downloadable',
+          license: 'Apache-2.0',
+          name: 'Qwen3.8 27B UD-IQ1_S',
+          qualification: 'pending',
+          repo_id: 'unsloth/Qwen3.8-27B-GGUF',
+          revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
+          sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887',
+          size: 6_192_222_208,
+          source_url: 'https://huggingface.co/example'
+        }
+      ],
+      models: []
+    })
+
+    render(<HafiyeOnboardingWizard />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Önerilen modeli indir' }))
+
+    await waitFor(() => {
+      expect(mocks.downloadLocalRuntimeModel).toHaveBeenCalledWith({
+        filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
+        model_id: 'qwen3.8-27b-ud-iq1_s',
+        repo_id: 'unsloth/Qwen3.8-27B-GGUF',
+        revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
+        sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887'
+      })
+    })
+  })
+
   it('does not render in a development checkout when onboarding is not required', async () => {
     mocks.getHafiyeOnboarding.mockResolvedValue(state({ required: false }))
 
@@ -179,7 +221,7 @@ describe('Hafiye first-run onboarding wizard', () => {
     expect(await screen.findByText('Masaüstü kontrolünü doğrula')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Doctor sonucunu doğrula' }))
 
-    expect(await screen.findByText('AT-SPI is unavailable')).toBeTruthy()
+    expect((await screen.findAllByText('AT-SPI is unavailable')).length).toBeGreaterThan(0)
     expect(mocks.updateHafiyeOnboarding).not.toHaveBeenCalled()
   })
 })

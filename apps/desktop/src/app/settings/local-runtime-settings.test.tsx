@@ -30,7 +30,7 @@ beforeEach(() => {
     server: { ready: false, running: false },
     warnings: []
   })
-  mocks.getLocalRuntimeModels.mockResolvedValue({ models: [] })
+  mocks.getLocalRuntimeModels.mockResolvedValue({ catalog: [], models: [] })
   mocks.downloadLocalRuntimeModel.mockResolvedValue({
     id: 'qwen3-test',
     path: '/managed/models/qwen3-test.gguf',
@@ -79,6 +79,44 @@ describe('LocalRuntimeSettings', () => {
         repo_id: 'Qwen/Qwen3-GGUF',
         revision: '530227a7d994db8eca5ab5ced2fb692b614357fd',
         sha256: 'abc123'
+      })
+    })
+  })
+
+  it('downloads the pinned production catalog model with integrity metadata', async () => {
+    mocks.getLocalRuntimeModels.mockResolvedValue({
+      catalog: [
+        {
+          featured: true,
+          filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
+          id: 'qwen3.8-27b-ud-iq1_s',
+          install_status: 'downloadable',
+          license: 'Apache-2.0',
+          name: 'Qwen3.8 27B UD-IQ1_S',
+          qualification: 'pending',
+          repo_id: 'unsloth/Qwen3.8-27B-GGUF',
+          resource_warning: 'Agent qualification is pending.',
+          revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
+          sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887',
+          size: 6_192_222_208,
+          source_url: 'https://huggingface.co/example'
+        }
+      ],
+      models: []
+    })
+
+    const { LocalRuntimeSettings } = await import('./local-runtime-settings')
+    render(<LocalRuntimeSettings />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Download verified GGUF' }))
+
+    await waitFor(() => {
+      expect(mocks.downloadLocalRuntimeModel).toHaveBeenCalledWith({
+        filename: 'Qwen3.8-27B-UD-IQ1_S.gguf',
+        model_id: 'qwen3.8-27b-ud-iq1_s',
+        repo_id: 'unsloth/Qwen3.8-27B-GGUF',
+        revision: '4ca720788d1e01f1bff70c033e0d0028fd02e502',
+        sha256: '3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887'
       })
     })
   })
